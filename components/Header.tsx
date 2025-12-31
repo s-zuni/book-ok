@@ -81,7 +81,10 @@ export default function Header({
                                 <span className="hidden md:inline">마이페이지</span>
                             </button>
                             <button
-                                onClick={signOut}
+                                onClick={async () => {
+                                    await signOut();
+                                    router.push('/');
+                                }}
                                 className="p-2 text-gray-400 hover:text-red-500"
                             >
                                 <LogOut size={20} />
