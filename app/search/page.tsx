@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Book } from "../../types";
 import BookGrid from "../../components/BookGrid";
@@ -12,6 +12,18 @@ import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 
 export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center py-20">
+                <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        }>
+            <SearchContent />
+        </Suspense>
+    );
+}
+
+function SearchContent() {
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("query") || "";
 
