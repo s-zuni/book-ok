@@ -9,6 +9,15 @@ import Sidebar from "../components/Sidebar";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 
+// app/search/page.tsx
+
+export const dynamic = "force-dynamic";
+
+// ... 그 아래 원래 있던 코드들 ...
+export default function SearchPage({ searchParams }) {
+  // ...
+}
+
 export default function HomePage() {
   const [activeMenu, setActiveMenu] = useState<any>('rec');
   const [activeSubMenu, setActiveSubMenu] = useState('2025 사서 추천');
