@@ -21,6 +21,15 @@ export default function MyPage() {
     const [newChildType, setNewChildType] = useState('유아');
     const [isAddingChild, setIsAddingChild] = useState(false);
 
+    // Search state
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            router.push(`/search?query=${encodeURIComponent(searchQuery)}`);
+        }
+    };
+
     useEffect(() => {
         if (user) {
             fetchChildren();
