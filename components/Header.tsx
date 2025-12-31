@@ -30,7 +30,7 @@ export default function Header({
 
     const onSearchSubmit = () => {
         if (searchQuery.trim()) {
-            router.push(`/search?query=${encodeURIComponent(searchQuery)}`);
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
         }
     };
 

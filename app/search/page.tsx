@@ -26,7 +26,7 @@ export default function SearchPage() {
 
 function SearchContent() {
     const searchParams = useSearchParams();
-    const initialQuery = searchParams.get("query") || "";
+    const initialQuery = searchParams.get("q") || "";
 
     const [searchQuery, setSearchQuery] = useState(initialQuery);
     const [searchResults, setSearchResults] = useState<Book[]>([]);

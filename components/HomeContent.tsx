@@ -16,7 +16,7 @@ export default function HomeContent() {
 
     const handleSearch = (page?: number) => {
         if (searchQuery.trim()) {
-            router.push(`/search?query=${encodeURIComponent(searchQuery)}`);
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
         }
     };
 
