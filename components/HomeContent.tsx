@@ -85,7 +85,7 @@ export default function HomeContent() {
                 handleSearch={() => { }}
             />
 
-            <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
+            <div className="max-w-7xl mx-auto px-6 py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-12">
                 <Sidebar
                     activeChild={activeChild}
                     activeMenu="rec"

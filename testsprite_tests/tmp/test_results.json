@@ -1,0 +1,30 @@
+[
+  {
+    "projectId": "6a8d73c7-1380-48e3-a8ad-4372497db3ed",
+    "testId": "7d5d6165-7b0c-4775-8800-a20105193803",
+    "userId": "14d83498-50e1-709f-8b30-84fbc157a68d",
+    "title": "TC001-get librarian recommended books",
+    "description": "Test the GET /api/librarian-books endpoint to verify it returns a successful response with the expected JSON structure containing librarian recommended books from the National Library for Children and Young Adults.",
+    "code": "import requests\n\ndef test_get_librarian_recommended_books():\n    base_url = \"http://localhost:3000\"\n    url = f\"{base_url}/api/librarian-books\"\n    headers = {\n        \"Accept\": \"application/json\"\n    }\n    try:\n        response = requests.get(url, headers=headers, timeout=30)\n    except requests.RequestException as e:\n        assert False, f\"Request to {url} failed: {e}\"\n\n    assert response.status_code == 200, f\"Expected status code 200, got {response.status_code}\"\n    try:\n        json_data = response.json()\n    except ValueError:\n        assert False, \"Response is not valid JSON\"\n\n    assert isinstance(json_data, dict), \"Response JSON is not an object\"\n    assert \"response\" in json_data, \"'response' key not found in JSON\"\n    assert isinstance(json_data[\"response\"], dict), \"'response' is not an object\"\n\ntest_get_librarian_recommended_books()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2025-12-31T13:24:59.051Z",
+    "modified": "2025-12-31T13:25:04.353Z"
+  },
+  {
+    "projectId": "6a8d73c7-1380-48e3-a8ad-4372497db3ed",
+    "testId": "1e751e4d-d464-4cc0-951f-707afc3614fb",
+    "userId": "14d83498-50e1-709f-8b30-84fbc157a68d",
+    "title": "TC002-search books with query and pagination",
+    "description": "Test the GET /api/search endpoint with a valid query parameter and optional page parameter to ensure it returns successful search results from the Aladin Open API, including correct handling of pagination.",
+    "code": "import requests\n\nBASE_URL = \"http://localhost:3000\"\nTIMEOUT = 30\nHEADERS = {\n    \"Accept\": \"application/json\"\n}\n\ndef test_search_books_with_query_and_pagination():\n    query = \"children\"\n    page = \"1\"\n    params = {\n        \"query\": query,\n        \"page\": page\n    }\n\n    try:\n        # Test with query and page parameter\n        response = requests.get(f\"{BASE_URL}/api/search\", headers=HEADERS, params=params, timeout=TIMEOUT)\n        assert response.status_code == 200, f\"Expected status code 200 but got {response.status_code}\"\n        json_data = response.json()\n        assert isinstance(json_data, dict) or isinstance(json_data, list), \"Response should be JSON object or array\"\n        # Check that some results exist and pagination info might be present\n        assert json_data, \"Response JSON should not be empty\"\n\n        # Test with query parameter only (no page)\n        params_no_page = {\n            \"query\": query\n        }\n        response_no_page = requests.get(f\"{BASE_URL}/api/search\", headers=HEADERS, params=params_no_page, timeout=TIMEOUT)\n        assert response_no_page.status_code == 200, f\"Expected status code 200 but got {response_no_page.status_code}\"\n        json_data_no_page = response_no_page.json()\n        assert isinstance(json_data_no_page, dict) or isinstance(json_data_no_page, list), \"Response should be JSON object or array\"\n        assert json_data_no_page, \"Response JSON should not be empty\"\n\n    except requests.exceptions.Timeout:\n        assert False, \"Request timed out\"\n    except requests.exceptions.RequestException as e:\n        assert False, f\"Request failed: {e}\"\n\ntest_search_books_with_query_and_pagination()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2025-12-31T13:24:59.056Z",
+    "modified": "2025-12-31T13:25:07.260Z"
+  }
+]

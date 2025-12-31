@@ -1,0 +1,12 @@
+[
+  {
+    "id": "TC001",
+    "title": "get librarian recommended books",
+    "description": "Test the GET /api/librarian-books endpoint to verify it returns a successful response with the expected JSON structure containing librarian recommended books from the National Library for Children and Young Adults."
+  },
+  {
+    "id": "TC002",
+    "title": "search books with query and pagination",
+    "description": "Test the GET /api/search endpoint with a valid query parameter and optional page parameter to ensure it returns successful search results from the Aladin Open API, including correct handling of pagination."
+  }
+]
