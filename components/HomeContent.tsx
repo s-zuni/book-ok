@@ -12,6 +12,13 @@ import { useRouter } from "next/navigation";
 export default function HomeContent() {
     const [activeMenu, setActiveMenu] = useState<any>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('2025 사서 추천');
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearch = (page?: number) => {
+        if (searchQuery.trim()) {
+            router.push(`/search?query=${encodeURIComponent(searchQuery)}`);
+        }
+    };
 
     const [librarianBooks, setLibrarianBooks] = useState<Book[]>([]);
     const [expertBooks, setExpertBooks] = useState<Book[]>([]);
@@ -80,9 +87,9 @@ export default function HomeContent() {
                 activeMenu={activeMenu}
                 setActiveMenu={setActiveMenu}
                 setActiveSubMenu={setActiveSubMenu}
-                searchQuery=""
-                setSearchQuery={() => { }}
-                handleSearch={() => { }}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleSearch={() => handleSearch(1)}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-12">

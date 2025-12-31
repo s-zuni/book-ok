@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Book } from "../../types";
 import BookGrid from "../../components/BookGrid";
+import BookList from "../../components/BookList";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "../../components/Header";
 import Sidebar from "../../components/Sidebar";
@@ -116,7 +117,7 @@ function SearchContent() {
                             <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                         </div>
                     ) : (
-                        <BookGrid books={searchResults} onSelectBook={(book) => window.location.href = `/book/${book.id}`} />
+                        <BookList books={searchResults} onSelectBook={(book) => window.location.href = `/book/${book.id}`} />
                     )}
                 </main>
             </div>

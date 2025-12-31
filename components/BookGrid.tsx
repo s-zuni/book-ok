@@ -1,4 +1,5 @@
 import { Book } from "../types";
+import Image from "next/image";
 
 interface BookGridProps {
     books: Book[];
@@ -11,10 +12,12 @@ export default function BookGrid({ books, onSelectBook }: BookGridProps) {
             {books.length > 0 ? books.map((book) => (
                 <div key={book.id} className="group cursor-pointer" onClick={() => onSelectBook(book)}>
                     <div className="aspect-[3/4.2] rounded-[2rem] overflow-hidden bg-white shadow-sm border border-gray-100 mb-5 relative transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2">
-                        <img
-                            src={book.imgsrc}
+                        <Image
+                            src={book.imgsrc && book.imgsrc.startsWith('http') ? book.imgsrc : '/file.svg'}
                             alt={book.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-700"
+                            sizes="(max-width: 768px) 50vw, 25vw"
                         />
                     </div>
                     <h3 className="font-black text-gray-800 group-hover:text-green-600 transition-colors line-clamp-1">{book.title}</h3>
