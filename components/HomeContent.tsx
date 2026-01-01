@@ -105,15 +105,18 @@ export default function HomeContent() {
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 handleSearch={() => handleSearch(1)}
+                activeSubMenu={activeSubMenu}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-12">
-                <Sidebar
-                    activeChild={activeChild}
-                    activeMenu="rec"
-                    activeSubMenu={activeSubMenu}
-                    setActiveSubMenu={setActiveSubMenu}
-                />
+                <div className="hidden lg:flex">
+                    <Sidebar
+                        activeChild={activeChild}
+                        activeMenu="rec"
+                        activeSubMenu={activeSubMenu}
+                        setActiveSubMenu={setActiveSubMenu}
+                    />
+                </div>
 
                 <main className="flex-1 min-h-[600px]">
                     {activeSubMenu === '2025 사서 추천' && (
@@ -124,7 +127,7 @@ export default function HomeContent() {
                                     <p className="text-yellow-600 text-xs mt-2">{librarianBooksError}</p>
                                 </div>
                             )}
-                            <BookGrid books={librarianBooks} onSelectBook={handleSelectBook} />
+                            <BookGrid books={librarianBooks} onSelectBook={handleSelectBook} size="small" />
                         </>
                     )}
                     {activeSubMenu === '전문가 추천' && <BookGrid books={expertBooks} onSelectBook={handleSelectBook} />}

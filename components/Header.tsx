@@ -3,6 +3,7 @@ import { MainMenu, ViewState } from "../types";
 import { MENU_CONFIG } from "../lib/constants";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
+import MobileSubMenu from "./MobileSubMenu";
 
 interface HeaderProps {
     view: ViewState;
@@ -13,6 +14,7 @@ interface HeaderProps {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     handleSearch: (page: number) => void;
+    activeSubMenu?: string;
 }
 
 export default function Header({
@@ -24,6 +26,7 @@ export default function Header({
     searchQuery,
     setSearchQuery,
     handleSearch,
+    activeSubMenu = '',
 }: HeaderProps) {
     const { user, signOut } = useAuth();
     const router = useRouter();
@@ -112,6 +115,14 @@ export default function Header({
                     ))}
                 </div>
             </nav>
+
+            {activeSubMenu && (
+                <MobileSubMenu
+                    activeMenu={activeMenu}
+                    activeSubMenu={activeSubMenu}
+                    setActiveSubMenu={setActiveSubMenu}
+                />
+            )}
         </header>
     );
 }

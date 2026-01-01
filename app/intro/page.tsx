@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Sidebar from "../../components/Sidebar";
 import ServiceIntro from "../../components/intro/ServiceIntro";
@@ -8,13 +9,14 @@ import VisionIntro from "../../components/intro/VisionIntro";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Child } from "../../types";
-import { useEffect } from "react";
 
 export default function IntroPage() {
     const [activeMenu, setActiveMenu] = useState<any>('intro');
     const [activeSubMenu, setActiveSubMenu] = useState('북콕 서비스');
     const [activeChild, setActiveChild] = useState<Child | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
     const { user } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         if (user) {
@@ -28,6 +30,12 @@ export default function IntroPage() {
         }
     }, [user]);
 
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
+
     const dummySetView = () => { };
 
     return (
@@ -38,18 +46,21 @@ export default function IntroPage() {
                 activeMenu={activeMenu}
                 setActiveMenu={setActiveMenu}
                 setActiveSubMenu={setActiveSubMenu}
-                searchQuery=""
-                setSearchQuery={() => { }}
-                handleSearch={() => { }}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleSearch={handleSearch}
+                activeSubMenu={activeSubMenu}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
-                <Sidebar
-                    activeChild={activeChild}
-                    activeMenu="intro"
-                    activeSubMenu={activeSubMenu}
-                    setActiveSubMenu={setActiveSubMenu}
-                />
+                <div className="hidden lg:flex">
+                    <Sidebar
+                        activeChild={activeChild}
+                        activeMenu="intro"
+                        activeSubMenu={activeSubMenu}
+                        setActiveSubMenu={setActiveSubMenu}
+                    />
+                </div>
 
                 <main className="flex-1 min-h-[600px]">
                     <div className="animate-in fade-in">
