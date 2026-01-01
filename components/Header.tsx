@@ -86,7 +86,7 @@ export default function Header({
                             <button
                                 onClick={async () => {
                                     await signOut();
-                                    router.push('/');
+                                    window.location.href = '/';
                                 }}
                                 className="p-2 text-gray-400 hover:text-red-500"
                             >
