@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Header from "../../components/Header";
 import Sidebar from "../../components/Sidebar";
 import ReadingAnalysis from "../../components/solution/ReadingAnalysis";
@@ -15,6 +16,7 @@ export default function SolutionPage() {
     const [activeMenu, setActiveMenu] = useState<any>('solution');
     const [activeSubMenu, setActiveSubMenu] = useState('우리 아이 독서 성향 AI 분석');
     const [activeChild, setActiveChild] = useState<Child | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
 
     // States for Reading Analysis
     const [userReadBooks, setUserReadBooks] = useState<Book[]>([]);
@@ -27,6 +29,7 @@ export default function SolutionPage() {
     const [aiSolutionLoading, setAiSolutionLoading] = useState(false);
 
     const { user } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         if (user) {
@@ -136,6 +139,12 @@ export default function SolutionPage() {
     };
 
 
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
+
     const dummySetView = () => { };
 
     return (
@@ -146,18 +155,21 @@ export default function SolutionPage() {
                 activeMenu={activeMenu}
                 setActiveMenu={setActiveMenu}
                 setActiveSubMenu={setActiveSubMenu}
-                searchQuery=""
-                setSearchQuery={() => { }}
-                handleSearch={() => { }}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleSearch={handleSearch}
+                activeSubMenu={activeSubMenu}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
-                <Sidebar
-                    activeChild={activeChild}
-                    activeMenu="solution"
-                    activeSubMenu={activeSubMenu}
-                    setActiveSubMenu={setActiveSubMenu}
-                />
+                <div className="hidden lg:flex">
+                    <Sidebar
+                        activeChild={activeChild}
+                        activeMenu="solution"
+                        activeSubMenu={activeSubMenu}
+                        setActiveSubMenu={setActiveSubMenu}
+                    />
+                </div>
 
                 <main className="flex-1 min-h-[600px]">
                     {activeSubMenu === '우리 아이 독서 성향 AI 분석' && (

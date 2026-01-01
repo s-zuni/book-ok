@@ -14,6 +14,7 @@ export default function CommunityPage() {
     const [activeSubMenu, setActiveSubMenu] = useState('전체 게시글');
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [posts, setPosts] = useState<Post[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
     const router = useRouter();
     const { user } = useAuth();
 
@@ -48,6 +49,12 @@ export default function CommunityPage() {
         if (data) setPosts(data);
     };
 
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
+
     const dummySetView = () => { };
 
     return (
@@ -58,18 +65,21 @@ export default function CommunityPage() {
                 activeMenu={activeMenu}
                 setActiveMenu={setActiveMenu} // This might need simple override if we don't want it to break
                 setActiveSubMenu={setActiveSubMenu}
-                searchQuery=""
-                setSearchQuery={() => { }}
-                handleSearch={() => { }}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleSearch={handleSearch}
+                activeSubMenu={activeSubMenu}
             />
 
             <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
-                <Sidebar
-                    activeChild={activeChild}
-                    activeMenu="comm"
-                    activeSubMenu={activeSubMenu}
-                    setActiveSubMenu={setActiveSubMenu}
-                />
+                <div className="hidden lg:flex">
+                    <Sidebar
+                        activeChild={activeChild}
+                        activeMenu="comm"
+                        activeSubMenu={activeSubMenu}
+                        setActiveSubMenu={setActiveSubMenu}
+                    />
+                </div>
 
                 <main className="flex-1 min-h-[600px]">
                     <div className="animate-in fade-in">
