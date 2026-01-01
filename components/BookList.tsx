@@ -53,37 +53,30 @@ export default function BookList({ books, onSelectBook }: BookListProps) {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-y-2 text-sm text-gray-600 mb-4">
-                                <span className="mr-4">ISBN: {book.bookid}</span>
-                                <span className="hidden md:inline text-gray-300 mx-2">|</span>
-                                <span className="mr-4">청구기호: 813.8-{book.author.substring(0, 1)}78{book.title.substring(0, 1)}</span>
-                                <span className="hidden md:inline text-gray-300 mx-2">|</span>
-                                <span className="flex items-center gap-1 border border-gray-300 rounded px-2 py-0.5 text-xs text-gray-500 cursor-not-allowed">
-                                    <Printer size={12} /> 위치출력
-                                </span>
+                                <span className="mr-4 text-gray-400">ISBN: {book.bookid}</span>
+                                {book.pubDate && (
+                                    <>
+                                        <span className="hidden md:inline text-gray-300 mx-2">|</span>
+                                        <span className="mr-4 text-gray-400">발급일: {book.pubDate}</span>
+                                    </>
+                                )}
                             </div>
 
-                            <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100 mb-4 inline-block md:block">
-                                <span className="mr-6">도서관: 서울어린이도서관</span>
-                                <span className="text-gray-300 mx-2">|</span>
-                                <span>자료실: [아동]2층 열람실</span>
-                            </div>
+                            {book.description && (
+                                <div className="text-sm text-gray-500 line-clamp-2 md:line-clamp-3 leading-relaxed mb-4 max-w-2xl">
+                                    {book.description}
+                                </div>
+                            )}
                         </div>
 
                         {/* Action Bar */}
-                        <div className="flex flex-wrap items-center justify-between gap-4 mt-2 pt-4 border-t border-gray-100">
-                            <div className="font-bold text-gray-800">
-                                대출가능<span className="text-blue-600">[비치중]</span>
-                            </div>
-
+                        <div className="flex flex-wrap items-center justify-end gap-4 mt-2 pt-4 border-t border-gray-100">
                             <div className="flex items-center gap-2">
-                                <button className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-100 text-gray-400 text-xs font-bold cursor-not-allowed">
-                                    <XCircle size={14} /> 도서예약불가
-                                </button>
-                                <button className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-xs font-bold hover:bg-green-200 transition">
-                                    <RefreshCw size={14} /> 책두레상호대차신청
-                                </button>
-                                <button className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-blue-100 text-blue-600 text-xs font-bold hover:bg-blue-200 transition">
-                                    <ShoppingBag size={14} /> 관심도서담기
+                                <button
+                                    onClick={() => onSelectBook(book)}
+                                    className="flex items-center gap-1 px-5 py-2 rounded-full bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 shadow-md shadow-blue-100 transition"
+                                >
+                                    <ShoppingBag size={14} /> 상세 정보 보기
                                 </button>
                             </div>
                         </div>
