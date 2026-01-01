@@ -64,12 +64,12 @@ export default function Sidebar({
                 </div>
             )}
 
-            <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-                <h2 className="text-[11px] font-black text-green-600 uppercase tracking-widest mb-6 px-2">{MENU_CONFIG[activeMenu].label}</h2>
-                <nav className="flex flex-col gap-1.5">
+            <div className="bg-white rounded-[2rem] p-4 lg:p-6 shadow-sm border border-gray-100">
+                <h2 className="text-[10px] lg:text-[11px] font-black text-green-600 uppercase tracking-widest mb-4 lg:mb-6 px-2">{MENU_CONFIG[activeMenu].label}</h2>
+                <nav className="flex flex-col gap-1">
                     {MENU_CONFIG[activeMenu].sub.map((sub) => (
                         <button key={sub} onClick={() => setActiveSubMenu(sub)}
-                            className={`flex items-center justify-between px-5 py-4 rounded-2xl font-bold text-sm transition-all ${activeSubMenu === sub ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'}`}>
+                            className={`flex items-center justify-between px-4 py-3 lg:px-5 lg:py-4 rounded-xl lg:rounded-2xl font-bold text-xs lg:text-sm transition-all ${activeSubMenu === sub ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'}`}>
                             {sub} {activeSubMenu === sub && <ChevronRight size={14} />}
                         </button>
                     ))}
