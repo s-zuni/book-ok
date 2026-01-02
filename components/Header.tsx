@@ -123,7 +123,7 @@ export default function Header({
 
             {/* Mobile Search Input Overlay */}
             {isSearchOpen && (
-                <div className="p-4 bg-white border-t sm:hidden absolute top-16 left-0 right-0 shadow-lg animate-in slide-in-from-top-2">
+                <div className="p-4 bg-white border-t sm:hidden fixed top-16 left-0 right-0 shadow-lg animate-in slide-in-from-top-2 z-[100]">
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input

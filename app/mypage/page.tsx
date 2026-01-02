@@ -60,7 +60,7 @@ export default function MyPage() {
             name: newChildNickname,
             birthdate: newChildBirthdate,
             type: newChildType,
-            profile_id: user.id
+            parent_id: user.id
         });
 
         if (error) {
