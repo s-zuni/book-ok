@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { AuthProvider } from "../context/AuthContext";
+import MobileBottomNav from "../components/MobileBottomNav";
 
 export default function RootLayout({
   children,
@@ -27,10 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased pb-16 lg:pb-0`}
       >
         <AuthProvider>
           {children}
+          <div className="lg:hidden">
+            <MobileBottomNav />
+          </div>
         </AuthProvider>
       </body>
     </html>
