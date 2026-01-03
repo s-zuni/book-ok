@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabase";
 import { Book, Review, Child } from "../../../types";
-import { Star, ChevronLeft } from "lucide-react";
+import { Star, ChevronLeft, Bookmark, BookOpen, Check } from "lucide-react";
 import Header from "../../../components/Header";
 import Sidebar from "../../../components/Sidebar";
 import { useAuth } from "../../../context/AuthContext";
@@ -24,6 +24,10 @@ export default function BookDetailPage() {
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [activeMenu, setActiveMenu] = useState<any>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
+
+    // Additional Actions State (Mocking DB state for UI demo)
+    const [isScrapped, setIsScrapped] = useState(false);
+    const [isRead, setIsRead] = useState(false);
 
     // Review form state
     const [newRating, setNewRating] = useState(0);
@@ -74,10 +78,12 @@ export default function BookDetailPage() {
         fetchBook();
         fetchReviews();
 
+        // Mock fetch user interactions
         if (user) {
             supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
                 if (data && data.length > 0) setActiveChild(data[0]);
             });
+            // Here we would check if book is scrapped or read
         }
 
     }, [bookId, user]);
@@ -91,27 +97,48 @@ export default function BookDetailPage() {
         if (data) setReviews(data as any);
     };
 
-    const handleSubmitReview = async () => {
-        if (!user || !newRating || !newReviewText) return;
-
-        // If it's an API book, we MUST insert it into 'books' table first to link the review foreign key
+    // Helper to ensure book exists in DB before linking actions
+    const ensureBookInDB = async () => {
         if (isApiBook && book) {
             const { error: insertError } = await supabase.from('books').upsert({
-                id: book.id, // Assuming ID is ISBN/String
+                id: book.id,
                 title: book.title,
                 author: book.author,
                 imgsrc: book.imgsrc,
                 category: book.category,
                 description: book.description,
-                // pubDate might need handling if column names differ, but 'books' schema usually flexible
             }, { onConflict: 'id' });
 
             if (insertError) {
-                console.error("Failed to save book:", insertError);
-                alert("도서 정보 저장 실패: " + insertError.message);
-                return;
+                alert("도서 저장 실패: " + insertError.message);
+                return false;
             }
+            setIsApiBook(false);
+            return true;
         }
+        return true; // Already in DB
+    };
+
+    const handleScrap = async () => {
+        if (!user) return alert("로그인이 필요합니다.");
+        await ensureBookInDB();
+        setIsScrapped(!isScrapped);
+        // Ideally: await supabase.from('scraps').insert(...)
+        alert(isScrapped ? "스크랩을 취소했습니다." : "책을 스크랩했습니다!");
+    };
+
+    const handleMarkRead = async () => {
+        if (!user) return alert("로그인이 필요합니다.");
+        await ensureBookInDB();
+        setIsRead(!isRead);
+        // Ideally: await supabase.from('user_reads').insert(...)
+        alert(isRead ? "읽은 책 목록에서 제거했습니다." : "읽은 책으로 표시했습니다!");
+    };
+
+    const handleSubmitReview = async () => {
+        if (!user || !newRating || !newReviewText) return;
+
+        await ensureBookInDB(); // Ensure book is saved first
 
         const { error } = await supabase.from('reviews').insert({
             book_id: bookId,
@@ -125,16 +152,12 @@ export default function BookDetailPage() {
             setNewRating(0);
             setNewReviewText("");
             fetchReviews();
-            setIsApiBook(false); // Now it's in DB
         } else {
             alert("리뷰 작성 실패: " + error.message);
         }
     };
 
     const dummySetView = () => { };
-
-    if (loading) return <div className="p-20 text-center font-bold text-gray-400">도서 정보를 불러오는 중...</div>;
-    if (!book && !loading) return <div className="p-20 text-center font-bold text-gray-400">도서 정보를 찾을 수 없습니다.</div>;
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans pb-24 lg:pb-0">
@@ -164,16 +187,51 @@ export default function BookDetailPage() {
                         <ChevronLeft size={20} /> 목록으로 돌아가기
                     </button>
 
-                    <div className="bg-white rounded-[2.5rem] p-6 lg:p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 mb-10">
-                        <div className="flex justify-center md:block">
-                            <img src={book?.imgsrc} alt={book?.title} className="w-40 md:w-48 h-56 md:h-64 object-cover rounded-xl shadow-md" />
-                        </div>
-                        <div className="flex-1">
-                            <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black mb-3">{book?.category}</span>
-                            <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">{book?.title}</h1>
-                            <p className="text-gray-500 font-medium mb-6">{book?.author} | {book?.pubDate}</p>
-                            {book?.description && <p className="text-gray-600 leading-relaxed mb-6 text-sm">{book.description}</p>}
-                        </div>
+                    <div className="bg-white rounded-[2.5rem] p-6 lg:p-10 shadow-sm border border-gray-100 flex flex-col md:flex-row gap-8 mb-10 transition-all">
+                        {loading && !book ? (
+                            // Inline Loading Skeleton
+                            <>
+                                <div className="w-40 md:w-48 h-56 md:h-64 bg-gray-100 rounded-xl animate-pulse mx-auto md:mx-0" />
+                                <div className="flex-1 space-y-4 pt-4">
+                                    <div className="h-6 w-20 bg-gray-100 rounded-full animate-pulse" />
+                                    <div className="h-10 w-3/4 bg-gray-100 rounded-xl animate-pulse" />
+                                    <div className="h-4 w-1/2 bg-gray-100 rounded-full animate-pulse" />
+                                    <div className="h-24 w-full bg-gray-100 rounded-xl animate-pulse" />
+                                </div>
+                            </>
+                        ) : book ? (
+                            <>
+                                <div className="flex justify-center md:block">
+                                    <img src={book.imgsrc} alt={book.title} className="w-40 md:w-48 h-56 md:h-64 object-cover rounded-xl shadow-md" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-start justify-between">
+                                        <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black mb-3">{book.category}</span>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleScrap}
+                                                className={`p-2 rounded-full border transition-all ${isScrapped ? 'bg-yellow-50 border-yellow-200 text-yellow-500' : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}
+                                                title="스크랩"
+                                            >
+                                                <Bookmark size={20} fill={isScrapped ? "currentColor" : "none"} />
+                                            </button>
+                                            <button
+                                                onClick={handleMarkRead}
+                                                className={`p-2 rounded-full border transition-all ${isRead ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}
+                                                title="읽은 책 표시"
+                                            >
+                                                {isRead ? <Check size={20} /> : <BookOpen size={20} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">{book.title}</h1>
+                                    <p className="text-gray-500 font-medium mb-6">{book.author} | {book.pubDate}</p>
+                                    {book.description && <p className="text-gray-600 leading-relaxed mb-6 text-sm">{book.description}</p>}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="p-10 text-center text-gray-400 font-bold w-full">도서 정보를 찾을 수 없습니다.</div>
+                        )}
                     </div>
 
                     {/* Reviews */}
