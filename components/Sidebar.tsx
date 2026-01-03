@@ -31,7 +31,7 @@ export default function Sidebar({
     return (
         <aside className="lg:w-64 shrink-0 flex flex-col gap-8">
             {user && activeChild ? (
-                <div className="bg-white rounded-[2rem] p-7 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-4xl p-7 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-4 mb-5">
                         <div className="w-14 h-14 bg-green-600 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-green-100">{activeChild.name[0]}</div>
                         <div>
@@ -45,7 +45,7 @@ export default function Sidebar({
                     </div>
                 </div>
             ) : user && userProfile ? (
-                <div className="bg-white rounded-[2rem] p-7 shadow-sm border border-gray-100">
+                <div className="bg-white rounded-4xl p-7 shadow-sm border border-gray-100">
                     <div className="flex items-center gap-4 mb-5">
                         <div className="w-14 h-14 bg-gray-200 rounded-2xl flex items-center justify-center text-gray-600 text-xl font-black shadow-lg shadow-gray-100"><User size={24} /></div>
                         <div>
@@ -59,12 +59,12 @@ export default function Sidebar({
                     </div>
                 </div>
             ) : (
-                <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-dashed border-gray-200 text-center">
+                <div className="bg-white rounded-4xl p-8 shadow-sm border border-dashed border-gray-200 text-center">
                     <p className="text-sm text-gray-400 font-bold">로그인 후 아이 프로필을 확인하세요</p>
                 </div>
             )}
 
-            <div className="bg-white rounded-[2rem] p-4 lg:p-6 shadow-sm border border-gray-100">
+            <div className="bg-white rounded-4xl p-4 lg:p-6 shadow-sm border border-gray-100">
                 <h2 className="text-[10px] lg:text-[11px] font-black text-green-600 uppercase tracking-widest mb-4 lg:mb-6 px-2">{MENU_CONFIG[activeMenu].label}</h2>
                 <nav className="flex flex-col gap-1">
                     {MENU_CONFIG[activeMenu].sub.map((sub) => (

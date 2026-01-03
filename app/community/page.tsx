@@ -58,12 +58,12 @@ export default function CommunityPage() {
     const dummySetView = () => { };
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans">
+        <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans pb-24 lg:pb-0">
             <Header
                 view="main"
                 setView={dummySetView}
                 activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu} // This might need simple override if we don't want it to break
+                setActiveMenu={setActiveMenu}
                 setActiveSubMenu={setActiveSubMenu}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
@@ -71,7 +71,7 @@ export default function CommunityPage() {
                 activeSubMenu={activeSubMenu}
             />
 
-            <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
+            <div className="max-w-7xl mx-auto px-6 py-8 lg:py-12 flex flex-col lg:flex-row gap-12">
                 <div className="hidden lg:flex">
                     <Sidebar
                         activeChild={activeChild}
@@ -82,33 +82,43 @@ export default function CommunityPage() {
                 </div>
 
                 <main className="flex-1 min-h-[600px]">
-                    <div className="animate-in fade-in">
+                    <div className="animate-in fade-in max-w-2xl mx-auto">
                         <div className="flex items-center justify-between mb-10">
-                            <h2 className="text-4xl font-black tracking-tight">{activeSubMenu}</h2>
-                            <button onClick={() => router.push('/community/write')} className="bg-gray-900 text-white px-8 py-4 rounded-[1.5rem] font-black shadow-xl hover:bg-black transition-all flex items-center gap-2"><Edit3 size={18} /> 글쓰기</button>
+                            <h2 className="text-3xl font-black tracking-tight">{activeSubMenu}</h2>
+                            <button onClick={() => router.push('/community/write')} className="bg-green-600 text-white px-6 py-2.5 rounded-full font-bold shadow-md hover:bg-green-700 transition-all flex items-center gap-2 text-sm"><Edit3 size={16} /> 글쓰기</button>
                         </div>
 
-                        <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                            <div className="grid grid-cols-[80px_1fr_100px_80px_80px] gap-4 px-8 py-5 bg-gray-50 border-b text-xs font-black text-gray-400 uppercase tracking-widest hidden md:grid">
-                                <div className="text-center">번호</div><div>제목</div><div className="text-center">작성자</div><div className="text-center">조회수</div><div className="text-center">좋아요</div>
-                            </div>
-
-                            {posts.map((post, idx) => (
-                                <div key={post.id} className="grid grid-cols-1 md:grid-cols-[80px_1fr_100px_80px_80px] gap-4 px-8 py-6 border-b hover:bg-green-50/30 transition-all cursor-pointer group"
+                        <div className="space-y-8">
+                            {posts.map((post) => (
+                                <div key={post.id} className="border-b border-gray-100 pb-8 cursor-pointer group"
                                     onClick={() => router.push(`/community/${post.id}`)}>
-                                    <div className="text-center text-gray-400 font-bold hidden md:block">{idx + 1}</div>
-                                    <div>
-                                        <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs font-bold mb-1 md:hidden">{post.category}</span>
-                                        <h3 className="font-bold text-lg text-gray-800 group-hover:text-green-600 transition-colors line-clamp-1">{post.title}</h3>
-                                        <div className="md:hidden flex items-center gap-3 mt-2 text-xs text-gray-400">
-                                            <span>{post.author_nickname}</span>
-                                            <span>조회 {post.views}</span>
-                                            <span>좋아요 {post.likes}</span>
+
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-6 h-6 rounded-full bg-gray-200" />
+                                        <span className="text-xs font-bold text-gray-800">{post.author_nickname}</span>
+                                        <span className="text-xs text-gray-400">· {new Date(post.created_at).toLocaleDateString()}</span>
+                                    </div>
+
+                                    <div className="flex justify-between gap-6">
+                                        <div className="flex-1">
+                                            <h3 className="font-black text-xl text-gray-900 group-hover:text-green-600 transition-colors mb-2 leading-tight">{post.title}</h3>
+                                            <p className="text-gray-500 text-sm line-clamp-2 md:line-clamp-3 mb-4 leading-relaxed font-medium">
+                                                {/* Fallback description or content excerpt */}
+                                                {post.content.replace(/<[^>]*>?/gm, '').substring(0, 100)}...
+                                            </p>
+
+                                            <div className="flex items-center gap-4 text-xs text-gray-400 font-medium">
+                                                <span className="bg-gray-100 px-2 py-1 rounded text-gray-500">{post.category}</span>
+                                                <span className="flex items-center gap-1"><Eye size={14} /> {post.views}</span>
+                                                <span className="flex items-center gap-1"><Heart size={14} /> {post.likes}</span>
+                                            </div>
+                                        </div>
+                                        {/* Optional: Add random placeholder image or if post has image */}
+                                        <div className="w-24 h-24 md:w-32 md:h-32 bg-gray-100 rounded-xl shrink-0 overflow-hidden">
+                                            {/* Using a placeholder service or generic colored box */}
+                                            <div className="w-full h-full bg-gray-50" />
                                         </div>
                                     </div>
-                                    <div className="text-center text-sm text-gray-600 hidden md:block">{post.author_nickname}</div>
-                                    <div className="text-center text-sm text-gray-400 hidden md:block">{post.views}</div>
-                                    <div className="text-center text-sm text-gray-400 font-bold hidden md:block">{post.likes}</div>
                                 </div>
                             ))}
 

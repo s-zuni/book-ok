@@ -52,7 +52,7 @@ export default function Header({
     };
 
     return (
-        <header className="bg-white border-b sticky top-0 z-[60]">
+        <header className="bg-white border-b sticky top-0 z-60">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 lg:h-20 flex items-center justify-between gap-4">
                 {/* Logo */}
                 <div
@@ -123,7 +123,7 @@ export default function Header({
 
             {/* Mobile Search Input Overlay */}
             {isSearchOpen && (
-                <div className="p-4 bg-white border-t sm:hidden fixed top-16 left-0 right-0 shadow-lg animate-in slide-in-from-top-2 z-[100]">
+                <div className="p-4 bg-white border-t sm:hidden fixed top-16 left-0 right-0 shadow-lg animate-in slide-in-from-top-2 z-100">
                     <div className="relative">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                         <input
