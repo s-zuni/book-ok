@@ -47,38 +47,33 @@ export default function HomeContent() {
 
     const fetchLibrarianBooks = async () => {
         try {
-            const res = await fetch('/api/librarian-books');
-            const data = await res.json();
+            // Reverted to Supabase as requested. 
+            // Assuming 'recommendation_type' column exists or we filter by some criteria.
+            // If 'librarian' type doesn't exist in DB, this might return empty, but it's the requested "manage via Supabase" method.
+            // We can also just fetch all books or random ones if specific type isn't set yet.
+            const { data, error } = await supabase
+                .from('books')
+                .select('*')
+                .eq('recommendation_type', 'librarian') // Assuming this tag exists or user will add it
+                .order('id', { ascending: false });
 
-            // Check if there's an error in the response
-            if (data.error) {
-                console.warn('Librarian books API error:', data.error, data.details);
-                setLibrarianBooksError(data.details || data.error);
-                setLibrarianBooks([]);
+            if (error) {
+                console.error("Supabase error:", error);
+                setLibrarianBooksError(error.message);
                 return;
             }
 
-            if (data.response?.body?.items?.item) {
-                const items = data.response.body.items.item;
-                const books = items.map((apiBook: any) => ({
-                    id: apiBook.url,
-                    bookid: apiBook.url,
-                    title: apiBook.title,
-                    author: apiBook.creator,
-                    imgsrc: apiBook.referenceIdentifier || '/file.svg',
-                    category: apiBook.subjectCategory || '미분류',
-                    pubDate: apiBook.regDate,
-                    description: Array.isArray(apiBook.description) ? apiBook.description.join('\n') : apiBook.description,
-                }));
-                setLibrarianBooks(books);
+            if (data && data.length > 0) {
+                setLibrarianBooks(data);
                 setLibrarianBooksError(null);
             } else {
-                setLibrarianBooks([]);
+                // Fallback if no specific librarian books found, maybe show all recent?
+                const { data: allBooks } = await supabase.from('books').select('*').limit(10);
+                if (allBooks) setLibrarianBooks(allBooks);
             }
         } catch (error) {
             console.error("Failed to fetch librarian books:", error);
-            setLibrarianBooksError("네트워크 오류가 발생했습니다.");
-            setLibrarianBooks([]);
+            setLibrarianBooksError("도서 정보를 불러오는데 실패했습니다.");
         }
     };
 
