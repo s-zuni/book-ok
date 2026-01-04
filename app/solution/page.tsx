@@ -79,7 +79,7 @@ export default function SolutionPage() {
         부모에게 조언하듯이 친절하고 전문적인 어조로 작성해주세요.
       `;
 
-            const response = await fetch('/api/gemini', {
+            const response = await fetch('/api/openai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
@@ -115,7 +115,7 @@ export default function SolutionPage() {
           답변은 공감하는 말로 시작해서, 구체적인 해결 방안 3가지 정도를 제시하고, 격려의 말로 마무리해주세요.
         `;
 
-            const response = await fetch('/api/gemini', {
+            const response = await fetch('/api/openai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
