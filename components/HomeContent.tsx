@@ -20,18 +20,13 @@ export default function HomeContent() {
         }
     };
 
-    const [librarianBooks, setLibrarianBooks] = useState<Book[]>([]);
-    const [expertBooks, setExpertBooks] = useState<Book[]>([]);
+    const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const [activeChild, setActiveChild] = useState<Child | null>(null);
-    const [librarianBooksError, setLibrarianBooksError] = useState<string | null>(null);
 
     const { user } = useAuth();
     const router = useRouter();
-
-    useEffect(() => {
-        fetchLibrarianBooks();
-        fetchExpertBooks();
-    }, []);
 
     useEffect(() => {
         if (user) {
@@ -45,41 +40,74 @@ export default function HomeContent() {
         }
     }, [user]);
 
-    const fetchLibrarianBooks = async () => {
-        try {
-            // Reverted to Supabase as requested. 
-            // Assuming 'recommendation_type' column exists or we filter by some criteria.
-            // If 'librarian' type doesn't exist in DB, this might return empty, but it's the requested "manage via Supabase" method.
-            // We can also just fetch all books or random ones if specific type isn't set yet.
-            const { data, error } = await supabase
-                .from('books')
-                .select('*')
-                .eq('recommendation_type', 'librarian') // Assuming this tag exists or user will add it
-                .order('id', { ascending: false });
+    useEffect(() => {
+        fetchBooks();
+    }, [activeSubMenu, activeChild]);
 
-            if (error) {
-                console.error("Supabase error:", error);
-                setLibrarianBooksError(error.message);
-                return;
-            }
-
-            if (data && data.length > 0) {
-                setLibrarianBooks(data);
-                setLibrarianBooksError(null);
-            } else {
-                // Fallback if no specific librarian books found, maybe show all recent?
-                const { data: allBooks } = await supabase.from('books').select('*').limit(10);
-                if (allBooks) setLibrarianBooks(allBooks);
-            }
-        } catch (error) {
-            console.error("Failed to fetch librarian books:", error);
-            setLibrarianBooksError("도서 정보를 불러오는데 실패했습니다.");
+    const fetchBooks = async () => {
+        // Only fetch for specific submenus
+        const validMenus = ["2025 사서 추천", "전문가 추천", "수상 도서작"];
+        if (!validMenus.includes(activeSubMenu)) {
+            setRecommendedBooks([]);
+            return;
         }
-    };
 
-    const fetchExpertBooks = async () => {
-        const { data } = await supabase.from('books').select('*').eq('recommendation_type', 'expert').order('id', { ascending: false });
-        if (data) setExpertBooks(data);
+        setLoading(true);
+        setError(null);
+
+        try {
+            let query = "";
+            let categoryId = "1108"; // Default: Children
+
+            // Dynamic Query Mapping
+            if (activeSubMenu === "2025 사서 추천") {
+                query = "사서추천";
+            } else if (activeSubMenu === "전문가 추천") {
+                query = "전문가추천";
+            } else if (activeSubMenu === "수상 도서작") {
+                query = "수상작";
+            }
+
+            // Category Filtering based on Active Child Age
+            // 4123: Children/Infant (Infant usually), 1108: Children
+            if (activeChild && activeChild.age <= 7) {
+                categoryId = "4123";
+            } else {
+                categoryId = "1108";
+            }
+
+            const res = await fetch(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}`);
+
+            if (!res.ok) {
+                throw new Error("Failed to fetch recommendations");
+            }
+
+            const data = await res.json();
+
+            if (data.item) {
+                const mappedBooks: Book[] = data.item.map((item: any) => ({
+                    id: item.isbn13 || item.isbn,
+                    bookid: item.isbn13 || item.isbn,
+                    title: item.title,
+                    author: item.author,
+                    imgsrc: item.cover,
+                    category: item.categoryName,
+                    pubDate: item.pubDate,
+                    description: item.description
+                }));
+                // Ensure duplicate keys don't crash React if Aladin returns duplicates (rare but possible)
+                // Filter distinct by id? No, BookGrid handles keys by id.
+                setRecommendedBooks(mappedBooks);
+            } else {
+                setRecommendedBooks([]);
+            }
+
+        } catch (err: any) {
+            console.error("Fetch books error:", err);
+            setError("도서 정보를 불러오는데 실패했습니다.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleSelectBook = (book: Book) => {
@@ -114,19 +142,24 @@ export default function HomeContent() {
                 </div>
 
                 <main className="flex-1 min-h-[600px]">
-                    {activeSubMenu === '2025 사서 추천' && (
+                    {["2025 사서 추천", "전문가 추천", "수상 도서작"].includes(activeSubMenu) ? (
                         <>
-                            {librarianBooksError && (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
-                                    <p className="text-yellow-800 font-bold text-sm">⚠️ 사서 추천 도서를 불러올 수 없습니다</p>
-                                    <p className="text-yellow-600 text-xs mt-2">{librarianBooksError}</p>
+                            {loading ? (
+                                <div className="flex justify-center py-20">
+                                    <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                                 </div>
+                            ) : error ? (
+                                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
+                                    <p className="text-yellow-800 font-bold text-sm">⚠️ 도서 정보를 불러올 수 없습니다</p>
+                                    <p className="text-yellow-600 text-xs mt-2">{error}</p>
+                                </div>
+                            ) : recommendedBooks.length === 0 ? (
+                                <div className="text-center py-20 text-gray-400 font-bold">No recommended books found</div>
+                            ) : (
+                                <BookGrid books={recommendedBooks} onSelectBook={handleSelectBook} size="small" />
                             )}
-                            <BookGrid books={librarianBooks} onSelectBook={handleSelectBook} size="small" />
                         </>
-                    )}
-                    {activeSubMenu === '전문가 추천' && <BookGrid books={expertBooks} onSelectBook={handleSelectBook} />}
-                    {activeSubMenu !== '2025 사서 추천' && activeSubMenu !== '전문가 추천' && (
+                    ) : (
                         <div className="text-center py-20 text-gray-400 font-bold">이 섹션은 준비 중입니다.</div>
                     )}
                 </main>
