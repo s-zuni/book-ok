@@ -83,7 +83,7 @@ export default function BookDetailPage() {
 
         // Fetch user children
         if (user) {
-            supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
+            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
                 if (data && data.length > 0) {
                     setUserChildren(data);
                     setActiveChild(data[0]); // Default active for sidebar

@@ -5,7 +5,7 @@ import Header from "../../components/Header";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Child } from "../../types";
-import { User, Plus, X, Settings, BookOpen, Bookmark, BarChart2, ChevronRight } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function MyPage() {
@@ -87,23 +87,16 @@ export default function MyPage() {
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans pb-24 lg:pb-0">
-            {/* Custom Header with Settings Icon for MyPage if needed, or modify Global Header. 
-                User requested "Settings icon instead of Search in MyPage top right". 
-                Since Header is global component, we might need a prop or just conditional styling here.
-                For now, I'll modify the global header to accept a 'customRight' prop or similar, OR mock the header here to look similar?
-                Actually, simpler to use existing Header and maybe overlay or just use this page's own layout?
-                The design shows a title "My Account" and a settings cog. 
-                I will stick to the global Header but maybe hide search?
-                Wait, user said "In My Page... replace search with settings". 
-                Global Header has lots of logic (nav, auth). 
-                I will render a Custom Header for My Page to match the design 100%. */}
-
-            <header className="sticky top-0 z-60 bg-white border-b border-gray-100 h-16 flex items-center justify-between px-6">
-                <h1 className="text-xl font-black">마이페이지</h1>
-                <button onClick={handleLogout} className="text-gray-900 p-2 hover:bg-gray-100 rounded-full">
-                    <Settings size={24} />
-                </button>
-            </header>
+            <Header
+                view="mypage"
+                setView={dummySetView}
+                activeMenu={activeMenu}
+                setActiveMenu={setActiveMenu}
+                setActiveSubMenu={setActiveSubMenu}
+                searchQuery=""
+                setSearchQuery={() => { }}
+                handleSearch={() => { }}
+            />
 
             <div className="max-w-xl mx-auto px-6 py-8">
 
