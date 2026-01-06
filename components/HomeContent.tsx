@@ -8,6 +8,8 @@ import BookGrid from "./BookGrid";
 import Sidebar from "./Sidebar";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
+import HeroSection from "./HeroSection";
+import RecommendationSection from "./RecommendationSection";
 
 export default function HomeContent() {
     const [activeMenu, setActiveMenu] = useState<any>('rec');
@@ -131,39 +133,35 @@ export default function HomeContent() {
                 activeSubMenu={activeSubMenu}
             />
 
-            <div className="max-w-7xl mx-auto px-6 py-8 lg:py-12 flex flex-col lg:flex-row gap-6 lg:gap-12">
-                <div className="hidden lg:flex">
-                    <Sidebar
-                        activeChild={activeChild}
-                        activeMenu="rec"
-                        activeSubMenu={activeSubMenu}
-                        setActiveSubMenu={setActiveSubMenu}
-                    />
-                </div>
+            <main className="pb-20">
+                <div className="max-w-[1920px] mx-auto">
+                    <HeroSection />
 
-                <main className="flex-1 min-h-[600px]">
-                    {["2025 사서 추천", "전문가 추천", "수상 도서작"].includes(activeSubMenu) ? (
-                        <>
-                            {loading ? (
-                                <div className="flex justify-center py-20">
-                                    <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                                </div>
-                            ) : error ? (
-                                <div className="bg-yellow-50 border border-yellow-200 rounded-2xl p-6 mb-6">
-                                    <p className="text-yellow-800 font-bold text-sm">⚠️ 도서 정보를 불러올 수 없습니다</p>
-                                    <p className="text-yellow-600 text-xs mt-2">{error}</p>
-                                </div>
-                            ) : recommendedBooks.length === 0 ? (
-                                <div className="text-center py-20 text-gray-400 font-bold">No recommended books found</div>
-                            ) : (
-                                <BookGrid books={recommendedBooks} onSelectBook={handleSelectBook} size="small" />
-                            )}
-                        </>
-                    ) : (
-                        <div className="text-center py-20 text-gray-400 font-bold">이 섹션은 준비 중입니다.</div>
-                    )}
-                </main>
-            </div>
+                    <div id="recommendations" className="space-y-0">
+                        <RecommendationSection
+                            title="2025 사서 추천 도서"
+                            subtitle="전국 도서관 사서들이 엄선한 올해의 필독서"
+                            query="사서추천"
+                            categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                        />
+
+                        <RecommendationSection
+                            title="전문가 추천 도서"
+                            subtitle="독서 교육 전문가들이 추천하는 단계별 도서"
+                            query="전문가추천"
+                            categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                            backgroundColor="bg-gray-50"
+                        />
+
+                        <RecommendationSection
+                            title="수상 도서작"
+                            subtitle="문학상 수상으로 작품성을 인정받은 수작"
+                            query="수상작"
+                            categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                        />
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }
