@@ -12,9 +12,10 @@ interface RecommendationSectionProps {
     query: string;
     categoryId?: string;
     backgroundColor?: string;
+    limit?: number;
 }
 
-export default function RecommendationSection({ title, subtitle, query, categoryId = "1108", backgroundColor = "bg-white" }: RecommendationSectionProps) {
+export default function RecommendationSection({ title, subtitle, query, categoryId = "1108", backgroundColor = "bg-white", limit }: RecommendationSectionProps) {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -26,7 +27,8 @@ export default function RecommendationSection({ title, subtitle, query, category
                 if (!res.ok) throw new Error("Failed");
                 const data = await res.json();
                 if (data.item) {
-                    const mappedBooks: Book[] = data.item.slice(0, 4).map((item: any) => ({ // Limit to 4 for homepage
+                    const items = limit ? data.item.slice(0, limit) : data.item;
+                    const mappedBooks: Book[] = items.map((item: any) => ({
                         id: item.isbn13 || item.isbn,
                         bookid: item.isbn13 || item.isbn,
                         title: item.title,
@@ -58,9 +60,11 @@ export default function RecommendationSection({ title, subtitle, query, category
                         {subtitle && <p className="text-gray-500">{subtitle}</p>}
                     </div>
                     {/* View All - For now just a placeholder or could link to search */}
-                    <button onClick={() => router.push(`/search?q=${encodeURIComponent(query)}`)} className="text-gray-400 hover:text-green-600 font-bold flex items-center gap-1 text-sm transition-colors">
-                        전체보기 <ChevronRight size={16} />
-                    </button>
+                    {limit && (
+                        <button onClick={() => router.push(`/search?q=${encodeURIComponent(query)}`)} className="text-gray-400 hover:text-green-600 font-bold flex items-center gap-1 text-sm transition-colors">
+                            전체보기 <ChevronRight size={16} />
+                        </button>
+                    )}
                 </div>
 
                 {loading ? (

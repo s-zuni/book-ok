@@ -2,18 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { Book, Child } from "../types";
+import { Child } from "../types";
 import Header from "./Header";
-import BookGrid from "./BookGrid";
-import Sidebar from "./Sidebar";
+// import BookGrid from "./BookGrid"; // Unused
+import Sidebar from "./Sidebar"; // Leaving for now to minimize diff, or remove if unused? It is unused in new layout.
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import HeroSection from "./HeroSection";
 import RecommendationSection from "./RecommendationSection";
+import { ChevronLeft, BookOpen, UserCheck, Trophy, ChevronRight } from "lucide-react";
 
 export default function HomeContent() {
     const [activeMenu, setActiveMenu] = useState<any>('rec');
-    const [activeSubMenu, setActiveSubMenu] = useState('2025 사서 추천');
+    const [activeSubMenu, setActiveSubMenu] = useState(''); // Default: Landing Page
     const [searchQuery, setSearchQuery] = useState("");
 
     const handleSearch = (page?: number) => {
@@ -22,9 +23,9 @@ export default function HomeContent() {
         }
     };
 
-    const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    // const [recommendedBooks, setRecommendedBooks] = useState<Book[]>([]); // Removed legacy
+    // const [loading, setLoading] = useState(false); // Removed legacy
+    // const [error, setError] = useState<string | null>(null); // Removed legacy
     const [activeChild, setActiveChild] = useState<Child | null>(null);
 
     const { user } = useAuth();
@@ -42,80 +43,9 @@ export default function HomeContent() {
         }
     }, [user]);
 
-    useEffect(() => {
-        fetchBooks();
-    }, [activeSubMenu, activeChild]);
 
-    const fetchBooks = async () => {
-        // Only fetch for specific submenus
-        const validMenus = ["2025 사서 추천", "전문가 추천", "수상 도서작"];
-        if (!validMenus.includes(activeSubMenu)) {
-            setRecommendedBooks([]);
-            return;
-        }
 
-        setLoading(true);
-        setError(null);
 
-        try {
-            let query = "";
-            let categoryId = "1108"; // Default: Children
-
-            // Dynamic Query Mapping
-            if (activeSubMenu === "2025 사서 추천") {
-                query = "사서추천";
-            } else if (activeSubMenu === "전문가 추천") {
-                query = "전문가추천";
-            } else if (activeSubMenu === "수상 도서작") {
-                query = "수상작";
-            }
-
-            // Category Filtering based on Active Child Age
-            // 4123: Children/Infant (Infant usually), 1108: Children
-            if (activeChild && activeChild.age <= 7) {
-                categoryId = "4123";
-            } else {
-                categoryId = "1108";
-            }
-
-            const res = await fetch(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}`);
-
-            if (!res.ok) {
-                throw new Error("Failed to fetch recommendations");
-            }
-
-            const data = await res.json();
-
-            if (data.item) {
-                const mappedBooks: Book[] = data.item.map((item: any) => ({
-                    id: item.isbn13 || item.isbn,
-                    bookid: item.isbn13 || item.isbn,
-                    title: item.title,
-                    author: item.author,
-                    imgsrc: item.cover,
-                    category: item.categoryName,
-                    pubDate: item.pubDate,
-                    description: item.description
-                }));
-                // Ensure duplicate keys don't crash React if Aladin returns duplicates (rare but possible)
-                // Filter distinct by id? No, BookGrid handles keys by id.
-                setRecommendedBooks(mappedBooks);
-            } else {
-                setRecommendedBooks([]);
-            }
-
-        } catch (err: any) {
-            console.error("Fetch books error:", err);
-            setError("도서 정보를 불러오는데 실패했습니다.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSelectBook = (book: Book) => {
-        const id = typeof book.id === 'number' ? book.id : encodeURIComponent(book.id);
-        router.push(`/book/${id}`);
-    };
 
     const dummySetView = () => { };
 
@@ -133,33 +63,100 @@ export default function HomeContent() {
                 activeSubMenu={activeSubMenu}
             />
 
-            <main className="pb-20">
+            <main className="pb-20 min-h-screen">
                 <div className="max-w-[1920px] mx-auto">
-                    <HeroSection />
 
-                    <div id="recommendations" className="space-y-0">
-                        <RecommendationSection
-                            title="2025 사서 추천 도서"
-                            subtitle="전국 도서관 사서들이 엄선한 올해의 필독서"
-                            query="사서추천"
-                            categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
-                        />
+                    {/* Landing Page View */}
+                    {activeSubMenu === '' ? (
+                        <>
+                            <HeroSection />
 
-                        <RecommendationSection
-                            title="전문가 추천 도서"
-                            subtitle="독서 교육 전문가들이 추천하는 단계별 도서"
-                            query="전문가추천"
-                            categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
-                            backgroundColor="bg-gray-50"
-                        />
+                            <div className="max-w-7xl mx-auto px-6 py-12">
+                                <h2 className="text-2xl font-black mb-8">추천 도서 컬렉션</h2>
+                                <div className="grid md:grid-cols-3 gap-6">
+                                    {/* Librarian Picks */}
+                                    <button
+                                        onClick={() => setActiveSubMenu('2025 사서 추천')}
+                                        className="bg-white p-8 rounded-4xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-green-200 transition-all text-left group"
+                                    >
+                                        <div className="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                            <BookOpen size={28} strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">2025 사서 추천</h3>
+                                        <p className="text-gray-400 text-sm mb-6">전국 도서관 사서들이 엄선한<br />올해의 필독서</p>
+                                        <div className="flex items-center text-sm font-bold text-gray-300 group-hover:text-green-600 transition-colors">
+                                            보러가기 <ChevronRight size={16} className="ml-1" />
+                                        </div>
+                                    </button>
 
-                        <RecommendationSection
-                            title="수상 도서작"
-                            subtitle="문학상 수상으로 작품성을 인정받은 수작"
-                            query="수상작"
-                            categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
-                        />
-                    </div>
+                                    {/* Expert Picks */}
+                                    <button
+                                        onClick={() => setActiveSubMenu('전문가 추천')}
+                                        className="bg-gray-50 p-8 rounded-4xl shadow-sm border border-transparent hover:bg-white hover:shadow-lg hover:border-green-200 transition-all text-left group"
+                                    >
+                                        <div className="w-14 h-14 bg-white text-gray-900 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-sm">
+                                            <UserCheck size={28} strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">전문가 추천 도서</h3>
+                                        <p className="text-gray-400 text-sm mb-6">독서 교육 전문가들이 추천하는<br />연령별 단계별 도서</p>
+                                        <div className="flex items-center text-sm font-bold text-gray-300 group-hover:text-green-600 transition-colors">
+                                            보러가기 <ChevronRight size={16} className="ml-1" />
+                                        </div>
+                                    </button>
+
+                                    {/* Award Winners */}
+                                    <button
+                                        onClick={() => setActiveSubMenu('수상 도서작')}
+                                        className="bg-white p-8 rounded-4xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-green-200 transition-all text-left group"
+                                    >
+                                        <div className="w-14 h-14 bg-yellow-50 text-yellow-500 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                            <Trophy size={28} strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">수상 도서작</h3>
+                                        <p className="text-gray-400 text-sm mb-6">문학상 수상으로 작품성을<br />인정받은 수작</p>
+                                        <div className="flex items-center text-sm font-bold text-gray-300 group-hover:text-green-600 transition-colors">
+                                            보러가기 <ChevronRight size={16} className="ml-1" />
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        /* Detail List View */
+                        <div className="max-w-7xl mx-auto px-6 py-8">
+                            <button
+                                onClick={() => setActiveSubMenu('')}
+                                className="mb-6 flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold transition-colors"
+                            >
+                                <ChevronLeft size={20} /> 홈으로 돌아가기
+                            </button>
+
+                            {activeSubMenu === '2025 사서 추천' && (
+                                <RecommendationSection
+                                    title="2025 사서 추천 도서"
+                                    subtitle="전국 도서관 사서들이 엄선한 올해의 필독서"
+                                    query="사서추천"
+                                    categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                                />
+                            )}
+                            {activeSubMenu === '전문가 추천' && (
+                                <RecommendationSection
+                                    title="전문가 추천 도서"
+                                    subtitle="독서 교육 전문가들이 추천하는 단계별 도서"
+                                    query="전문가추천"
+                                    categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                                />
+                            )}
+                            {activeSubMenu === '수상 도서작' && (
+                                <RecommendationSection
+                                    title="수상 도서작"
+                                    subtitle="문학상 수상으로 작품성을 인정받은 수작"
+                                    query="수상작"
+                                    categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                                />
+                            )}
+                        </div>
+                    )}
                 </div>
             </main>
         </div>
