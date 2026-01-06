@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const targetCategory = categoryId || '1108'; // Default to 1108 (Children) if not provided
 
     // Construct Aladin API URL
-    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=10`;
+    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=10&Cover=Big`;
 
     console.log(`Fetching recommendations from Aladin: Query="${query}", CategoryId=${targetCategory}`);
 

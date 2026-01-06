@@ -8,6 +8,7 @@ import { Star, ChevronLeft, Bookmark, BookOpen, Check } from "lucide-react";
 import Header from "../../../components/Header";
 import Sidebar from "../../../components/Sidebar";
 import { useAuth } from "../../../context/AuthContext";
+import ChildSelectionModal from "../../../components/ChildSelectionModal";
 
 export default function BookDetailPage() {
     const params = useParams();
@@ -21,13 +22,15 @@ export default function BookDetailPage() {
 
     // Auth & Sidebar state
     const { user } = useAuth();
+    const [userChildren, setUserChildren] = useState<Child[]>([]);
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [activeMenu, setActiveMenu] = useState<any>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
 
-    // Additional Actions State (Mocking DB state for UI demo)
+    // Additional Actions State
     const [isScrapped, setIsScrapped] = useState(false);
     const [isRead, setIsRead] = useState(false);
+    const [showChildModal, setShowChildModal] = useState(false);
 
     // Review form state
     const [newRating, setNewRating] = useState(0);
@@ -60,7 +63,7 @@ export default function BookDetailPage() {
                         bookid: apiItem.isbn13 || apiItem.isbn,
                         title: apiItem.title,
                         author: apiItem.author,
-                        imgsrc: apiItem.cover,
+                        imgsrc: apiItem.cover, // API usually returns generic, but searched items might have big cover if specified
                         category: apiItem.categoryName,
                         pubDate: apiItem.pubDate,
                         description: apiItem.description
@@ -78,12 +81,16 @@ export default function BookDetailPage() {
         fetchBook();
         fetchReviews();
 
-        // Mock fetch user interactions
+        // Fetch user children
         if (user) {
             supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) setActiveChild(data[0]);
+                if (data && data.length > 0) {
+                    setUserChildren(data);
+                    setActiveChild(data[0]); // Default active for sidebar
+                }
             });
-            // Here we would check if book is scrapped or read
+            // Check if book is already read (simplified check)
+            // In a real app, we'd check `read_books` table for any of the user's children
         }
 
     }, [bookId, user]);
@@ -123,16 +130,38 @@ export default function BookDetailPage() {
         if (!user) return alert("로그인이 필요합니다.");
         await ensureBookInDB();
         setIsScrapped(!isScrapped);
-        // Ideally: await supabase.from('scraps').insert(...)
+        // Implement actual scrap logic if needed
         alert(isScrapped ? "스크랩을 취소했습니다." : "책을 스크랩했습니다!");
     };
 
     const handleMarkRead = async () => {
         if (!user) return alert("로그인이 필요합니다.");
+        if (userChildren.length === 0) return alert("먼저 자녀 프로필을 등록해주세요.");
+
         await ensureBookInDB();
-        setIsRead(!isRead);
-        // Ideally: await supabase.from('user_reads').insert(...)
-        alert(isRead ? "읽은 책 목록에서 제거했습니다." : "읽은 책으로 표시했습니다!");
+        setShowChildModal(true);
+    };
+
+    const handleChildSelect = async (childId: string) => {
+        if (!book) return;
+
+        try {
+            const { error } = await supabase.from('read_books').insert({
+                user_id: user?.id,
+                child_id: childId,
+                book_id: book.id,
+                read_date: new Date().toISOString()
+            });
+
+            if (error) throw error;
+
+            alert("읽은 책으로 기록되었습니다!");
+            setIsRead(true);
+            setShowChildModal(false);
+        } catch (err: any) {
+            console.error(err);
+            alert("저장 중 오류가 발생했습니다: " + err.message);
+        }
     };
 
     const handleSubmitReview = async () => {
@@ -278,6 +307,13 @@ export default function BookDetailPage() {
                     </div>
                 </main>
             </div>
+
+            <ChildSelectionModal
+                isOpen={showChildModal}
+                onClose={() => setShowChildModal(false)}
+                childrenList={userChildren}
+                onSelect={handleChildSelect}
+            />
         </div>
     );
 }

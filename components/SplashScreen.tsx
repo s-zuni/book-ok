@@ -8,6 +8,12 @@ export default function SplashScreen() {
     const [opacity, setOpacity] = useState(1);
 
     useEffect(() => {
+        // Check if desktop - if so, skip splash screen
+        if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+            setIsVisible(false);
+            return;
+        }
+
         // Keep visible for 1.5 seconds, then fade out
         const fadeTimer = setTimeout(() => {
             setOpacity(0);
