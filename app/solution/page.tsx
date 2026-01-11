@@ -64,10 +64,13 @@ export default function SolutionPage() {
         }
     };
 
+    const [chartData, setChartData] = useState<{ subject: string; A: number; fullMark: number; }[]>([]);
+
     const getReadingAnalysis = async () => {
         if (userReadBooks.length === 0) return;
         setReadingAnalysisLoading(true);
         setReadingAnalysisResult('');
+        setChartData([]);
 
         try {
             const bookListText = userReadBooks.map(book => `- ${book.title} (저자: ${book.author})`).join('\n');
@@ -76,7 +79,20 @@ export default function SolutionPage() {
         ${bookListText}
 
         이 아이의 독서 성향을 분석해주고, 앞으로 어떤 분야의 책을 더 읽으면 좋을지 구체적인 장르나 주제를 추천해주세요.
-        부모에게 조언하듯이 친절하고 전문적인 어조로 작성해주세요.
+        
+        **중요:** 응답은 반드시 유효한 JSON 형식이어야 합니다. Markdown 코드 블록 없이 순수 JSON만 반환하세요.
+        JSON 구조는 다음과 같아야 합니다:
+        {
+          "summary": "분석 내용 및 추천 사항 (줄바꿈 문자는 \\n으로 표기)",
+          "scores": [
+             { "subject": "어휘력", "A": 수치(0-100), "fullMark": 100 },
+             { "subject": "이해력", "A": 수치(0-100), "fullMark": 100 },
+             { "subject": "상상력", "A": 수치(0-100), "fullMark": 100 },
+             { "subject": "탐구심", "A": 수치(0-100), "fullMark": 100 },
+             { "subject": "독서습관", "A": 수치(0-100), "fullMark": 100 }
+          ]
+        }
+        5가지 지표(subject)는 위 예시(어휘력, 이해력, 상상력, 탐구심, 독서습관)를 그대로 사용하세요.
       `;
 
             const response = await fetch('/api/openai', {
@@ -91,8 +107,22 @@ export default function SolutionPage() {
                 throw new Error(data.error || 'API Error');
             }
 
-            const solutionText = data.result || "분석을 완료할 수 없습니다. 다시 시도해주세요.";
-            setReadingAnalysisResult(solutionText);
+            let resultData;
+            try {
+                // Remove any markdown code blocks if present
+                const cleanJson = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
+                resultData = JSON.parse(cleanJson);
+            } catch (e) {
+                console.error("JSON Parse Error:", e);
+                // Fallback for plain text response
+                setReadingAnalysisResult(data.result);
+                return;
+            }
+
+            setReadingAnalysisResult(resultData.summary);
+            if (resultData.scores) {
+                setChartData(resultData.scores);
+            }
 
         } catch (error) {
             console.error(error);
@@ -179,6 +209,7 @@ export default function SolutionPage() {
                             getReadingAnalysis={getReadingAnalysis}
                             loading={readingAnalysisLoading}
                             result={readingAnalysisResult}
+                            chartData={chartData}
                         />
                     )}
 

@@ -5,6 +5,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const query = searchParams.get('query');
     const categoryId = searchParams.get('categoryId');
+    const sort = searchParams.get('sort') || 'Accuracy'; // Default to Accuracy if not provided
 
     if (!query) {
         return new Response(JSON.stringify({ error: 'Query parameter is required' }), {
@@ -23,9 +24,10 @@ export async function GET(request: NextRequest) {
     const targetCategory = categoryId || '1108'; // Default to 1108 (Children) if not provided
 
     // Construct Aladin API URL
-    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=10&Cover=Big`;
+    // Sort options: Accuracy(기본값), PublishTime(출간일), SalesPoint(판매량), CustomerRating(평점)
+    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=10&Cover=Big&Sort=${sort}`;
 
-    console.log(`Fetching recommendations from Aladin: Query="${query}", CategoryId=${targetCategory}`);
+    console.log(`Fetching recommendations from Aladin: Query="${query}", CategoryId=${targetCategory}, Sort=${sort}`);
 
     try {
         const res = await fetch(url, {
