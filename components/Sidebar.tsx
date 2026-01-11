@@ -69,7 +69,7 @@ export default function Sidebar({
                 <nav className="flex flex-col gap-1">
                     {MENU_CONFIG[activeMenu].sub.map((sub) => (
                         <button key={sub} onClick={() => setActiveSubMenu(sub)}
-                            className={`flex items-center justify-between px-4 py-3 lg:px-5 lg:py-4 rounded-xl lg:rounded-2xl font-bold text-xs lg:text-sm transition-all ${activeSubMenu === sub ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'}`}>
+                            className={`flex items-center justify-between px-4 py-3 lg:px-5 lg:py-4 rounded-xl lg:rounded-2xl font-bold text-xs lg:text-sm transition-all whitespace-nowrap ${activeSubMenu === sub ? 'bg-gray-900 text-white shadow-xl shadow-gray-200' : 'text-gray-400 hover:bg-gray-50 hover:text-gray-900'}`}>
                             {sub} {activeSubMenu === sub && <ChevronRight size={14} />}
                         </button>
                     ))}
