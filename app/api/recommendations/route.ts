@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Construct Aladin API URL
     // Sort options: Accuracy(기본값), PublishTime(출간일), SalesPoint(판매량), CustomerRating(평점)
-    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=10&Cover=Big&Sort=${sort}`;
+    const url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=50&Cover=Big&Sort=${sort}`;
 
     console.log(`Fetching recommendations from Aladin: Query="${query}", CategoryId=${targetCategory}, Sort=${sort}`);
 

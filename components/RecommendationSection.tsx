@@ -25,7 +25,18 @@ export default function RecommendationSection({ title, subtitle, query, category
     const [sortBy, setSortBy] = useState('PublishTime'); // Default to Latest
 
     // Determine the actual query to use
+    // Determine the actual query to use
     const currentQuery = tabs.find(t => t.label === activeTab)?.query || query;
+    const [displayCount, setDisplayCount] = useState(12); // Initial display count
+
+    // Reset display count when tab or sort changes
+    useEffect(() => {
+        setDisplayCount(12);
+    }, [currentQuery, sortBy, categoryId]);
+
+    const handleShowMore = () => {
+        setDisplayCount(prev => prev + 12);
+    };
 
     useEffect(() => {
         const fetchBooks = async () => {
@@ -91,8 +102,8 @@ export default function RecommendationSection({ title, subtitle, query, category
                                     key={tab.label}
                                     onClick={() => setActiveTab(tab.label)}
                                     className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${activeTab === tab.label
-                                            ? 'bg-gray-900 text-white shadow-lg shadow-gray-200'
-                                            : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'
+                                        ? 'bg-gray-900 text-white shadow-lg shadow-gray-200'
+                                        : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50'
                                         }`}
                                 >
                                     {tab.label}
@@ -130,7 +141,21 @@ export default function RecommendationSection({ title, subtitle, query, category
                         ))}
                     </div>
                 ) : (
-                    <BookGrid books={books} onSelectBook={(book) => router.push(`/book/${book.id}`)} size="small" />
+                    <>
+                        <BookGrid books={books.slice(0, limit || displayCount)} onSelectBook={(book) => router.push(`/book/${book.id}`)} size="small" />
+
+                        {/* Show More Button */}
+                        {!limit && books.length > displayCount && (
+                            <div className="mt-10 text-center">
+                                <button
+                                    onClick={handleShowMore}
+                                    className="px-8 py-3 bg-white border border-gray-200 rounded-full text-gray-600 font-bold hover:bg-gray-50 hover:text-gray-900 transition-all shadow-sm"
+                                >
+                                    더보기 ({Math.min(displayCount, books.length)} / {books.length})
+                                </button>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </section>

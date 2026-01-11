@@ -8,20 +8,20 @@ export const MENU_CONFIG = {
 export const RECOMMENDATION_TABS: Record<string, { label: string; query: string }[]> = {
     '2025 사서 추천': [
         { label: '전체', query: '사서추천' },
-        { label: '국립중앙도서관', query: '국립중앙도서관 사서추천' },
-        { label: '학교도서관저널', query: '학교도서관저널 추천' },
-        { label: '서울시교육청', query: '서울시교육청 추천도서' },
-        { label: '국립어린이청소년도서관', query: '국립어린이청소년도서관 추천' }
+        { label: '국립중앙도서관', query: '국립중앙도서관' },
+        { label: '학교도서관저널', query: '학교도서관저널' },
+        { label: '서울시교육청', query: '서울시교육청' },
+        { label: '국립어린이청소년도서관', query: '국립어린이청소년도서관' }
     ],
     '전문가 추천': [
         { label: '전체', query: '전문가추천' },
         { label: '북스타트', query: '북스타트' },
-        { label: '아침독서', query: '아침독서 추천' },
+        { label: '아침독서', query: '아침독서' },
         { label: '어린이도서연구회', query: '어린이도서연구회' },
-        { label: '행복한아침독서', query: '행복한아침독서 추천' }
+        { label: '행복한아침독서', query: '행복한아침독서' }
     ],
     '수상 도서작': [
-        { label: '전체', query: '수상작' },
+        { label: '전체', query: '문학상' },
         { label: '칼데콧상', query: '칼데콧상' },
         { label: '뉴베리상', query: '뉴베리상' },
         { label: '볼로냐 라가치상', query: '볼로냐 라가치상' },
