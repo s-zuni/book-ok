@@ -1,6 +1,7 @@
 import { Sparkles } from "lucide-react";
 import { Book, Child } from "../../types";
 import ReadingRadarChart from "./ReadingRadarChart";
+import AIRecommendationList from "./AIRecommendationList";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -9,6 +10,7 @@ interface ReadingAnalysisProps {
     loading: boolean;
     result: string;
     chartData: { subject: string; A: number; fullMark: number; }[];
+    keywords?: string[];
 }
 
 export default function ReadingAnalysis({
@@ -17,7 +19,8 @@ export default function ReadingAnalysis({
     getReadingAnalysis,
     loading,
     result,
-    chartData
+    chartData,
+    keywords = []
 }: ReadingAnalysisProps) {
     return (
         <div className="animate-in fade-in pb-20">
@@ -64,16 +67,23 @@ export default function ReadingAnalysis({
                 )}
             </div>
 
-            {/* Bottom: Text Result */}
+            {/* Bottom: Text Result & Recommendations */}
             {result && (
-                <div className="mt-8 bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 animate-in slide-in-from-bottom-5">
-                    <h3 className="text-2xl font-black mb-6 flex items-center gap-2">
-                        <Sparkles className="text-green-500" />
-                        AI 분석 결과
-                    </h3>
-                    <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed">
-                        {result}
+                <div className="space-y-8 mt-8">
+                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 animate-in slide-in-from-bottom-5">
+                        <h3 className="text-2xl font-black mb-6 flex items-center gap-2">
+                            <Sparkles className="text-green-500" />
+                            AI 분석 결과
+                        </h3>
+                        <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed">
+                            {result}
+                        </div>
                     </div>
+
+                    {/* AI Recommendation List */}
+                    {keywords.length > 0 && (
+                        <AIRecommendationList keywords={keywords} />
+                    )}
                 </div>
             )}
         </div>

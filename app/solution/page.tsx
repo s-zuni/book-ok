@@ -65,12 +65,14 @@ export default function SolutionPage() {
     };
 
     const [chartData, setChartData] = useState<{ subject: string; A: number; fullMark: number; }[]>([]);
+    const [aiKeywords, setAiKeywords] = useState<string[]>([]);
 
     const getReadingAnalysis = async () => {
         if (userReadBooks.length === 0) return;
         setReadingAnalysisLoading(true);
         setReadingAnalysisResult('');
         setChartData([]);
+        setAiKeywords([]);
 
         try {
             const bookListText = userReadBooks.map(book => `- ${book.title} (저자: ${book.author})`).join('\n');
@@ -90,9 +92,11 @@ export default function SolutionPage() {
              { "subject": "상상력", "A": 수치(0-100), "fullMark": 100 },
              { "subject": "탐구심", "A": 수치(0-100), "fullMark": 100 },
              { "subject": "독서습관", "A": 수치(0-100), "fullMark": 100 }
-          ]
+          ],
+          "recommendationKeywords": ["키워드1", "키워드2", "키워드3"]
         }
-        5가지 지표(subject)는 위 예시(어휘력, 이해력, 상상력, 탐구심, 독서습관)를 그대로 사용하세요.
+        
+        "recommendationKeywords"는 아이에게 추천할만한 구체적인 책 검색어(장르, 주제, 시리즈명 등) 3개를 선정해서 배열로 주세요. (예: ["공룡 도감", "과학 학습만화", "전래동화"])
       `;
 
             const response = await fetch('/api/openai', {
@@ -120,9 +124,8 @@ export default function SolutionPage() {
             }
 
             setReadingAnalysisResult(resultData.summary);
-            if (resultData.scores) {
-                setChartData(resultData.scores);
-            }
+            if (resultData.scores) setChartData(resultData.scores);
+            if (resultData.recommendationKeywords) setAiKeywords(resultData.recommendationKeywords);
 
         } catch (error) {
             console.error(error);
@@ -210,6 +213,7 @@ export default function SolutionPage() {
                             loading={readingAnalysisLoading}
                             result={readingAnalysisResult}
                             chartData={chartData}
+                            keywords={aiKeywords}
                         />
                     )}
 
