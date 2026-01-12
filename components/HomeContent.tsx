@@ -89,16 +89,16 @@ export default function HomeContent() {
                                         </div>
                                     </button>
 
-                                    {/* Expert Picks */}
+                                    {/* Age-based Recommendations */}
                                     <button
-                                        onClick={() => setActiveSubMenu('전문가 추천')}
+                                        onClick={() => setActiveSubMenu('연령별 추천 도서')}
                                         className="bg-gray-50 p-8 rounded-4xl shadow-sm border border-transparent hover:bg-white hover:shadow-lg hover:border-green-200 transition-all text-left group"
                                     >
                                         <div className="w-14 h-14 bg-white text-gray-900 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-sm">
                                             <UserCheck size={28} strokeWidth={2.5} />
                                         </div>
-                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">전문가 추천 도서</h3>
-                                        <p className="text-gray-400 text-sm mb-6">독서 교육 전문가들이 추천하는<br />연령별 단계별 도서</p>
+                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">연령별 추천 도서</h3>
+                                        <p className="text-gray-400 text-sm mb-6">우리 아이 나이에 딱 맞는<br />단계별 맞춤 도서</p>
                                         <div className="flex items-center text-sm font-bold text-gray-300 group-hover:text-green-600 transition-colors">
                                             보러가기 <ChevronRight size={16} className="ml-1" />
                                         </div>
@@ -139,12 +139,12 @@ export default function HomeContent() {
                                     categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
                                 />
                             )}
-                            {activeSubMenu === '전문가 추천' && (
+                            {activeSubMenu === '연령별 추천 도서' && (
                                 <RecommendationSection
-                                    title="전문가 추천 도서"
-                                    subtitle="독서 교육 전문가들이 추천하는 단계별 도서"
-                                    query="전문가추천"
-                                    categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                                    title="연령별 추천 도서"
+                                    subtitle="우리 아이 발달 단계에 맞춘 연령별 추천 도서"
+                                    query="연령별"
+                                    categoryId="1108" // Default fallback, specific tabs override this
                                 />
                             )}
                             {activeSubMenu === '수상 도서작' && (
