@@ -33,7 +33,7 @@ export default function SolutionPage() {
 
     useEffect(() => {
         if (user) {
-            supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
+            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
                 if (data && data.length > 0) {
                     const child = data[0];
                     const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
@@ -43,21 +43,23 @@ export default function SolutionPage() {
         }
     }, [user]);
 
-    // Fetch read books when tab changes
+    // Fetch read books when tab changes or active child changes
     useEffect(() => {
-        if (activeSubMenu === '우리 아이 독서 성향 AI 분석' && user) {
+        if (activeSubMenu === '우리 아이 독서 성향 AI 분석' && user && activeChild) {
             fetchUserReadBooks();
         }
-    }, [activeSubMenu, user]);
+    }, [activeSubMenu, user, activeChild]);
 
     const fetchUserReadBooks = async () => {
-        if (!user) return;
-        const { data: reviews } = await supabase.from('reviews')
-            .select('book_id, books(*)')
-            .eq('user_id', user.id); // Assuming user_id links to reviews
+        if (!user || !activeChild) return;
 
-        if (reviews) {
-            const books = reviews.map((r: any) => r.books).filter(Boolean);
+        const { data: readBooksData } = await supabase
+            .from('read_books') // Changed from 'reviews' to 'read_books'
+            .select('book_id, books(*)')
+            .eq('child_id', activeChild.id); // Filter by selected child
+
+        if (readBooksData) {
+            const books = readBooksData.map((r: any) => r.books).filter(Boolean);
             // Deduplicate
             const uniqueBooks = Array.from(new Map(books.map((b: any) => [b.id, b])).values());
             setUserReadBooks(uniqueBooks as Book[]);
