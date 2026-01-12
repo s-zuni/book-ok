@@ -21,15 +21,30 @@ export default function MyPage() {
     const [newChildType, setNewChildType] = useState('유아');
     const [isAddingChild, setIsAddingChild] = useState(false);
 
+    // Active Child & Stats
+    const [activeChild, setActiveChild] = useState<Child | null>(null);
+    const [readBookCount, setReadBookCount] = useState(0);
+    const [readBooks, setReadBooks] = useState<any[]>([]);
+    const [showReadBooksModal, setShowReadBooksModal] = useState(false);
+
     useEffect(() => {
         if (user) {
             fetchChildren();
         }
     }, [user]);
 
+    useEffect(() => {
+        if (activeChild) {
+            fetchReadBooks();
+        } else {
+            setReadBookCount(0);
+            setReadBooks([]);
+        }
+    }, [activeChild]);
+
     const fetchChildren = async () => {
         if (!user) return;
-        const { data: childrenList } = await supabase.from('children').select('*, birthdate').eq('parent_id', user.id); // Changed to parent_id
+        const { data: childrenList } = await supabase.from('children').select('*, birthdate').eq('parent_id', user.id);
         if (childrenList) {
             const childrenWithAge = childrenList.map(child => {
                 const birthYear = new Date(child.birthdate).getFullYear();
@@ -38,6 +53,38 @@ export default function MyPage() {
                 return { ...child, age };
             });
             setChildren(childrenWithAge as Child[]);
+
+            // Set default active child if none selected and list not empty
+            if (childrenWithAge.length > 0 && !activeChild) {
+                setActiveChild(childrenWithAge[0] as Child);
+            }
+        }
+    };
+
+    const fetchReadBooks = async () => {
+        if (!activeChild) return;
+
+        const { data, error, count } = await supabase
+            .from('read_books')
+            .select('*', { count: 'exact' })
+            .eq('child_id', activeChild.id);
+
+        if (error) {
+            console.error("Error fetching read books:", error);
+            return;
+        }
+
+        setReadBookCount(count || 0);
+
+        // Fetch details if needed for modal
+        if (data) {
+            const { data: booksData } = await supabase
+                .from('read_books')
+                .select('*, books(*)')
+                .eq('child_id', activeChild.id)
+                .order('read_date', { ascending: false });
+
+            if (booksData) setReadBooks(booksData);
         }
     };
 
@@ -45,25 +92,14 @@ export default function MyPage() {
         if (!newChildNickname || !newChildBirthdate || !user) return;
 
         try {
-            console.log("Adding child...", {
+            const { error } = await supabase.from('children').insert({
                 name: newChildNickname,
                 birthdate: newChildBirthdate,
                 type: newChildType,
                 parent_id: user.id
             });
 
-            const { error } = await supabase.from('children').insert({
-                name: newChildNickname,
-                birthdate: newChildBirthdate,
-                type: newChildType,
-                parent_id: user.id // Checked: schema likely uses parent_id or profile_id. Trying parent_id based on previous fix.
-            });
-
             if (error) {
-                console.error("Supabase insert error:", error);
-                // Fallback try profile_id if parent_id fails? 
-                // Given previous error was "column profile_id not found", parent_id is the likely candidate unless it's user_id.
-                // We'll alert the specific error.
                 alert('아이 프로필 추가 실패: ' + error.message);
             } else {
                 alert('아이 프로필이 추가되었습니다.');
@@ -73,7 +109,6 @@ export default function MyPage() {
                 fetchChildren();
             }
         } catch (err: any) {
-            console.error("Unexpected error:", err);
             alert("오류가 발생했습니다: " + err.message);
         }
     };
@@ -103,7 +138,6 @@ export default function MyPage() {
                 {/* Profile Section */}
                 <div className="flex items-center gap-5 mb-10">
                     <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
-                        {/* Placeholder or actual image */}
                         <User size={40} />
                     </div>
                     <div>
@@ -124,16 +158,22 @@ export default function MyPage() {
                         {/* List of Children */}
                         <div className="space-y-3 mb-4">
                             {children.map(child => (
-                                <div key={child.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl">
+                                <button
+                                    key={child.id}
+                                    onClick={() => setActiveChild(child)}
+                                    className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${activeChild?.id === child.id ? 'bg-green-50 border-2 border-green-100' : 'bg-gray-50 border border-transparent'}`}
+                                >
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center font-black text-green-600 shadow-sm">{child.name[0]}</div>
-                                        <div>
-                                            <div className="font-bold text-sm">{child.name}</div>
+                                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black shadow-sm ${activeChild?.id === child.id ? 'bg-green-500 text-white' : 'bg-white text-green-600'}`}>
+                                            {child.name[0]}
+                                        </div>
+                                        <div className="text-left">
+                                            <div className={`font-bold text-sm ${activeChild?.id === child.id ? 'text-green-900' : 'text-gray-900'}`}>{child.name}</div>
                                             <div className="text-xs text-gray-400">{child.age}세 · {child.type}</div>
                                         </div>
                                     </div>
-                                    <ChevronRight size={16} className="text-gray-300" />
-                                </div>
+                                    {activeChild?.id === child.id && <div className="text-xs font-bold text-green-600 bg-white px-2 py-1 rounded-lg shadow-sm">선택됨</div>}
+                                </button>
                             ))}
                         </div>
 
@@ -163,12 +203,18 @@ export default function MyPage() {
                     </div>
 
                     {/* Menu Items */}
-                    <button className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                    <button
+                        onClick={() => setShowReadBooksModal(true)}
+                        disabled={!activeChild}
+                        className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center"><BookOpen size={20} strokeWidth={2.5} /></div>
                             <div className="text-left">
                                 <h3 className="font-bold text-gray-900">읽은 책 기록</h3>
-                                <p className="text-xs text-gray-400 mt-0.5">지금까지 읽은 12권의 책</p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    {activeChild ? `${activeChild.name} 어린이가 읽은 ${readBookCount}권의 책` : '아이를 선택해주세요'}
+                                </p>
                             </div>
                         </div>
                         <ChevronRight size={20} className="text-gray-300" />
@@ -201,6 +247,44 @@ export default function MyPage() {
                     <button onClick={handleLogout} className="text-gray-400 text-xs font-bold underline hover:text-red-500">로그아웃</button>
                 </div>
             </div>
+
+            {/* Read Books Modal */}
+            {showReadBooksModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-3xl w-full max-w-lg h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900">{activeChild?.name}의 서재</h3>
+                                <p className="text-xs text-gray-500 mt-1">총 {readBookCount}권의 책을 읽었어요!</p>
+                            </div>
+                            <button onClick={() => setShowReadBooksModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={24} /></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {readBooks.length > 0 ? (
+                                readBooks.map((item, idx) => (
+                                    <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
+                                            {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
+                                        </div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
+                                            <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
+                                            <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
+                                                {new Date(item.read_date).toLocaleDateString()} 읽음
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
+                                    <BookOpen size={48} className="text-gray-200" />
+                                    <p>아직 읽은 책이 없어요.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

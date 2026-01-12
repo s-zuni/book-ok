@@ -55,3 +55,12 @@ export interface Child {
     profile_id: string;
     birthdate: string;
 }
+
+export interface ReadBook {
+    id: number;
+    user_id: string;
+    child_id: string;
+    book_id: string;
+    read_date: string;
+    books?: Book; // Joined book data
+}
