@@ -25,14 +25,16 @@ export default function RecommendationSection({ title, subtitle, query, category
     const [sortBy, setSortBy] = useState('PublishTime'); // Default to Latest
 
     // Determine the actual query to use
-    // Determine the actual query to use
-    const currentQuery = tabs.find(t => t.label === activeTab)?.query || query;
+    const activeTabConfig = tabs.find(t => t.label === activeTab);
+    const currentQuery = activeTabConfig?.query || query;
+    const currentCategoryId = activeTabConfig?.categoryId || categoryId;
+
     const [displayCount, setDisplayCount] = useState(12); // Initial display count
 
     // Reset display count when tab or sort changes
     useEffect(() => {
         setDisplayCount(12);
-    }, [currentQuery, sortBy, categoryId]);
+    }, [currentQuery, sortBy, currentCategoryId]);
 
     const handleShowMore = () => {
         setDisplayCount(prev => prev + 12);
@@ -44,7 +46,7 @@ export default function RecommendationSection({ title, subtitle, query, category
             try {
                 // Determine sort param
                 // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${categoryId}&sort=${sortBy}`);
+                const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}`);
                 if (!res.ok) throw new Error("Failed");
                 const data = await res.json();
                 if (data.item) {
@@ -71,7 +73,7 @@ export default function RecommendationSection({ title, subtitle, query, category
             }
         };
         fetchBooks();
-    }, [currentQuery, categoryId, sortBy, limit]);
+    }, [currentQuery, currentCategoryId, sortBy, limit]);
 
     if (!loading && books.length === 0) return (
         <section className={`py-16 px-6 ${backgroundColor}`}>
