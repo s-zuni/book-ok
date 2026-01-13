@@ -133,7 +133,7 @@ export default function HomeContent() {
 
                             {activeSubMenu === '2025 사서 추천' && (
                                 <RecommendationSection
-                                    title="2025 사서 추천 도서"
+                                    title="2025 사서 추천"
                                     subtitle="전국 도서관 사서들이 엄선한 올해의 필독서"
                                     query="사서추천"
                                     categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}

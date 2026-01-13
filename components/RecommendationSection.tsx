@@ -46,7 +46,7 @@ export default function RecommendationSection({ title, subtitle, query, category
             try {
                 // Determine sort param
                 // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}`);
+                const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`);
                 if (!res.ok) throw new Error("Failed");
                 const data = await res.json();
                 if (data.item) {

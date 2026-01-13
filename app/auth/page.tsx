@@ -20,7 +20,8 @@ export default function AuthPage() {
         if (error) {
             setAuthError(error.message);
         } else {
-            router.push('/');
+            // Force hard redirect to ensure auth state is properly picked up by all components
+            window.location.href = '/';
         }
     };
 
@@ -52,7 +53,7 @@ export default function AuthPage() {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
             <div className="w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-xl shadow-gray-200/50 relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-400 to-green-600"></div>
+                <div className="absolute top-0 left-0 w-full h-2 bg-linear-to-r from-green-400 to-green-600"></div>
 
                 <button onClick={() => router.back()} className="absolute top-8 left-8 text-gray-400 hover:text-gray-900 transition-colors">
                     <ArrowLeft size={24} />
@@ -79,6 +80,7 @@ export default function AuthPage() {
                             onChange={(e) => setEmail(e.target.value)}
                             className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
                             placeholder="example@email.com"
+                            onKeyDown={(e) => e.key === 'Enter' && (isLogin ? handleLogin() : handleSignUp())}
                         />
                     </div>
 
