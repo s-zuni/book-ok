@@ -89,7 +89,10 @@ export default function MyPage() {
     };
 
     const handleChildProfileSubmit = async () => {
-        if (!newChildNickname || !newChildBirthdate || !user) return;
+        if (!newChildNickname || !newChildBirthdate || !user) {
+            alert('이름과 생년월일을 모두 입력해주세요.');
+            return;
+        }
 
         try {
             const { error } = await supabase.from('children').insert({
@@ -192,7 +195,8 @@ export default function MyPage() {
                                     <input type="text" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500" />
                                     <input type="date" value={newChildBirthdate} onChange={e => setNewChildBirthdate(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500" />
                                     <select value={newChildType} onChange={e => setNewChildType(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500">
-                                        <option value="유아">유아 (4-7세)</option>
+                                        <option value="영아">영아 (0-4세)</option>
+                                        <option value="유아">유아 (5-7세)</option>
                                         <option value="초등저학년">초등 저학년 (8-10세)</option>
                                         <option value="초등고학년">초등 고학년 (11-13세)</option>
                                     </select>

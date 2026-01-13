@@ -37,7 +37,7 @@ function SearchContent() {
 
     // States needed for Header/Sidebar to work visually (simulated for now)
     const [activeMenu, setActiveMenu] = useState<any>('rec');
-    const [activeSubMenu, setActiveSubMenu] = useState('검색');
+    const [activeSubMenu, setActiveSubMenu] = useState('');
 
     // Auth context
     const { user } = useAuth();

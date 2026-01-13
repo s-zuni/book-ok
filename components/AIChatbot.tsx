@@ -107,8 +107,8 @@ export default function AIChatbot() {
                         {messages.map((msg, idx) => (
                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                                        ? 'bg-green-600 text-white rounded-br-none shadow-md shadow-green-100'
-                                        : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-sm'
+                                    ? 'bg-green-600 text-white rounded-br-none shadow-md shadow-green-100'
+                                    : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-sm'
                                     }`}>
                                     {msg.content}
                                 </div>
@@ -137,7 +137,7 @@ export default function AIChatbot() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                 placeholder="궁금한 책 이야기를 해보세요..."
-                                className="flex-1 bg-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 text-sm font-medium transition-all"
+                                className="flex-1 bg-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 text-sm font-medium text-gray-900 transition-all"
                             />
                             <button
                                 onClick={handleSend}
