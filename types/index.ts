@@ -52,7 +52,7 @@ export interface Child {
     name: string;
     age: number;
     type: string;
-    profile_id: string;
+    parent_id: string;
     birthdate: string;
 }
 
