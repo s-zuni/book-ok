@@ -22,7 +22,7 @@ export default function RecommendationSection({ title, subtitle, query, category
     // Determine sub-tabs based on the title (which matches the key in RECOMMENDATION_TABS)
     const tabs = RECOMMENDATION_TABS[title] || [];
     const [activeTab, setActiveTab] = useState(tabs.length > 0 ? tabs[0].label : '전체');
-    const [sortBy, setSortBy] = useState('PublishTime'); // Default to Latest
+    const [sortBy, setSortBy] = useState('SalesPoint'); // Default to Best Selling to ensure results
 
     // Determine the actual query to use
     const activeTabConfig = tabs.find(t => t.label === activeTab);
@@ -52,8 +52,8 @@ export default function RecommendationSection({ title, subtitle, query, category
                 if (data.item) {
                     const items = limit ? data.item.slice(0, limit) : data.item;
                     const mappedBooks: Book[] = items.map((item: any) => ({
-                        id: item.isbn13 || item.isbn,
-                        bookid: item.isbn13 || item.isbn,
+                        id: String(item.isbn13 || item.isbn),
+                        bookid: String(item.isbn13 || item.isbn),
                         title: item.title,
                         author: item.author,
                         imgsrc: item.cover, // Ensures high res if available

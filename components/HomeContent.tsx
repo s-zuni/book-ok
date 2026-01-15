@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { Child } from "../types";
+import { Child, MainMenu } from "../types";
 import Header from "./Header";
 // import BookGrid from "./BookGrid"; // Unused
 import Sidebar from "./Sidebar"; // Leaving for now to minimize diff, or remove if unused? It is unused in new layout.
@@ -13,7 +13,7 @@ import RecommendationSection from "./RecommendationSection";
 import { ChevronLeft, BookOpen, UserCheck, Trophy, ChevronRight } from "lucide-react";
 
 export default function HomeContent() {
-    const [activeMenu, setActiveMenu] = useState<any>('rec');
+    const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState(''); // Default: Landing Page
     const [searchQuery, setSearchQuery] = useState("");
 

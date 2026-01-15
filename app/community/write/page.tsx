@@ -14,11 +14,43 @@ export default function WritePage() {
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('유아동 독서 고민');
     const [content, setContent] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setImageFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
 
     const handleSubmit = async () => {
         if (!title || !content || !user) return;
         setLoading(true);
+
+        let imageUrl = null;
+
+        if (imageFile) {
+            const fileExt = imageFile.name.split('.').pop();
+            const fileName = `${Math.random()}.${fileExt}`;
+            const filePath = `${user.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('post_images')
+                .upload(filePath, imageFile);
+
+            if (uploadError) {
+                // If bucket doesn't exist or RLS fails, we might just fail silently or alert.
+                // For now, let's try to proceed or alert.
+                console.error("Image upload failed:", uploadError);
+                // Optional: alert('이미지 업로드에 실패했습니다. 글만 등록합니다.');
+            } else {
+                const { data } = supabase.storage.from('post_images').getPublicUrl(filePath);
+                imageUrl = data.publicUrl;
+            }
+        }
 
         const { error } = await supabase.from('posts').insert({
             title,
@@ -27,7 +59,8 @@ export default function WritePage() {
             author_id: user.id,
             author_nickname: userProfile?.nickname || user.email?.split('@')[0] || '익명',
             views: 0,
-            likes: 0
+            likes: 0,
+            image_url: imageUrl
         });
 
         if (error) {
@@ -87,6 +120,25 @@ export default function WritePage() {
                     </div>
 
                     <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">사진 첨부</label>
+                        <div className="flex items-center gap-4">
+                            <label className="cursor-pointer bg-gray-50 px-5 py-3 rounded-xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-100 transition flex items-center gap-2">
+                                <span>📷 사진 선택</span>
+                                <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                            </label>
+                            {imageFile && <span className="text-xs text-green-600 font-bold">{imageFile.name}</span>}
+                        </div>
+                        {previewUrl && (
+                            <div className="mt-4 relative w-full max-w-sm h-64 bg-gray-100 rounded-xl overflow-hidden">
+                                <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                                <button onClick={() => { setImageFile(null); setPreviewUrl(null); }} className="absolute top-2 right-2 bg-black/50 text-white p-1 rounded-full hover:bg-black/70">
+                                    <ChevronLeft size={16} className="rotate-45" /> {/* Close icon substitute */}
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">내용</label>
                         <textarea
                             value={content}
@@ -94,6 +146,10 @@ export default function WritePage() {
                             placeholder="내용을 입력하세요"
                             className="w-full h-80 bg-gray-50 rounded-xl px-5 py-4 font-medium text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500 resize-none"
                         />
+                    </div>
+
+                    <div className="bg-yellow-50 p-4 rounded-xl text-xs text-yellow-700 font-bold mb-2">
+                        * 사진 업로드를 위해서는 Supabase Storage에 'post_images' 버킷이 생성되어 있어야 합니다.
                     </div>
 
                     <button
