@@ -2,49 +2,51 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 const path = require('path');
 
-const envPath = path.resolve(__dirname, '.env.local');
-let env = {};
-if (fs.existsSync(envPath)) {
-    const content = fs.readFileSync(envPath, 'utf8');
-    content.split('\n').forEach(line => {
-        const [key, val] = line.split('=');
-        if (key && val) env[key.trim()] = val.trim().replace(/"/g, '');
-    });
+const supabaseUrl = 'https://holaqlorkluptvrcfwtu.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvbGFxbG9ya2x1cHR2cmNmd3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMjQ2ODksImV4cCI6MjA3NzgwMDY4OX0.S2yKt3PJBtt4va9WvrjgqqytqcsJQS8s_Fo3N6H43Sk';
+
+const logFile = path.resolve(__dirname, 'debug_output.txt');
+fs.writeFileSync(logFile, ''); // Clear file
+
+function log(...args) {
+    const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
+    fs.appendFileSync(logFile, msg);
 }
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+console.log = log;
+console.error = log;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('Missing Supabase env vars in .env.local');
-    process.exit(1);
-}
-
+console.log('Connecting to:', supabaseUrl);
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function listColumns() {
     console.log('Checking children table...');
+
+    // Try to select just one row to get keys if possible
     const { data: children, error: childError } = await supabase.from('children').select('*').limit(1);
+
     if (childError) {
-        console.error('Error selecting children:', childError);
+        console.error('Error selecting * from children:', JSON.stringify(childError, null, 2));
     } else if (children && children.length > 0) {
         console.log('Child sample keys:', Object.keys(children[0]));
     } else {
-        // If empty, try to insert a dummy to provoke a column list error or just infer?
-        // Let's try to select 'parent_id' specifically?
-        const { error: parentError } = await supabase.from('children').select('parent_id').limit(1);
-        if (!parentError) console.log('Column parent_id EXISTS');
-        const { error: profileError } = await supabase.from('children').select('profile_id').limit(1);
-        if (!profileError) console.log('Column profile_id EXISTS');
-        else console.log('Column profile_id MISSING');
+        console.log('No children found or RLS hiding them. Trying to detect columns by probing...');
     }
 
-    console.log('Checking books table...');
-    const { data: books, error: bookError } = await supabase.from('books').select('*').limit(1);
-    if (bookError) {
-        console.error('Error selecting books:', bookError);
-    } else if (books && books.length > 0) {
-        console.log('Book sample keys:', Object.keys(books[0]));
+    // Explicit probe for parent_id
+    const { error: parentError } = await supabase.from('children').select('parent_id').limit(1);
+    if (!parentError) {
+        console.log('>>> Column parent_id EXISTS');
+    } else {
+        console.log('>>> Column parent_id PROBE FAILED:', parentError.message);
+    }
+
+    // Explicit probe for profile_id
+    const { error: profileError } = await supabase.from('children').select('profile_id').limit(1);
+    if (!profileError) {
+        console.log('>>> Column profile_id EXISTS');
+    } else {
+        console.log('>>> Column profile_id PROBE FAILED:', profileError.message);
     }
 }
 

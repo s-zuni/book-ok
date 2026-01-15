@@ -44,7 +44,7 @@ export default function MyPage() {
 
     const fetchChildren = async () => {
         if (!user) return;
-        const { data: childrenList } = await supabase.from('children').select('*, birthdate').eq('profile_id', user.id);
+        const { data: childrenList } = await supabase.from('children').select('*, birthdate').eq('parent_id', user.id);
         if (childrenList) {
             const childrenWithAge = childrenList.map(child => {
                 const birthYear = new Date(child.birthdate).getFullYear();
@@ -99,7 +99,7 @@ export default function MyPage() {
                 name: newChildNickname,
                 birthdate: newChildBirthdate,
                 type: newChildType,
-                profile_id: user.id
+                parent_id: user.id
             });
 
             if (error) {

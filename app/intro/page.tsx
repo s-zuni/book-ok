@@ -20,7 +20,7 @@ export default function IntroPage() {
 
     useEffect(() => {
         if (user) {
-            supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
+            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
                 if (data && data.length > 0) {
                     const child = data[0];
                     const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
