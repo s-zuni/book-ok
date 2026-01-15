@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Sparkles, Bot, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Book, Child } from "../../types";
 import ReadingRadarChart from "./ReadingRadarChart";
 import AIRecommendationList from "./AIRecommendationList";
@@ -59,10 +59,44 @@ export default function ReadingAnalysis({
                 </div>
 
                 {/* Right: Chart (Only visible when there is data) */}
-                {chartData.length > 0 && (
-                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center">
+                {/* Right: Chart (Only visible when there is data) OR Educational Info */}
+                {chartData.length > 0 ? (
+                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center animate-in fade-in">
                         <h3 className="text-xl font-black mb-4 text-center text-gray-800">독서 성향 분석 차트</h3>
                         <ReadingRadarChart data={chartData} />
+                    </div>
+                ) : (
+                    <div className="space-y-6 animate-in slide-in-from-right-5">
+                        <div className="bg-linear-to-br from-blue-50 to-indigo-50/50 rounded-[2.5rem] p-8 border border-blue-100/50 text-blue-900">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="p-3 bg-white rounded-2xl shadow-sm text-blue-600">
+                                    <Bot size={24} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-xl font-black">왜 분석이 필요한가요?</h3>
+                            </div>
+                            <ul className="space-y-4 font-medium text-gray-600">
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
+                                    <span>우리 아이가 편식 없이 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">골고루 읽고 있는지</span> 점검해요.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
+                                    <span>어휘력, 이해력, 상상력 등 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">5대 독서지표</span>를 진단해요.</span>
+                                </li>
+                                <li className="flex items-start gap-3">
+                                    <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
+                                    <span>결과에 따라 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">부족한 영역을 보완할 책</span>을 추천받아요.</span>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm flex items-center justify-between">
+                            <div>
+                                <h4 className="font-bold text-gray-900 mb-1 text-lg">아동 심리 전문가 자문</h4>
+                                <p className="text-sm text-gray-500">독서 교육 전문 모델 기반 분석 알고리즘</p>
+                            </div>
+                            <ShieldCheck size={48} className="text-green-500/20" strokeWidth={1.5} />
+                        </div>
                     </div>
                 )}
             </div>
