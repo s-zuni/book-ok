@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import Header from "../../components/Header";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
-import { Child } from "../../types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight } from "lucide-react";
+import { Child, MainMenu, ReadBook } from "../../types";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked } from "lucide-react";
 import { useRouter } from "next/navigation";
+import EmptyState from "../../components/EmptyState";
 
 export default function MyPage() {
-    const [activeMenu, setActiveMenu] = useState<any>('rec');
+    const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
     const { user, userProfile, signOut } = useAuth();
     const [children, setChildren] = useState<Child[]>([]);
@@ -24,7 +25,7 @@ export default function MyPage() {
     // Active Child & Stats
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [readBookCount, setReadBookCount] = useState(0);
-    const [readBooks, setReadBooks] = useState<any[]>([]);
+    const [readBooks, setReadBooks] = useState<ReadBook[]>([]);
     const [showReadBooksModal, setShowReadBooksModal] = useState(false);
 
     useEffect(() => {
@@ -280,10 +281,11 @@ export default function MyPage() {
                                     </div>
                                 ))
                             ) : (
-                                <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-4">
-                                    <BookOpen size={48} className="text-gray-200" />
-                                    <p>아직 읽은 책이 없어요.</p>
-                                </div>
+                                <EmptyState
+                                    icon={BookMarked}
+                                    title="아직 읽은 책이 어요"
+                                    description="아이와 함께 책을 읽고 기록을 남겨보세요!"
+                                />
                             )}
                         </div>
                     </div>

@@ -2,6 +2,7 @@ import { Sparkles, Bot, CheckCircle2, ShieldCheck } from "lucide-react";
 import { Book, Child } from "../../types";
 import ReadingRadarChart from "./ReadingRadarChart";
 import AIRecommendationList from "./AIRecommendationList";
+import LoadingState from "../LoadingState";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -60,7 +61,11 @@ export default function ReadingAnalysis({
 
                 {/* Right: Chart (Only visible when there is data) */}
                 {/* Right: Chart (Only visible when there is data) OR Educational Info */}
-                {chartData.length > 0 ? (
+                {loading ? (
+                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center items-center animate-in fade-in min-h-[400px]">
+                        <LoadingState messages={["아이의 독서 기록을 분석하고 있어요...", "5대 독서 지표를 계산 중이에요...", "딱 맞는 책을 찾고 있어요..."]} />
+                    </div>
+                ) : chartData.length > 0 ? (
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center animate-in fade-in">
                         <h3 className="text-xl font-black mb-4 text-center text-gray-800">독서 성향 분석 차트</h3>
                         <ReadingRadarChart data={chartData} />

@@ -3,7 +3,7 @@ export type MainMenu = 'intro' | 'rec' | 'solution' | 'comm';
 export type ViewState = 'main' | 'search' | 'detail' | 'mypage' | 'write' | 'post-detail' | 'auth';
 
 export interface Book {
-    id: string | number;
+    id: string;
     bookid: string;
     title: string;
     author: string;
@@ -35,6 +35,7 @@ export interface Post {
     views: number;
     likes: number;
     created_at: string;
+    image_url?: string;
 }
 
 export interface Comment {

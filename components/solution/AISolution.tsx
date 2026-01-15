@@ -1,4 +1,5 @@
 import { Sparkles, MessageCircle, Quote } from "lucide-react";
+import LoadingState from "../LoadingState";
 
 interface AISolutionProps {
     prompt: string;
@@ -50,7 +51,13 @@ export default function AISolution({
                         )}
                     </button>
 
-                    {result && (
+                    {loading && (
+                        <div className="mt-10 pt-10 border-t border-gray-100">
+                            <LoadingState messages={["도서 전문가 AI가 고민을 분석하고 있어요...", "아동 발달 이론을 바탕으로 솔루션을 찾고 있어요...", "실질적인 해결책을 정리하고 있어요..."]} />
+                        </div>
+                    )}
+
+                    {!loading && result && (
                         <div className="mt-10 pt-10 border-t border-gray-100 animate-in fade-in">
                             <h3 className="text-xl font-black mb-6 flex items-center gap-2 text-gray-900">
                                 <Sparkles className="text-green-500" /> 솔루션 도착

@@ -121,6 +121,12 @@ export default function PostDetailPage() {
                             </div>
                         </div>
 
+                        {post.image_url && (
+                            <div className="mb-10 rounded-2xl overflow-hidden border border-gray-100">
+                                <img src={post.image_url} alt="Post Attachment" className="w-full object-cover" />
+                            </div>
+                        )}
+
                         <div className="prose prose-lg max-w-none mb-12 text-gray-700 whitespace-pre-wrap">
                             {post.content}
                         </div>
