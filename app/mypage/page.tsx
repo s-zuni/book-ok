@@ -8,6 +8,7 @@ import { Child, MainMenu, ReadBook } from "../../types";
 import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked } from "lucide-react";
 import { useRouter } from "next/navigation";
 import EmptyState from "../../components/EmptyState";
+import { toast } from "sonner";
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -91,7 +92,7 @@ export default function MyPage() {
 
     const handleChildProfileSubmit = async () => {
         if (!newChildNickname || !newChildBirthdate || !user) {
-            alert('이름과 생년월일을 모두 입력해주세요.');
+            toast.error('이름과 생년월일을 모두 입력해주세요.');
             return;
         }
 
@@ -104,16 +105,16 @@ export default function MyPage() {
             });
 
             if (error) {
-                alert('아이 프로필 추가 실패: ' + error.message);
+                toast.error('아이 프로필 추가 실패: ' + error.message);
             } else {
-                alert('아이 프로필이 추가되었습니다.');
+                toast.success('아이 프로필이 추가되었습니다.');
                 setNewChildNickname('');
                 setNewChildBirthdate('');
                 setIsAddingChild(false);
                 fetchChildren();
             }
         } catch (err: any) {
-            alert("오류가 발생했습니다: " + err.message);
+            toast.error("오류가 발생했습니다: " + err.message);
         }
     };
 

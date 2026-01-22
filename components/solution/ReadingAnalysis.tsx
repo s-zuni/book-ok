@@ -1,8 +1,9 @@
-import { Sparkles, Bot, CheckCircle2, ShieldCheck } from "lucide-react";
+import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen } from "lucide-react";
 import { Book, Child } from "../../types";
 import ReadingRadarChart from "./ReadingRadarChart";
 import AIRecommendationList from "./AIRecommendationList";
 import LoadingState from "../LoadingState";
+import EmptyState from "../EmptyState";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -36,7 +37,13 @@ export default function ReadingAnalysis({
                         {userReadBooks.length > 0 ? userReadBooks.map(book => (
                             <div key={book.id} className="p-3 bg-white rounded-lg shadow-sm text-sm font-medium">{book.title}</div>
                         )) : (
-                            <p className="text-center text-gray-400 py-8">아직 아이가 읽은 책 기록이 없습니다. 책 상세페이지에서 리뷰를 남겨주세요.</p>
+                            <div className="py-8">
+                                <EmptyState
+                                    icon={BookOpen}
+                                    title="읽은 책이 없어요"
+                                    description="책을 읽고 기록을 남겨보세요."
+                                />
+                            </div>
                         )}
                     </div>
 

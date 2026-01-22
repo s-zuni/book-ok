@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Book } from "../types";
 import BookGrid from "./BookGrid";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, BookX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RECOMMENDATION_TABS } from "../lib/constants";
+import EmptyState from "./EmptyState";
+import SkeletonLoader from "./SkeletonLoader";
 
 interface RecommendationSectionProps {
     title: string;
@@ -77,9 +79,14 @@ export default function RecommendationSection({ title, subtitle, query, category
 
     if (!loading && books.length === 0) return (
         <section className={`py-16 px-6 ${backgroundColor}`}>
-            <div className="max-w-7xl mx-auto text-center text-gray-500">
-                <h2 className="text-2xl font-black text-gray-900 mb-2">{title}</h2>
-                <p>추천 도서 정보를 불러올 수 없습니다.</p>
+            <div className="max-w-7xl mx-auto">
+                <EmptyState
+                    icon={BookX}
+                    title={title}
+                    description="추천 도서를 불러올 수 없거나, 조건에 맞는 책이 없습니다."
+                    actionLabel="홈으로 돌아가기"
+                    onAction={() => router.push('/')}
+                />
             </div>
         </section>
     );
@@ -132,16 +139,10 @@ export default function RecommendationSection({ title, subtitle, query, category
                     </div>
                 </div>
 
+
+
                 {loading ? (
-                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {[1, 2, 3, 4, 5].map(i => (
-                            <div key={i} className="space-y-3">
-                                <div className="aspect-[1/1.4] bg-white rounded-2xl animate-pulse shadow-sm border border-gray-50" />
-                                <div className="h-4 bg-gray-100 rounded w-3/4 animate-pulse" />
-                                <div className="h-3 bg-gray-50 rounded w-1/2 animate-pulse" />
-                            </div>
-                        ))}
-                    </div>
+                    <SkeletonLoader count={4} type="card" />
                 ) : (
                     <>
                         <BookGrid books={books.slice(0, limit || displayCount)} onSelectBook={(book) => router.push(`/book/${book.id}`)} size="small" />

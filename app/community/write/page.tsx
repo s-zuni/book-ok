@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import Header from "../../../components/Header";
 import { useAuth } from "../../../context/AuthContext";
 import { supabase } from "../../../lib/supabase";
+import { toast } from "sonner";
 
 export default function WritePage() {
     const router = useRouter();
@@ -42,10 +43,10 @@ export default function WritePage() {
                 .upload(filePath, imageFile);
 
             if (uploadError) {
-                // If bucket doesn't exist or RLS fails, we might just fail silently or alert.
-                // For now, let's try to proceed or alert.
                 console.error("Image upload failed:", uploadError);
-                // Optional: alert('이미지 업로드에 실패했습니다. 글만 등록합니다.');
+                toast.error('이미지 업로드에 실패했습니다. 잠시 후 다시 시도하거나 이미지를 제외하고 작성해주세요.');
+                setLoading(false);
+                return;
             } else {
                 const { data } = supabase.storage.from('post_images').getPublicUrl(filePath);
                 imageUrl = data.publicUrl;
@@ -64,10 +65,10 @@ export default function WritePage() {
         });
 
         if (error) {
-            alert('글 작성 실패: ' + error.message);
+            toast.error('글 작성 실패: ' + error.message);
             setLoading(false);
         } else {
-            alert('글이 등록되었습니다.');
+            toast.success('글이 등록되었습니다.');
             router.push('/community');
         }
     };
