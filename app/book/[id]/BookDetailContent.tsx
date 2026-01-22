@@ -9,6 +9,7 @@ import Header from "../../../components/Header";
 import Sidebar from "../../../components/Sidebar";
 import { useAuth } from "../../../context/AuthContext";
 import ChildSelectionModal from "../../../components/ChildSelectionModal";
+import { toast } from "sonner";
 
 export default function BookDetailContent() {
     const params = useParams();
@@ -117,7 +118,7 @@ export default function BookDetailContent() {
             }, { onConflict: 'id' });
 
             if (insertError) {
-                alert("도서 저장 실패: " + insertError.message);
+                toast.error("도서 저장 실패: " + insertError.message);
                 return false;
             }
             setIsApiBook(false);
@@ -127,16 +128,16 @@ export default function BookDetailContent() {
     };
 
     const handleScrap = async () => {
-        if (!user) return alert("로그인이 필요합니다.");
+        if (!user) return toast.error("로그인이 필요합니다.");
         await ensureBookInDB();
         setIsScrapped(!isScrapped);
         // Implement actual scrap logic if needed
-        alert(isScrapped ? "스크랩을 취소했습니다." : "책을 스크랩했습니다!");
+        toast.success(isScrapped ? "스크랩을 취소했습니다." : "책을 스크랩했습니다!");
     };
 
     const handleMarkRead = async () => {
-        if (!user) return alert("로그인이 필요합니다.");
-        if (userChildren.length === 0) return alert("먼저 자녀 프로필을 등록해주세요.");
+        if (!user) return toast.error("로그인이 필요합니다.");
+        if (userChildren.length === 0) return toast.error("먼저 자녀 프로필을 등록해주세요.");
 
         await ensureBookInDB();
         setShowChildModal(true);
@@ -155,12 +156,12 @@ export default function BookDetailContent() {
 
             if (error) throw error;
 
-            alert("읽은 책으로 기록되었습니다!");
+            toast.success("읽은 책으로 기록되었습니다!");
             setIsRead(true);
             setShowChildModal(false);
         } catch (err: any) {
             console.error(err);
-            alert("저장 중 오류가 발생했습니다: " + err.message);
+            toast.error("저장 중 오류가 발생했습니다: " + err.message);
         }
     };
 
@@ -182,7 +183,7 @@ export default function BookDetailContent() {
             setNewReviewText("");
             fetchReviews();
         } else {
-            alert("리뷰 작성 실패: " + error.message);
+            toast.error("리뷰 작성 실패: " + error.message);
         }
     };
 

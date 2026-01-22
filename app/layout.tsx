@@ -12,9 +12,23 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { Toaster } from "sonner"; // Import Toaster
+
 export const metadata: Metadata = {
-  title: "Book,ok - 우리 아이 맞춤 독서 플랫폼",
-  description: "Book,ok",
+  title: "Book,ok | 우리 아이 맞춤 독서 플랫폼",
+  description: "AI 기반 독서 성향 분석과 연령별 맞춤 도서 추천으로 우리 아이 독서 습관을 길러주세요.",
+  openGraph: {
+    title: "Book,ok - 우리 아이 맞춤 독서 플랫폼",
+    description: "AI 독서 성향 분석 & 맞춤 도서 추천",
+    type: "website",
+    locale: "ko_KR",
+    siteName: "Book,ok",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Book,ok | 우리 아이 독서 친구",
+    description: "AI 분석으로 완성하는 우리 아이 독서 로드맵"
+  }
 };
 
 import { AuthProvider } from "../context/AuthContext";
@@ -35,6 +49,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <ChatbotProvider>
+            <Toaster position="top-center" richColors closeButton />
             <SplashScreen />
             {children}
             <AIChatbot /> {/* Global Chatbot Component */}
