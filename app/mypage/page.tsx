@@ -129,6 +129,14 @@ export default function MyPage() {
         router.push('/');
     };
 
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const handleSearch = () => {
+        if (searchQuery.trim()) {
+            router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+        }
+    };
+
     const dummySetView = () => { };
 
     return (
@@ -139,9 +147,9 @@ export default function MyPage() {
                 activeMenu={activeMenu}
                 setActiveMenu={setActiveMenu}
                 setActiveSubMenu={setActiveSubMenu}
-                searchQuery=""
-                setSearchQuery={() => { }}
-                handleSearch={() => { }}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleSearch={handleSearch}
             />
 
             <div className="max-w-xl mx-auto px-6 py-8">
