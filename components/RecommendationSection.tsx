@@ -50,7 +50,7 @@ export default function RecommendationSection({ title, subtitle, query, category
 
                 // Special handling for National Library API
                 if (title === '사서 추천' && (activeTab === '국립중앙도서관' || activeTab === '국립어린이청소년도서관')) {
-                    const res = await fetch(`/api/external/librarian?page=1&drCode=11&_t=${Date.now()}`); // drCode 11=Literature
+                    const res = await fetch(`/api/external/librarian?page=1&drCode=11&tab=${encodeURIComponent(activeTab)}&_t=${Date.now()}`); // drCode 11=Literature
                     if (!res.ok) throw new Error("Failed to fetch from NLK API");
                     const data = await res.json();
                     items = data.items || [];
