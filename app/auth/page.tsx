@@ -14,14 +14,20 @@ export default function AuthPage() {
     const [phone, setPhone] = useState('');
     const [authError, setAuthError] = useState('');
 
+    const [isLoading, setIsLoading] = useState(false);
+
     const handleLogin = async () => {
         setAuthError('');
+        setIsLoading(true);
         const { error } = await supabase.auth.signInWithPassword({ email, password });
+
         if (error) {
             setAuthError(error.message);
+            setIsLoading(false);
         } else {
-            // Force hard redirect to ensure auth state is properly picked up by all components
-            window.location.href = '/';
+            // Use router.push + refresh for smoother Next.js navigation while ensuring auth state flows
+            router.refresh();
+            router.push('/');
         }
     };
 
@@ -32,10 +38,12 @@ export default function AuthPage() {
             return;
         }
 
+        setIsLoading(true);
         const { data, error } = await supabase.auth.signUp({ email, password });
 
         if (error) {
             setAuthError(error.message);
+            setIsLoading(false);
         } else {
             if (data.user) {
                 await supabase.from('profiles').insert({
@@ -45,6 +53,7 @@ export default function AuthPage() {
                     role: 'user'
                 });
                 alert('회원가입이 완료되었습니다!');
+                setIsLoading(false);
                 setIsLogin(true);
             }
         }
@@ -81,6 +90,7 @@ export default function AuthPage() {
                             className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
                             placeholder="example@email.com"
                             onKeyDown={(e) => e.key === 'Enter' && (isLogin ? handleLogin() : handleSignUp())}
+                            disabled={isLoading}
                         />
                     </div>
 
@@ -93,6 +103,7 @@ export default function AuthPage() {
                             className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
                             placeholder="••••••••"
                             onKeyDown={(e) => e.key === 'Enter' && (isLogin ? handleLogin() : handleSignUp())}
+                            disabled={isLoading}
                         />
                     </div>
 
@@ -107,6 +118,7 @@ export default function AuthPage() {
                                         onChange={(e) => setNickname(e.target.value)}
                                         className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
                                         placeholder="홍길동"
+                                        disabled={isLoading}
                                     />
                                 </div>
                                 <div>
@@ -117,24 +129,30 @@ export default function AuthPage() {
                                         onChange={(e) => setPhone(e.target.value)}
                                         className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
                                         placeholder="010-0000-0000"
+                                        disabled={isLoading}
                                     />
                                 </div>
                             </div>
                         </>
                     )}
 
-                    {authError && <p className="text-red-500 text-sm font-bold text-center py-2 bg-red-50 rounded-lg">{authError}</p>}
+                    {authError && <p className="text-red-500 text-sm font-bold text-center py-2 bg-red-50 rounded-lg animate-in fade-in slide-in-from-top-1">{authError}</p>}
 
                     <button
                         onClick={isLogin ? handleLogin : handleSignUp}
-                        className="w-full bg-gray-900 text-white font-black py-4 rounded-xl shadow-lg hover:bg-black hover:scale-[1.02] transform transition-all active:scale-95 mt-4"
+                        disabled={isLoading}
+                        className="w-full bg-gray-900 text-white font-black py-4 rounded-xl shadow-lg hover:bg-black hover:scale-[1.02] transform transition-all active:scale-95 mt-4 flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
                     >
-                        {isLogin ? '로그인하기' : '가입하기'}
+                        {isLoading ? (
+                            <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                            isLogin ? '로그인하기' : '가입하기'
+                        )}
                     </button>
 
                     <div className="flex items-center justify-center gap-2 mt-6">
                         <span className="text-gray-400 font-medium text-sm">{isLogin ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}</span>
-                        <button onClick={() => setIsLogin(!isLogin)} className="text-green-600 font-black text-sm hover:underline">
+                        <button onClick={() => setIsLogin(!isLogin)} className="text-green-600 font-black text-sm hover:underline" disabled={isLoading}>
                             {isLogin ? '회원가입' : '로그인'}
                         </button>
                     </div>
