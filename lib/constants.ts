@@ -11,7 +11,7 @@ export const RECOMMENDATION_TABS: Record<string, { label: string; query: string;
         { label: '국립중앙도서관', query: '국립중앙도서관' },
         { label: '학교도서관저널', query: '학교도서관저널' },
         { label: '서울시교육청', query: '서울시교육청' },
-        { label: '국립어린이청소년도서관', query: '사서추천', categoryId: '1108' } // Added categoryId for explicit child filtering
+        { label: '국립어린이청소년도서관', query: '국립어린이청소년도서관', categoryId: '1108' }
     ],
     '연령별 추천 도서': [
         { label: '영유아 (0-4세)', query: 'ItemList', categoryId: '13789' },
