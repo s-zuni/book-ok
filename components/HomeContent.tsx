@@ -143,8 +143,8 @@ export default function HomeContent() {
                                 <RecommendationSection
                                     title="연령별 추천 도서"
                                     subtitle="우리 아이 발달 단계에 맞춘 연령별 추천 도서"
-                                    query={activeChild && activeChild.age <= 7 ? "유아 권장도서" : "초등 권장도서"}
-                                    categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
+                                    query="ItemList"
+                                    categoryId={activeChild && activeChild.age <= 7 ? "13789" : "1108"}
                                 />
                             )}
                             {activeSubMenu === '수상 도서작' && (
