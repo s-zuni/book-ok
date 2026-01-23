@@ -46,26 +46,50 @@ export default function RecommendationSection({ title, subtitle, query, category
         const fetchBooks = async () => {
             setLoading(true);
             try {
-                // Determine sort param
-                // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`);
-                if (!res.ok) throw new Error("Failed");
-                const data = await res.json();
-                if (data.item) {
-                    const items = limit ? data.item.slice(0, limit) : data.item;
+                let items = [];
+
+                // Special handling for National Library API
+                if (title === '사서 추천' && (activeTab === '국립중앙도서관' || activeTab === '국립어린이청소년도서관')) {
+                    const res = await fetch(`/api/external/librarian?page=1&drCode=11&_t=${Date.now()}`); // drCode 11=Literature
+                    if (!res.ok) throw new Error("Failed to fetch from NLK API");
+                    const data = await res.json();
+                    items = data.items || [];
+
+                    // The API route already returns mapped objects, but let's ensure type safety
                     const mappedBooks: Book[] = items.map((item: any) => ({
-                        id: String(item.isbn13 || item.isbn),
-                        bookid: String(item.isbn13 || item.isbn),
+                        id: item.id,
+                        bookid: item.id,
                         title: item.title,
                         author: item.author,
-                        imgsrc: item.cover, // Ensures high res if available
-                        category: item.categoryName,
+                        imgsrc: item.cover,
+                        category: item.categoryName || '사서추천',
                         pubDate: item.pubDate,
-                        description: item.description
+                        description: item.description || ''
                     }));
                     setBooks(mappedBooks);
                 } else {
-                    setBooks([]);
+                    // Existing logic for Aladin API
+                    // Determine sort param
+                    // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
+                    const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`);
+                    if (!res.ok) throw new Error("Failed");
+                    const data = await res.json();
+                    if (data.item) {
+                        items = limit ? data.item.slice(0, limit) : data.item;
+                        const mappedBooks: Book[] = items.map((item: any) => ({
+                            id: String(item.isbn13 || item.isbn),
+                            bookid: String(item.isbn13 || item.isbn),
+                            title: item.title,
+                            author: item.author,
+                            imgsrc: item.cover, // Ensures high res if available
+                            category: item.categoryName,
+                            pubDate: item.pubDate,
+                            description: item.description
+                        }));
+                        setBooks(mappedBooks);
+                    } else {
+                        setBooks([]);
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -75,7 +99,7 @@ export default function RecommendationSection({ title, subtitle, query, category
             }
         };
         fetchBooks();
-    }, [currentQuery, currentCategoryId, sortBy, limit]);
+    }, [currentQuery, currentCategoryId, sortBy, limit, title, activeTab]);
 
     if (!loading && books.length === 0) return (
         <section className={`py-16 px-6 ${backgroundColor}`}>
