@@ -51,9 +51,6 @@ export default function RecommendationSection({ title, subtitle, query, category
                 // If Librarian Recommendations is selected and specifically the 'National Library of Korea' tab
                 // The user requested to use Aladin for 'National Library for Children'
                 if (title === '사서 추천' && activeTab === '국립중앙도서관') {
-                    const isChildren = activeTab === '국립어린이청소년도서관'; // This won't be true here, but keeping var for logic if needed or just simplify
-                    const drCode = '11'; // Literature logic checks can remain or just simple fetch
-
                     const fetchUrl = `/api/external/librarian?activeTab=${encodeURIComponent(activeTab)}&_t=${Date.now()}`; // drCode 11=Literature
                     const res = await fetch(fetchUrl);
                     if (!res.ok) throw new Error("Failed to fetch from NLK API");
