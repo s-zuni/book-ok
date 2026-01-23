@@ -90,11 +90,15 @@ export default function MyPage() {
         }
     };
 
+    const [isLoading, setIsLoading] = useState(false);
+
     const handleChildProfileSubmit = async () => {
         if (!newChildNickname || !newChildBirthdate || !user) {
             toast.error('이름과 생년월일을 모두 입력해주세요.');
             return;
         }
+
+        setIsLoading(true);
 
         try {
             const { error } = await supabase.from('children').insert({
@@ -115,6 +119,8 @@ export default function MyPage() {
             }
         } catch (err: any) {
             toast.error("오류가 발생했습니다: " + err.message);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -194,15 +200,25 @@ export default function MyPage() {
                                     <button onClick={() => setIsAddingChild(false)}><X size={16} className="text-gray-400" /></button>
                                 </div>
                                 <div className="space-y-3">
-                                    <input type="text" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500" />
-                                    <input type="date" value={newChildBirthdate} onChange={e => setNewChildBirthdate(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500" />
-                                    <select value={newChildType} onChange={e => setNewChildType(e.target.value)} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500">
+                                    <input type="text" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
+                                    <input type="date" value={newChildBirthdate} onChange={e => setNewChildBirthdate(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
+                                    <select value={newChildType} onChange={e => setNewChildType(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50">
                                         <option value="영아">영아 (0-4세)</option>
                                         <option value="유아">유아 (5-7세)</option>
                                         <option value="초등저학년">초등 저학년 (8-10세)</option>
                                         <option value="초등고학년">초등 고학년 (11-13세)</option>
                                     </select>
-                                    <button onClick={handleChildProfileSubmit} className="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:bg-green-700 transition">등록 완료</button>
+                                    <button
+                                        onClick={handleChildProfileSubmit}
+                                        disabled={isLoading}
+                                        className="w-full bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-lg shadow-green-100 hover:bg-green-700 transition flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed"
+                                    >
+                                        {isLoading ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        ) : (
+                                            '등록 완료'
+                                        )}
+                                    </button>
                                 </div>
                             </div>
                         )}
