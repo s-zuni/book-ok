@@ -131,9 +131,9 @@ export default function HomeContent() {
                                 <ChevronLeft size={20} /> 홈으로 돌아가기
                             </button>
 
-                            {activeSubMenu === '2025 사서 추천' && (
+                            {activeSubMenu === '사서 추천' && (
                                 <RecommendationSection
-                                    title="2025 사서 추천"
+                                    title="사서 추천"
                                     subtitle="전국 도서관 사서들이 엄선한 올해의 필독서"
                                     query="사서추천"
                                     categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
@@ -143,8 +143,8 @@ export default function HomeContent() {
                                 <RecommendationSection
                                     title="연령별 추천 도서"
                                     subtitle="우리 아이 발달 단계에 맞춘 연령별 추천 도서"
-                                    query="연령별"
-                                    categoryId="1108" // Default fallback, specific tabs override this
+                                    query={activeChild && activeChild.age <= 7 ? "유아 권장도서" : "초등 권장도서"}
+                                    categoryId={activeChild && activeChild.age <= 7 ? "4123" : "1108"}
                                 />
                             )}
                             {activeSubMenu === '수상 도서작' && (
