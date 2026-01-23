@@ -48,9 +48,14 @@ export default function RecommendationSection({ title, subtitle, query, category
             try {
                 let items = [];
 
-                // Special handling for National Library API
-                if (title === '사서 추천' && (activeTab === '국립중앙도서관' || activeTab === '국립어린이청소년도서관')) {
-                    const res = await fetch(`/api/external/librarian?page=1&drCode=11&tab=${encodeURIComponent(activeTab)}&_t=${Date.now()}`); // drCode 11=Literature
+                // If Librarian Recommendations is selected and specifically the 'National Library of Korea' tab
+                // The user requested to use Aladin for 'National Library for Children'
+                if (title === '사서 추천' && activeTab === '국립중앙도서관') {
+                    const isChildren = activeTab === '국립어린이청소년도서관'; // This won't be true here, but keeping var for logic if needed or just simplify
+                    const drCode = '11'; // Literature logic checks can remain or just simple fetch
+
+                    const fetchUrl = `/api/external/librarian?activeTab=${encodeURIComponent(activeTab)}&_t=${Date.now()}`; // drCode 11=Literature
+                    const res = await fetch(fetchUrl);
                     if (!res.ok) throw new Error("Failed to fetch from NLK API");
                     const data = await res.json();
                     items = data.items || [];
@@ -71,9 +76,12 @@ export default function RecommendationSection({ title, subtitle, query, category
                     // Existing logic for Aladin API
                     // Determine sort param
                     // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                    const res = await fetch(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`);
+                    const fetchUrl = `/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`;
+                    console.log(`Fetching Aladin: ${fetchUrl}`);
+                    const res = await fetch(fetchUrl);
                     if (!res.ok) throw new Error("Failed");
                     const data = await res.json();
+                    console.log('Aladin Data:', data);
                     if (data.item) {
                         items = limit ? data.item.slice(0, limit) : data.item;
                         const mappedBooks: Book[] = items.map((item: any) => ({
