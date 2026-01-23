@@ -13,7 +13,7 @@ import { toast } from "sonner";
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
-    const { user, userProfile, signOut } = useAuth();
+    const { user, userProfile, signOut, loading: authLoading } = useAuth();
     const [children, setChildren] = useState<Child[]>([]);
     const router = useRouter();
 
@@ -30,10 +30,10 @@ export default function MyPage() {
     const [showReadBooksModal, setShowReadBooksModal] = useState(false);
 
     useEffect(() => {
-        if (user) {
+        if (user && !authLoading) {
             fetchChildren();
         }
-    }, [user]);
+    }, [user, authLoading]);
 
     useEffect(() => {
         if (activeChild) {
@@ -124,9 +124,16 @@ export default function MyPage() {
         }
     };
 
+    // ... (rest of code) ...
+
     const handleLogout = async () => {
-        await signOut();
-        router.push('/');
+        try {
+            await signOut();
+            window.location.href = '/'; // Force clear state and navigation
+        } catch (e) {
+            console.error(e);
+            router.push('/');
+        }
     };
 
     const [searchQuery, setSearchQuery] = useState("");
