@@ -4,6 +4,7 @@ import ReadingRadarChart from "./ReadingRadarChart";
 import AIRecommendationList from "./AIRecommendationList";
 import LoadingState from "../LoadingState";
 import EmptyState from "../EmptyState";
+import { marked } from 'marked';
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -121,9 +122,9 @@ export default function ReadingAnalysis({
                             <Sparkles className="text-green-500" />
                             AI 분석 결과
                         </h3>
-                        <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed">
-                            {result}
-                        </div>
+                        <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed"
+                            dangerouslySetInnerHTML={{ __html: marked.parse(result as string) as string }}
+                        />
                     </div>
 
                     {/* AI Recommendation List */}

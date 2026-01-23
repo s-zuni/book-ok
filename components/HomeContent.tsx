@@ -76,13 +76,13 @@ export default function HomeContent() {
                                 <div className="grid md:grid-cols-3 gap-6">
                                     {/* Librarian Picks */}
                                     <button
-                                        onClick={() => setActiveSubMenu('2025 사서 추천')}
+                                        onClick={() => setActiveSubMenu('사서 추천')}
                                         className="bg-white p-8 rounded-4xl shadow-sm border border-gray-100 hover:shadow-lg hover:border-green-200 transition-all text-left group"
                                     >
                                         <div className="w-14 h-14 bg-green-50 text-green-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                                             <BookOpen size={28} strokeWidth={2.5} />
                                         </div>
-                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">2025 사서 추천</h3>
+                                        <h3 className="text-xl font-black mb-2 group-hover:text-green-700 transition-colors">사서 추천</h3>
                                         <p className="text-gray-400 text-sm mb-6">전국 도서관 사서들이 엄선한<br />올해의 필독서</p>
                                         <div className="flex items-center text-sm font-bold text-gray-300 group-hover:text-green-600 transition-colors">
                                             보러가기 <ChevronRight size={16} className="ml-1" />

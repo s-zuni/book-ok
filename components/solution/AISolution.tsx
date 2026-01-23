@@ -1,5 +1,6 @@
 import { Sparkles, MessageCircle, Quote } from "lucide-react";
 import LoadingState from "../LoadingState";
+import { marked } from 'marked';
 
 interface AISolutionProps {
     prompt: string;
@@ -62,9 +63,10 @@ export default function AISolution({
                             <h3 className="text-xl font-black mb-6 flex items-center gap-2 text-gray-900">
                                 <Sparkles className="text-green-500" /> 솔루션 도착
                             </h3>
-                            <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed bg-green-50/50 p-8 rounded-3xl border border-green-100/50">
-                                {result}
-                            </div>
+                            <div
+                                className="prose prose-lg max-w-none text-gray-700 leading-relaxed bg-green-50/50 p-8 rounded-3xl border border-green-100/50"
+                                dangerouslySetInnerHTML={{ __html: marked.parse(result) as string }}
+                            />
                         </div>
                     )}
                 </div>

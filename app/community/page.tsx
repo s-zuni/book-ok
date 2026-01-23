@@ -143,7 +143,41 @@ export default function CommunityPage() {
                                 </button>
                                 <h2 className="text-2xl lg:text-3xl font-black tracking-tight">{activeSubMenu}</h2>
                             </div>
-                            <button onClick={() => router.push('/community/write')} className="bg-green-600 text-white px-5 py-2 lg:px-6 lg:py-2.5 rounded-full font-bold shadow-md hover:bg-green-700 transition-all flex items-center gap-2 text-sm"><Edit3 size={16} /> <span className="hidden sm:inline">글쓰기</span></button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={async () => {
+                                        if (!user) {
+                                            alert("로그인이 필요합니다.");
+                                            return;
+                                        }
+                                        if (!confirm("임의의 게시글 5개를 생성하시겠습니까?")) return;
+
+                                        try {
+                                            const dummyPosts = Array.from({ length: 5 }).map((_, i) => ({
+                                                category: ['자유게시판', '질문과 답변', '정보 공유'][Math.floor(Math.random() * 3)],
+                                                title: `테스트 게시글 ${Date.now()}_${i + 1}`,
+                                                content: `이것은 테스트를 위해 자동으로 생성된 게시글 내용입니다. ${i + 1}`,
+                                                author_id: user.id,
+                                                author_nickname: user.user_metadata?.name || '익명',
+                                                views: Math.floor(Math.random() * 100),
+                                                likes: Math.floor(Math.random() * 20),
+                                            }));
+
+                                            const { error } = await supabase.from('posts').insert(dummyPosts);
+                                            if (error) throw error;
+                                            alert("게시글이 생성되었습니다. 새로고침 해주세요.");
+                                            window.location.reload();
+                                        } catch (e) {
+                                            console.error(e);
+                                            alert("생성 실패: " + (e as any).message);
+                                        }
+                                    }}
+                                    className="bg-gray-100 text-gray-600 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-gray-200 transition-all text-xs"
+                                >
+                                    더미 데이터 생성
+                                </button>
+                                <button onClick={() => router.push('/community/write')} className="bg-green-600 text-white px-5 py-2 lg:px-6 lg:py-2.5 rounded-full font-bold shadow-md hover:bg-green-700 transition-all flex items-center gap-2 text-sm"><Edit3 size={16} /> <span className="hidden sm:inline">글쓰기</span></button>
+                            </div>
                         </div>
 
                         <div className="space-y-8">

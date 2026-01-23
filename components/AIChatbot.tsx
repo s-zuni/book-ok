@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Bot, User, Minimize2, Sparkles } from "lucide-react";
 import { useChatbot } from "../context/ChatbotContext";
+import { marked } from 'marked';
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -110,7 +111,14 @@ export default function AIChatbot() {
                                     ? 'bg-green-600 text-white rounded-br-none shadow-md shadow-green-100'
                                     : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-sm'
                                     }`}>
-                                    {msg.content}
+                                    {msg.role === 'assistant' ? (
+                                        <div
+                                            className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 text-gray-800"
+                                            dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
+                                        />
+                                    ) : (
+                                        msg.content
+                                    )}
                                 </div>
                             </div>
                         ))}
