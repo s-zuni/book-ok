@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
+import { XMLParser } from 'fast-xml-parser';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const drCode = searchParams.get('drCode') || '11'; // Default: Literature (11)
     const page = searchParams.get('page') || '1';
 
-    // Default to strict search for 2025? Or just latest? 
-    // The API seems to just return latest recommendations.
-
-    const API_KEY = process.env.NATIONAL_LIBRARY_API_KEY;
+    const API_KEY = process.env.NLCF_API_KEY;
     const ENDPOINT = 'https://www.nl.go.kr/NL/search/openApi/saseoApi.do';
 
     if (!API_KEY) {
@@ -26,60 +24,58 @@ export async function GET(request: Request) {
         const response = await fetch(apiUrl);
         const textData = await response.text();
 
-        // Simple XML parsing (since we might not have a parser installed yet)
-        // Ideally we should use fast-xml-parser, but for now let's try to extract basic info with Regex 
-        // or check if we can interpret it. 
-        // Actually, let's just return the raw XML/Text for now so the frontend or a utility can parse it, 
-        // OR better, let's do a basic parse here to return JSON.
+        const parser = new XMLParser();
+        const parsed = parser.parse(textData);
 
-        const items = [];
-        const itemRegex = /<list>([\s\S]*?)<\/list>/g;
-        let match;
+        // Check for error response
+        // Expected format on error: <error><msg>...</msg><error_code>...</error_code></error>
+        if (parsed.error) {
+            console.error('NLK API returned error:', parsed.error);
+            return NextResponse.json({
+                error: parsed.error.msg || 'National Library API Error',
+                code: parsed.error.error_code
+            }, { status: 400 });
+        }
 
-        while ((match = itemRegex.exec(textData)) !== null) {
-            const itemContent = match[1];
+        // Expected format on success: <channel><list>...</list><totalCount>...</totalCount></channel> 
+        // OR directly <list>... if root is different. Based on debug log, it seems OK.
+        // Let's inspect the structure. The debug output showed <error> at root.
+        // Likely <channel> or <root> is the success root. 
+        // The regex code was looking for <list>.
 
-            const extract = (tag: string) => {
-                const regex = new RegExp(`<${tag}><!\\[CDATA\\[(.*?)\\]\\]><\\/${tag}>`, 's');
-                const m = itemContent.match(regex);
-                return m ? m[1] : '';
-            };
+        let lists = parsed.channel?.list || parsed.list || [];
+        if (!Array.isArray(lists)) {
+            lists = [lists]; // Handle single item case
+        }
 
-            // Sometimes CDATA is not used for simple fields
-            const extractSimple = (tag: string) => {
-                const regex = new RegExp(`<${tag}>(.*?)<\\/${tag}>`, 's');
-                const m = itemContent.match(regex);
-                return m ? m[1] : '';
-            };
+        const items = lists.map((item: any) => {
+            const getField = (field: any) => (typeof field === 'string' ? field : field?.['#text'] || '');
 
-            const title = extract('title_info') || extractSimple('title_info');
-            const author = extract('author_info') || extractSimple('author_info');
-            const publisher = extract('pub_info') || extractSimple('pub_info');
-            const pubYear = extract('pub_year_info') || extractSimple('pub_year_info');
-            const imageUrl = extract('file_url') || extractSimple('file_url') || `https://image.aladin.co.kr/product/placeholder.jpg`; // Fallback
-            const link = extract('link_url') || extractSimple('link_url');
+            const title = getField(item.title_info);
+            const author = getField(item.author_info);
+            const publisher = getField(item.pub_info);
+            const pubYear = getField(item.pub_year_info);
+            const imageUrl = getField(item.file_url) || `https://image.aladin.co.kr/product/placeholder.jpg`;
+            const link = getField(item.link_url);
 
-            // Clean up title (sometimes includes volume info)
             const cleanTitle = title.replace(/\s*\(.*?\)\s*$/, '');
 
-            if (title) {
-                items.push({
-                    id: link || Math.random().toString(36).substr(2, 9),
-                    title: cleanTitle,
-                    author: author,
-                    cover: imageUrl.startsWith('http') ? imageUrl : `https://www.nl.go.kr${imageUrl}`,
-                    description: `${publisher} | ${pubYear}`, // Using description field for pub info
-                    publisher: publisher,
-                    pubDate: pubYear,
-                    link: link,
-                    category: { id: '0', name: '사서추천' }
-                });
-            }
-        }
+            return {
+                id: link || Math.random().toString(36).substr(2, 9),
+                title: cleanTitle,
+                author: author,
+                cover: imageUrl.startsWith('http') ? imageUrl : `https://www.nl.go.kr${imageUrl}`,
+                description: `${publisher} | ${pubYear}`,
+                publisher: publisher,
+                pubDate: pubYear,
+                link: link,
+                category: { id: '0', name: '사서추천' }
+            };
+        }).filter((item: any) => item.title);
 
         return NextResponse.json({
             items,
-            totalResult: items.length // API doesn't seem to give total quickly in this view 
+            totalResult: items.length
         });
 
     } catch (error) {
