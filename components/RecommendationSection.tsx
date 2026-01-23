@@ -48,53 +48,30 @@ export default function RecommendationSection({ title, subtitle, query, category
             try {
                 let items = [];
 
-                // If Librarian Recommendations is selected and specifically the 'National Library of Korea' tab
-                // The user requested to use Aladin for 'National Library for Children'
-                if (title === '사서 추천' && activeTab === '국립중앙도서관') {
-                    const fetchUrl = `/api/external/librarian?activeTab=${encodeURIComponent(activeTab)}&_t=${Date.now()}`; // drCode 11=Literature
-                    const res = await fetch(fetchUrl);
-                    if (!res.ok) throw new Error("Failed to fetch from NLK API");
-                    const data = await res.json();
-                    items = data.items || [];
-
-                    // The API route already returns mapped objects, but let's ensure type safety
+                // Existing logic for Aladin API
+                // Determine sort param
+                // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
+                const fetchUrl = `/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`;
+                console.log(`Fetching Aladin: ${fetchUrl}`);
+                const res = await fetch(fetchUrl);
+                if (!res.ok) throw new Error("Failed");
+                const data = await res.json();
+                console.log('Aladin Data:', data);
+                if (data.item) {
+                    items = limit ? data.item.slice(0, limit) : data.item;
                     const mappedBooks: Book[] = items.map((item: any) => ({
-                        id: item.id,
-                        bookid: item.id,
+                        id: String(item.isbn13 || item.isbn),
+                        bookid: String(item.isbn13 || item.isbn),
                         title: item.title,
                         author: item.author,
-                        imgsrc: item.cover,
-                        category: item.categoryName || '사서추천',
+                        imgsrc: item.cover, // Ensures high res if available
+                        category: item.categoryName,
                         pubDate: item.pubDate,
-                        description: item.description || ''
+                        description: item.description
                     }));
                     setBooks(mappedBooks);
                 } else {
-                    // Existing logic for Aladin API
-                    // Determine sort param
-                    // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                    const fetchUrl = `/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`;
-                    console.log(`Fetching Aladin: ${fetchUrl}`);
-                    const res = await fetch(fetchUrl);
-                    if (!res.ok) throw new Error("Failed");
-                    const data = await res.json();
-                    console.log('Aladin Data:', data);
-                    if (data.item) {
-                        items = limit ? data.item.slice(0, limit) : data.item;
-                        const mappedBooks: Book[] = items.map((item: any) => ({
-                            id: String(item.isbn13 || item.isbn),
-                            bookid: String(item.isbn13 || item.isbn),
-                            title: item.title,
-                            author: item.author,
-                            imgsrc: item.cover, // Ensures high res if available
-                            category: item.categoryName,
-                            pubDate: item.pubDate,
-                            description: item.description
-                        }));
-                        setBooks(mappedBooks);
-                    } else {
-                        setBooks([]);
-                    }
+                    setBooks([]);
                 }
             } catch (err) {
                 console.error(err);
