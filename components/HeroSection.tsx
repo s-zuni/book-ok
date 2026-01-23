@@ -45,9 +45,13 @@ export default function HeroSection() {
                 <div className="relative animate-in fade-in zoom-in-95 duration-1000 delay-200 hidden lg:block">
                     <div className="relative z-10 bg-white p-6 rounded-4xl shadow-2xl rotate-3 hover:rotate-0 transition-transform duration-500 cursor-default">
                         <div className="bg-gray-100 rounded-3xl overflow-hidden aspect-4/3 flex items-center justify-center relative group">
-                            {/* Placeholder for "Children Reading" illustration */}
+                            {/* 3D Illustration */}
                             <div className="absolute inset-0 bg-linear-to-br from-green-100 to-blue-50" />
-                            <div className="text-9xl transform text-green-200 group-hover:scale-110 transition-transform duration-700">📚</div>
+                            <img
+                                src="/images/hero_child_reading_3d.png"
+                                alt="아이 독서 3D 일러스트"
+                                className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
+                            />
 
                             {/* Floating Cards UI Elements */}
                             <div className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg">
