@@ -43,8 +43,8 @@ export default function HeroSection() {
 
                 {/* Hero Illustration/Image Placeholder */}
                 <div className="relative animate-in fade-in zoom-in-95 duration-1000 delay-200 hidden lg:block">
-                    {/* Floating animation container */}
-                    <div className="relative z-10 bg-white p-6 rounded-4xl shadow-2xl animate-[bounce_3s_infinite]" style={{ animationDuration: '4s' }}>
+                    {/* Fixed static container without animation */}
+                    <div className="relative z-10 bg-white p-6 rounded-4xl shadow-2xl transition-transform duration-500 cursor-default">
                         <div className="bg-gray-100 rounded-3xl overflow-hidden aspect-4/3 flex items-center justify-center relative group">
                             {/* 3D Illustration */}
                             <div className="absolute inset-0 bg-linear-to-br from-green-100 to-blue-50" />
