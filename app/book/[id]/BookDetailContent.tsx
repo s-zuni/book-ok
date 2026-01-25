@@ -135,6 +135,7 @@ export default function BookDetailContent() {
         if (isApiBook && book) {
             const { error: insertError } = await supabase.from('books').upsert({
                 id: book.id,
+                bookid: book.bookid || book.id, // Ensure bookid is present
                 title: book.title,
                 author: book.author,
                 imgsrc: book.imgsrc,
