@@ -31,8 +31,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                await fetchUserProfile(session.user.id);
-                await fetchChildren(session.user.id);
+                // Fetch in parallel for performance
+                await Promise.all([
+                    fetchUserProfile(session.user.id),
+                    fetchChildren(session.user.id)
+                ]);
             }
             setLoading(false);
         };
@@ -43,8 +46,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             setSession(session);
             setUser(session?.user ?? null);
             if (session?.user) {
-                await fetchUserProfile(session.user.id);
-                await fetchChildren(session.user.id);
+                // Fetch in parallel for performance
+                await Promise.all([
+                    fetchUserProfile(session.user.id),
+                    fetchChildren(session.user.id)
+                ]);
             } else {
                 setUserProfile(null);
                 setChildren([]);
