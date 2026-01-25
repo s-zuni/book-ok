@@ -27,35 +27,45 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
     useEffect(() => {
         const initAuth = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                // Fetch in parallel for performance
-                await Promise.all([
-                    fetchUserProfile(session.user.id),
-                    fetchChildren(session.user.id)
-                ]);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                setSession(session);
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    // Fetch in parallel for performance
+                    await Promise.allSettled([
+                        fetchUserProfile(session.user.id),
+                        fetchChildren(session.user.id)
+                    ]);
+                }
+            } catch (error) {
+                console.error("Auth initialization error:", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         initAuth();
 
         const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
-            if (session?.user) {
-                // Fetch in parallel for performance
-                await Promise.all([
-                    fetchUserProfile(session.user.id),
-                    fetchChildren(session.user.id)
-                ]);
-            } else {
-                setUserProfile(null);
-                setChildren([]);
+            try {
+                setSession(session);
+                setUser(session?.user ?? null);
+                if (session?.user) {
+                    // Fetch in parallel for performance
+                    await Promise.allSettled([
+                        fetchUserProfile(session.user.id),
+                        fetchChildren(session.user.id)
+                    ]);
+                } else {
+                    setUserProfile(null);
+                    setChildren([]);
+                }
+            } catch (error) {
+                console.error("Auth state change error:", error);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return () => {
