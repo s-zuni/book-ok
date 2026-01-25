@@ -39,7 +39,17 @@ export default function AuthPage() {
         }
 
         setIsLoading(true);
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    name: nickname,
+                    phone: phone,
+                    role: 'user'
+                }
+            }
+        });
 
         if (error) {
             setAuthError(error.message);
