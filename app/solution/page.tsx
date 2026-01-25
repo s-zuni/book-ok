@@ -28,20 +28,15 @@ export default function SolutionPage() {
     const [aiSolutionResult, setAiSolutionResult] = useState('');
     const [aiSolutionLoading, setAiSolutionLoading] = useState(false);
 
-    const { user } = useAuth();
+    const { user, children } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
-        if (user) {
-            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) {
-                    const child = data[0];
-                    const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
-                    setActiveChild({ ...child, age });
-                }
-            });
+        // Sync activeChild with global children list
+        if (!activeChild && children.length > 0) {
+            setActiveChild(children[0]);
         }
-    }, [user]);
+    }, [children, activeChild]);
 
     // Fetch read books when tab changes or active child changes
     useEffect(() => {
@@ -313,6 +308,7 @@ export default function SolutionPage() {
                         activeMenu="solution"
                         activeSubMenu={activeSubMenu}
                         setActiveSubMenu={setActiveSubMenu}
+                        setActiveChild={setActiveChild}
                     />
                 </div>
 

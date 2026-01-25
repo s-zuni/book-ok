@@ -22,7 +22,7 @@ export default function BookDetailContent() {
     const [isApiBook, setIsApiBook] = useState(false);
 
     // Auth & Sidebar state
-    const { user } = useAuth();
+    const { user, children } = useAuth();
     const [userChildren, setUserChildren] = useState<Child[]>([]);
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [activeMenu, setActiveMenu] = useState<any>('rec');
@@ -32,6 +32,14 @@ export default function BookDetailContent() {
     const [isScrapped, setIsScrapped] = useState(false);
     const [isRead, setIsRead] = useState(false);
     const [showChildModal, setShowChildModal] = useState(false);
+
+    // Sync activeChild with global children list
+    useEffect(() => {
+        if (!activeChild && children.length > 0) {
+            setActiveChild(children[0]);
+        }
+        setUserChildren(children); // Keep local for modal if needed, or switch modal to use global
+    }, [children, activeChild]);
 
     // Review form state
     const [newRating, setNewRating] = useState(0);
@@ -64,7 +72,7 @@ export default function BookDetailContent() {
                         bookid: apiItem.isbn13 || apiItem.isbn,
                         title: apiItem.title,
                         author: apiItem.author,
-                        imgsrc: apiItem.cover, // API usually returns generic, but searched items might have big cover if specified
+                        imgsrc: apiItem.cover,
                         category: apiItem.categoryName,
                         pubDate: apiItem.pubDate,
                         description: apiItem.description
@@ -87,14 +95,31 @@ export default function BookDetailContent() {
             supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
                 if (data && data.length > 0) {
                     setUserChildren(data);
-                    setActiveChild(data[0]); // Default active for sidebar
+                    setActiveChild(data[0]);
                 }
             });
-            // Check if book is already read (simplified check)
-            // In a real app, we'd check `read_books` table for any of the user's children
         }
-
     }, [bookId, user]);
+
+    // Check interaction status (Read/Scrap)
+    useEffect(() => {
+        if (!user || !book) return;
+
+        const checkInteractions = async () => {
+            // Check Read Status (Any child read this book?)
+            const { data } = await supabase.from('read_books')
+                .select('id')
+                .eq('book_id', book.id)
+                .eq('user_id', user.id)
+                .limit(1);
+
+            if (data && data.length > 0) {
+                setIsRead(true);
+            }
+        };
+
+        checkInteractions();
+    }, [user, book]);
 
     const fetchReviews = async () => {
         const { data } = await supabase.from('reviews')
@@ -210,6 +235,7 @@ export default function BookDetailContent() {
                         activeMenu={activeMenu}
                         activeSubMenu={activeSubMenu}
                         setActiveSubMenu={setActiveSubMenu}
+                        setActiveChild={setActiveChild}
                     />
                 </div>
 
@@ -241,17 +267,17 @@ export default function BookDetailContent() {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={handleScrap}
-                                                className={`p-2 rounded-full border transition-all ${isScrapped ? 'bg-yellow-50 border-yellow-200 text-yellow-500' : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}
-                                                title="스크랩"
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-bold text-sm ${isScrapped ? 'bg-yellow-50 border-yellow-200 text-yellow-600' : 'border-gray-100 text-gray-500 hover:bg-gray-50'}`}
                                             >
-                                                <Bookmark size={20} fill={isScrapped ? "currentColor" : "none"} />
+                                                <Bookmark size={18} fill={isScrapped ? "currentColor" : "none"} />
+                                                {isScrapped ? "찜 완료" : "찜하기"}
                                             </button>
                                             <button
                                                 onClick={handleMarkRead}
-                                                className={`p-2 rounded-full border transition-all ${isRead ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-100 text-gray-400 hover:bg-gray-50'}`}
-                                                title="읽은 책 표시"
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-bold text-sm ${isRead ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-100 text-gray-500 hover:bg-gray-50'}`}
                                             >
-                                                {isRead ? <Check size={20} /> : <BookOpen size={20} />}
+                                                {isRead ? <Check size={18} /> : <BookOpen size={18} />}
+                                                {isRead ? "읽은 책" : "읽었어요"}
                                             </button>
                                         </div>
                                     </div>

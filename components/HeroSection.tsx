@@ -32,7 +32,7 @@ export default function HeroSection() {
 
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
                         <button
-                            onClick={() => document.getElementById('recommendations')?.scrollIntoView({ behavior: 'smooth' })}
+                            onClick={() => router.push('/chat')}
                             className="px-8 py-4 bg-gray-900 text-white rounded-full font-bold text-lg hover:bg-gray-800 transition-all hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2 group"
                         >
                             지금 추천받기
@@ -42,7 +42,7 @@ export default function HeroSection() {
                 </div>
 
                 {/* Hero Illustration/Image Placeholder */}
-                <div className="relative animate-in fade-in zoom-in-95 duration-1000 delay-200 hidden lg:block">
+                <div className="relative animate-in fade-in zoom-in-95 duration-1000 delay-200 block">
                     {/* Fixed static container without animation */}
                     <div className="relative z-10 bg-white p-6 rounded-4xl shadow-2xl transition-transform duration-500 cursor-default">
                         <div className="bg-gray-100 rounded-3xl overflow-hidden aspect-4/3 flex items-center justify-center relative group">
@@ -51,11 +51,11 @@ export default function HeroSection() {
                             <img
                                 src="/images/hero_child_reading_3d.png"
                                 alt="아이 독서 3D 일러스트"
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover relative z-10"
                             />
 
                             {/* Floating Cards UI Elements */}
-                            <div className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg">
+                            <div className="absolute bottom-6 left-6 right-6 bg-white/80 backdrop-blur-sm p-4 rounded-xl shadow-lg z-20">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center text-2xl">🧒</div>
                                     <div>

@@ -28,20 +28,15 @@ export default function HomeContent() {
     // const [error, setError] = useState<string | null>(null); // Removed legacy
     const [activeChild, setActiveChild] = useState<Child | null>(null);
 
-    const { user } = useAuth();
+    const { user, children } = useAuth(); // Now using global children
     const router = useRouter();
 
     useEffect(() => {
-        if (user) {
-            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) {
-                    const child = data[0];
-                    const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
-                    setActiveChild({ ...child, age });
-                }
-            });
+        // Sync activeChild with global children list if not set or updated
+        if (!activeChild && children.length > 0) {
+            setActiveChild(children[0]);
         }
-    }, [user]);
+    }, [children, activeChild]);
 
 
 
