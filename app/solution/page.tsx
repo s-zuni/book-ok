@@ -54,14 +54,20 @@ export default function SolutionPage() {
         if (!user || !activeChild) return;
 
         const { data: readBooksData } = await supabase
-            .from('read_books') // Changed from 'reviews' to 'read_books'
-            .select('book_id, books(*)')
-            .eq('child_id', activeChild.id); // Filter by selected child
+            .from('read_books')
+            .select('book_id, observation_data, books(*)') // Fetch observation_data
+            .eq('child_id', activeChild.id)
+            .order('read_date', { ascending: false }); // Ensure newest first
 
         if (readBooksData) {
-            const books = readBooksData.map((r: any) => r.books).filter(Boolean);
-            // Deduplicate
-            const uniqueBooks = Array.from(new Map(books.map((b: any) => [b.id, b])).values());
+            // Map books and attach their specific observation
+            const booksWithObs = readBooksData.map((r: any) => ({
+                ...r.books,
+                _observation: r.observation_data // Store internally for analysis
+            })).filter((b: any) => b && b.id); // Filter invalid
+
+            // Deduplicate (Keep most recent if duplicate)
+            const uniqueBooks = Array.from(new Map(booksWithObs.map((b: any) => [b.id, b])).values());
             setUserReadBooks(uniqueBooks as Book[]);
         }
     };
@@ -69,7 +75,7 @@ export default function SolutionPage() {
     const [chartData, setChartData] = useState<{ subject: string; A: number; fullMark: number; }[]>([]);
     const [aiKeywords, setAiKeywords] = useState<string[]>([]);
 
-    const getReadingAnalysis = async () => {
+    const getReadingAnalysis = async (observations?: any) => {
         if (userReadBooks.length === 0) return;
         setReadingAnalysisLoading(true);
         setReadingAnalysisResult('');
@@ -77,24 +83,119 @@ export default function SolutionPage() {
         setAiKeywords([]);
 
         try {
-            const bookListText = userReadBooks.map(book => `- ${book.title} (저자: ${book.author})`).join('\n');
+            // STEP 1: Enrich Book Data (Phase 2 - Data Enrichment)
+            // Fetch details for up to 5 most recent books to avoid API overload/timeout
+            const recentBooks = userReadBooks.slice(0, 5);
+            const enrichedBooks = await Promise.all(recentBooks.map(async (book) => {
+                try {
+                    // Assuming book.bookid is the ISBN13 or ItemId
+                    const res = await fetch(`/api/book-detail?itemId=${book.bookid}`);
+                    if (!res.ok) return book;
+                    const details = await res.json();
+                    return { ...book, description: details.description, toc: details.toc };
+                } catch (e) {
+                    console.error("Failed to fetch details for", book.title);
+                    return book;
+                }
+            }));
+
+            const bookListText = enrichedBooks.map((book: any) => {
+                let info = `- 제목: **${book.title}** (저자: ${book.author})`;
+
+                // Add Historical Observation if exists (Phase 3)
+                if (book._observation && Object.keys(book._observation).length > 0) {
+                    info += `\n   > **부모 관찰 기록**: `;
+                    const obs = book._observation;
+                    const parts = [];
+                    if (obs.fluency) parts.push(`유창성: ${obs.fluency}`);
+                    if (obs.independence) parts.push(`독립독서: ${obs.independence}`);
+                    if (obs.interest) parts.push(`흥미: ${obs.interest}`);
+                    if (obs.decoding) parts.push(`해독: ${obs.decoding}`);
+                    if (obs.critical) parts.push(`질문: ${obs.critical}`);
+                    info += parts.join(', ');
+                }
+
+                // Simplified Description & TOC handling to fit prompt limits
+                // In production, we would use sophisticated summarization here
+                if (book.description && book.description.length > 20) {
+                    info += `\n   > 줄거리: ${book.description.substring(0, 100)}...`;
+                }
+                if (book.toc && book.toc.length > 20) {
+                    info += `\n   > 목차(일부): ${book.toc.substring(0, 100)}...`;
+                }
+                return info;
+            }).join('\n\n');
+            const age = activeChild?.age || 0;
+
+            // Phase Definition based on Planning Report
+            let phaseInfo = "";
+            let focusPoint = "";
+
+            if (age < 5) {
+                phaseInfo = "발현기 전 독서 (Pre-reading)";
+                focusPoint = "청각적 자극, 그림과 글자의 연결, 상호작용";
+            } else if (age >= 5 && age < 7) {
+                phaseInfo = "초기 독서 (Early Reading)";
+                focusPoint = "해독(Decoding), 파닉스, 글자에 대한 흥미";
+            } else if (age >= 7 && age < 9) {
+                phaseInfo = "전환기 독서 (Transitional Reading)";
+                focusPoint = "**가장 중요한 시기**입니다. '읽는 법을 배우는' 단계에서 '지식을 얻기 위해 읽는' 단계로 넘어가는 변곡점입니다. 읽기 유창성(Fluency)과 지구력이 핵심입니다.";
+            } else if (age >= 9 && age < 12) {
+                phaseInfo = "중간 독서 (Intermediate Reading)";
+                focusPoint = "비판적 사고, 추론, 다양한 장르의 소화";
+            } else {
+                phaseInfo = "고등 독서 (Advanced Reading)";
+                focusPoint = "분석적 사고, 복합 텍스트 이해, 자아 성찰";
+            }
+
+            // Format Observations
+            let observationText = "";
+            if (observations && Object.keys(observations).length > 0) {
+                observationText = `\n[부모님 관찰 기록 (중요)]\n`;
+                // Map common keys to Korean labels if needed, or just send raw values with context
+                if (observations.fluency) observationText += `- 읽기 유창성 관찰: "${observations.fluency}"\n`;
+                if (observations.independence) observationText += `- 독립 독서 여부: "${observations.independence}"\n`;
+                if (observations.decoding) observationText += `- 글자 해독 능력: "${observations.decoding}"\n`;
+                if (observations.interest) observationText += `- 흥미 반응: "${observations.interest}"\n`;
+                if (observations.critical) observationText += `- 비판적 질문: "${observations.critical}"\n`;
+                // Fallback for others
+                for (const [key, val] of Object.entries(observations)) {
+                    if (!['fluency', 'independence', 'decoding', 'interest', 'critical'].includes(key)) {
+                        observationText += `- 기타 관찰(${key}): "${val}"\n`;
+                    }
+                }
+            }
+
             const prompt = `
-        다음은 5~9세 아이가 읽은 책 목록입니다:
+        당신은 아동 발달 심리 및 독서 교육 최고 전문가입니다.
+        현재 분석 대상 아동은 **만 ${age}세**이며, 독서 발달 단계상 **'${phaseInfo}'**에 해당합니다.
+        이 시기의 핵심 발달 과업은 **'${focusPoint}'**입니다.
+
+        다음 정보를 종합하여 초개인화된 정밀 독서 성향을 분석해주세요. (SAV 알고리즘 기반)
+
+        1. **최근 읽은 책 상세 분석 (최대 5권)**:
+           *참고: 책의 줄거리와 목차, 그리고 [부모 관찰 기록]을 바탕으로 "이 아이가 이 책을 어떻게 소화했는지" 판단해주세요.*
         ${bookListText}
 
-        이 아이의 독서 성향을 분석해주고, 앞으로 어떤 분야의 책을 더 읽으면 좋을지 구체적인 장르나 주제를 추천해주세요.
-        
+        2. **분석 요청 종합 의견**:
+        ${observationText || "(특이사항 없음)"}
+
+        ---
+        **분석 요청 사항**:
+        1. **독서 태도 및 역량 변화 추적**: 각 책마다 기록된 부모님의 관찰(유창성, 질문 여부 등)을 토대로, 아이의 독서 능력이 어떻게 변화하고 있는지 파악해주세요.
+        2. **SAV(적정 연령 가치) 정밀 진단**: 아이가 어려워했던 책과 즐거워했던 책의 패턴을 분석하여, 현재 아이의 **실질적인 문해력 나이**를 추정해주세요. (만 나이와 비교)
+        3. **맞춤형 확장 독서 제안**: 현재 아이가 관심을 보이는 구체적인 주제에서 한 단계 더 나아갈 수 있는 책을 추천해주세요.
+
         **중요:** 응답은 반드시 유효한 JSON 형식이어야 합니다. Markdown 코드 블록 없이 순수 JSON만 반환하세요.
         
-        **summary 필드 작성 시 주의사항:**
-        1. **개괄식 서술**: 핵심 요약을 먼저 작성하세요.
-        2. **마크다운 활용**: 
-           - 주요 키워드나 책 제목은 **굵게(**)** 표시하세요.
-           - 세부 내용은 **글머리 기호(-)**를 사용하여 가독성 있게 정리하세요.
+        **summary 필드 작성 가이드**:
+        - 따뜻하고 전문적인 어조("~해요", "~입니다")를 사용하세요.
+        - 핵심 단어는 **굵게** 표시하세요.
+        - 분석 내용은 글머리 기호 등을 사용하여 가독성 있게 구조화하세요.
         
         JSON 구조:
         {
-          "summary": "분석 내용 및 추천 사항 (마크다운 포맷 활용)",
+          "summary": "마크다운 포맷의 상세 분석 리포트",
           "scores": [
              { "subject": "어휘력", "A": 수치(0-100), "fullMark": 100 },
              { "subject": "이해력", "A": 수치(0-100), "fullMark": 100 },
@@ -104,8 +205,6 @@ export default function SolutionPage() {
           ],
           "recommendationKeywords": ["키워드1", "키워드2", "키워드3"]
         }
-        
-        "recommendationKeywords"는 아이에게 추천할만한 구체적인 책 검색어(장르, 주제, 시리즈명 등) 3개를 선정해서 배열로 주세요.
       `;
 
             const response = await fetch('/api/openai', {

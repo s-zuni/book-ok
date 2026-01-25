@@ -143,7 +143,7 @@ export default function BookDetailContent() {
         setShowChildModal(true);
     };
 
-    const handleChildSelect = async (childId: string) => {
+    const handleChildSelect = async (childId: string, observations?: any) => {
         if (!book) return;
 
         try {
@@ -151,12 +151,13 @@ export default function BookDetailContent() {
                 user_id: user?.id,
                 child_id: childId,
                 book_id: book.id,
-                read_date: new Date().toISOString()
+                read_date: new Date().toISOString(),
+                observation_data: observations // New JSONB column
             });
 
             if (error) throw error;
 
-            toast.success("읽은 책으로 기록되었습니다!");
+            toast.success("읽은 책으로 기록되었습니다! (관찰 내용 저장 완료)");
             setIsRead(true);
             setShowChildModal(false);
         } catch (err: any) {
