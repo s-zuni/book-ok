@@ -32,11 +32,15 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 setSession(session);
                 setUser(session?.user ?? null);
                 if (session?.user) {
-                    // Fetch in parallel for performance
-                    await Promise.allSettled([
+                    // Fetch in parallel for performance, with timeout safeguard
+                    const fetchData = Promise.allSettled([
                         fetchUserProfile(session.user.id),
                         fetchChildren(session.user.id)
                     ]);
+
+                    const timeout = new Promise((_, reject) => setTimeout(() => reject("Timeout"), 5000));
+
+                    await Promise.race([fetchData, timeout]);
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);
@@ -52,11 +56,15 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 setSession(session);
                 setUser(session?.user ?? null);
                 if (session?.user) {
-                    // Fetch in parallel for performance
-                    await Promise.allSettled([
+                    // Fetch in parallel for performance, with timeout safeguard
+                    const fetchData = Promise.allSettled([
                         fetchUserProfile(session.user.id),
                         fetchChildren(session.user.id)
                     ]);
+
+                    const timeout = new Promise((_, reject) => setTimeout(() => reject("Timeout"), 5000));
+
+                    await Promise.race([fetchData, timeout]);
                 } else {
                     setUserProfile(null);
                     setChildren([]);

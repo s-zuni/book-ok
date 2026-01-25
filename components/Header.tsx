@@ -101,8 +101,13 @@ export default function Header({
                                 </button>
                                 <button
                                     onClick={async () => {
-                                        await signOut();
-                                        window.location.href = '/';
+                                        try {
+                                            await signOut();
+                                        } catch (e) {
+                                            console.error("Logout failed", e);
+                                        } finally {
+                                            window.location.href = '/';
+                                        }
                                     }}
                                     className="p-2 text-gray-400 hover:text-red-500"
                                 >
