@@ -8,11 +8,21 @@ export default function SplashScreen() {
     const [opacity, setOpacity] = useState(1);
 
     useEffect(() => {
-        // Check if desktop - if so, skip splash screen
-        if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        // 1. Check if already shown in this session
+        const hasShown = sessionStorage.getItem('splash_shown');
+        if (hasShown) {
             setIsVisible(false);
             return;
         }
+
+        // 2. Check if desktop (double check in JS)
+        if (typeof window !== 'undefined' && window.innerWidth >= 1024) { // 1024px for PC
+            setIsVisible(false);
+            return;
+        }
+
+        // Mark as shown
+        sessionStorage.setItem('splash_shown', 'true');
 
         // Keep visible for 1.5 seconds, then fade out
         const fadeTimer = setTimeout(() => {
@@ -34,7 +44,7 @@ export default function SplashScreen() {
 
     return (
         <div
-            className="fixed inset-0 bg-white transition-opacity duration-500 ease-in-out"
+            className="fixed inset-0 bg-white transition-opacity duration-500 ease-in-out lg:hidden"
             style={{ opacity, zIndex: 9999 }}
         >
             {/* Centered Logo */}
