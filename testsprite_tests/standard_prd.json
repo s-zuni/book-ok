@@ -1,143 +1,69 @@
 {
   "meta": {
-    "project": "Children and Young Adults Book Recommendation Platform",
-    "date": "2025-12-30",
+    "project": "User Dashboard and Reading Tracker",
+    "date": "2026-01-21",
     "prepared_by": "Software Development Manager"
   },
-  "product_overview": "A web platform that provides curated book recommendations for children and young adults by integrating the National Library's librarian recommendations and external search via Aladin Open API, aimed at enhancing user discovery and engagement with age-appropriate literature.",
+  "product_overview": "A user dashboard platform enabling authenticated users to manage profiles, view their children's reading statistics, and track read books via a seamless interface.",
   "core_goals": [
-    "Provide reliable and updated librarian recommended books from the National Library for Children and Young Adults.",
-    "Enable users to search a wide range of books using the Aladin Open API to extend discovery options beyond curated lists.",
-    "Ensure an intuitive and user-friendly interface for easy browsing and searching of books.",
-    "Allow access to book recommendations and search without requiring user authentication to maximize accessibility.",
-    "Ensure backend API endpoints are secure, performant, and reliable for a smooth user experience."
+    "Ensure reliable user authentication and session handling for secure access.",
+    "Provide a comprehensive user dashboard displaying profile and children reading data.",
+    "Support management of child profiles including listing and stats presentation.",
+    "Enable fetching and displaying of books read by each child to track reading progress.",
+    "Resolve PC environment loading issues on the MyPage user dashboard to ensure smooth UX."
   ],
   "key_features": [
-    "Librarian Books API integration fetching recommended books from the National Library for Children and Young Adults (NLCF).",
-    "Search API integration utilizing Aladin Open API for comprehensive book search functionality with pagination support.",
-    "Home page displaying both librarian and expert recommended books to facilitate user engagement.",
-    "Search results page showing books found via the Search API, with query input and results pagination.",
-    "Use of modern front-end technologies including Next.js, React, and TailwindCSS for responsive and accessible UI design.",
-    "Backend powered by TypeScript and Supabase ensuring secure data access and API management."
+    "Supabase Auth-based user authentication and session management.",
+    "MyPage user dashboard with profile overview and child listing.",
+    "Reading statistics visualization per child within the dashboard.",
+    "Child profile management including add, edit, and list functionalities.",
+    "Display of detailed lists of books read by children.",
+    "Responsive UI implemented with Next.js and Tailwind CSS to support desktop environments."
   ],
   "user_flow_summary": [
-    "User lands on the Home page and views a curated list of librarian and expert recommended books.",
-    "User navigates to the Search page and enters a search query to find additional books.",
-    "The system calls the Search API with the user's query and optionally a page number to retrieve matching book results.",
-    "Search results are displayed with pagination to allow browsing through multiple pages of books.",
-    "Users can explore detailed book information through the listed results without needing to log in."
+    "User logs in using Supabase authentication.",
+    "Upon login, user navigates to MyPage dashboard.",
+    "Dashboard loads user profile and list of children.",
+    "User views reading stats and list of books read by each child.",
+    "User manages child profiles through the dashboard interface.",
+    "User logs out to end session."
   ],
   "validation_criteria": [
-    "Verify that API keys for all external services are valid and not expired.",
-    "Validate that all API endpoints return correct JSON responses when accessed directly.",
-    "Check database permissions ensuring anonymous users can read recommended books but no unauthorized modifications.",
-    "Test that all features function correctly end-to-end including retrieving, searching, and displaying books.",
-    "Ensure UI components render properly across multiple devices and browsers for consistent user experience."
+    "User authentication completes successfully and maintains session.",
+    "MyPage dashboard loads fully and correctly in PC and desktop environments without hanging or infinite loading states.",
+    "User profile, children list, and reading stats correctly display accurate data from the backend.",
+    "Read books list fetches and renders properly for each child.",
+    "UI adapts responsively with Tailwind CSS styling ensuring usability on desktop.",
+    "No critical errors or crashes occur during mentioned user flows."
   ],
   "code_summary": {
     "tech_stack": [
       "TypeScript",
       "Next.js",
-      "React",
       "Supabase",
-      "TailwindCSS"
+      "Tailwind CSS"
     ],
     "features": [
       {
-        "name": "Librarian Books API",
-        "description": "Fetches recommended books from the National Library for Children and Young Adults (NLCF) API.",
+        "name": "Authentication",
+        "description": "User authentication and session management using Supabase Auth.",
         "files": [
-          "app/api/librarian-books/route.ts"
-        ],
-        "api_doc": {
-          "openapi": "3.0.0",
-          "info": {
-            "title": "Librarian Books API",
-            "version": "1.0.0"
-          },
-          "paths": {
-            "/api/librarian-books": {
-              "get": {
-                "summary": "Get librarian recommended books",
-                "responses": {
-                  "200": {
-                    "description": "Successful response",
-                    "content": {
-                      "application/json": {
-                        "schema": {
-                          "type": "object",
-                          "properties": {
-                            "response": {
-                              "type": "object"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "name": "Search API",
-        "description": "Searches for books using the Aladin Open API.",
-        "files": [
-          "app/api/search/route.ts"
-        ],
-        "api_doc": {
-          "openapi": "3.0.0",
-          "info": {
-            "title": "Search API",
-            "version": "1.0.0"
-          },
-          "paths": {
-            "/api/search": {
-              "get": {
-                "summary": "Search books",
-                "parameters": [
-                  {
-                    "name": "query",
-                    "in": "query",
-                    "required": true,
-                    "schema": {
-                      "type": "string"
-                    }
-                  },
-                  {
-                    "name": "page",
-                    "in": "query",
-                    "required": false,
-                    "schema": {
-                      "type": "string"
-                    }
-                  }
-                ],
-                "responses": {
-                  "200": {
-                    "description": "Successful search results"
-                  }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
-        "name": "Frontend - Search Page",
-        "description": "Search results page that displays books found via the Search API.",
-        "files": [
-          "app/search/page.tsx"
+          "context/AuthContext.tsx"
         ]
       },
       {
-        "name": "Frontend - Home Page",
-        "description": "Main landing page displaying librarian and expert recommendations.",
+        "name": "MyPage",
+        "description": "User dashboard displaying profile, children list, and reading stats. Includes child profile management.",
         "files": [
-          "app/page.tsx",
-          "components/HomeContent.tsx"
+          "app/mypage/page.tsx",
+          "components/Header.tsx"
+        ]
+      },
+      {
+        "name": "Read Books",
+        "description": "Functionality to fetch and display books read by a child.",
+        "files": [
+          "app/mypage/page.tsx"
         ]
       }
     ]

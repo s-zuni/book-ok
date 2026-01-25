@@ -1,19 +1,16 @@
 {
   "status": "commited",
-  "type": "backend",
+  "type": "frontend",
   "scope": "codebase",
-  "localEndpoint": "http://localhost:3000",
-  "backendAuthType": "basic token",
-  "backendUsername": "zxzx729@gmail.com",
-  "backendPassword": "lsj103820@",
+  "localEndpoint": "http://localhost:3000/mypage",
   "executionArgs": {
     "projectName": "bookok-app",
     "projectPath": "c:\\Users\\zxzx7\\Desktop\\bookok-app",
     "testIds": [],
-    "additionalInstruction": "Ensure tests run against the local dev server at http://localhost:3000",
+    "additionalInstruction": "Verify that the MyPage loads correctly and does not get stuck on the loading skeleton. Use a test user login if necessary.",
     "envs": {
       "API_KEY": "sk-user-1PERtQ1OMbX6vlRy7yUsrQLmNmzz4uJ4lk7VUGyVpBEgKbAtZwPW_jfQQxIqfvm-loa_OBwQrA7nENpEkc5BmqH4CwWfO2cMpgE7fJFzu2XP1pzNwnZxs2iC5ZMPx1DB-QY"
     }
   },
-  "proxy": "http://c417a601-53d7-4ead-8f61-eb98e90327db:CBgabmIGAkXbNMVOtYe7n2SHz0A6bbFk@tun.testsprite.com:8080"
+  "proxy": "http://cab3b8ec-da81-4a37-8a8a-04398b3703c1:WHwWMbHbKNFWWh8kdmvR2Nwz59VK0RhT@tun.testsprite.com:8080"
 }

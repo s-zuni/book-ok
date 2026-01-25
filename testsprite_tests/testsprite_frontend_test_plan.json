@@ -1,0 +1,360 @@
+[
+  {
+    "id": "TC001",
+    "title": "Successful User Authentication and Session Establishment",
+    "description": "Verify that the user can authenticate successfully with valid credentials and a session is maintained.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page."
+      },
+      {
+        "type": "action",
+        "description": "Input valid user credentials into the login form."
+      },
+      {
+        "type": "action",
+        "description": "Submit the login request."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the user is authenticated and redirected to the MyPage dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that the user session is maintained during navigation within the app."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "Failed Authentication with Invalid Credentials",
+    "description": "Check that the system rejects login attempts with incorrect username or password and provides an appropriate error message.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to the login page."
+      },
+      {
+        "type": "action",
+        "description": "Input invalid username and/or password."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit the login request."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the system rejects login and displays a clear error message indicating the failure."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "MyPage Dashboard Loads Correctly in Desktop Environment",
+    "description": "Ensure the MyPage dashboard loads completely without hanging or infinite loading and displays all core elements correctly in a desktop/PC environment.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in with valid credentials and navigate to the MyPage dashboard on a desktop or PC environment."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the dashboard page fully loads without any infinite loops or hanging states."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that user profile information is displayed accurately."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that the list of children is visible and populated with correct data."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify reading statistics for each child are rendered correctly."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "Display and Accuracy of User Profile Information",
+    "description": "Validate that the user profile data displayed on the MyPage dashboard matches the backend data and updates appropriately.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log into the application and navigate to MyPage dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that all fields in the user profile (e.g., username, email) are accurately displayed as received from the backend."
+      },
+      {
+        "type": "action",
+        "description": "Update user profile data via backend or API directly."
+      },
+      {
+        "type": "action",
+        "description": "Refresh the dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate that the updated profile data is reflected correctly in the UI."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "Listing Child Profiles in the Dashboard",
+    "description": "Verify that all child profiles associated with the authenticated user are listed correctly in the MyPage dashboard.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as a user with multiple children."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to the MyPage dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate that the children list shows all child profiles belonging to the user."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that each child's basic info (name, age if shown) is correctly displayed."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Child Profile Management - Add New Child",
+    "description": "Test the ability to add a new child profile via the MyPage dashboard interface and verify it appears in the list.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to MyPage dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Access the add child profile form."
+      },
+      {
+        "type": "action",
+        "description": "Input valid information for a new child."
+      },
+      {
+        "type": "action",
+        "description": "Submit the new child profile."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the new child profile is added successfully and appears in the child list."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Child Profile Management - Edit Existing Child Profile",
+    "description": "Verify that a user's child profile can be updated correctly and changes persist.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Select an existing child profile from the dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Edit fields such as name or age."
+      },
+      {
+        "type": "action",
+        "description": "Save the changes."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that updated child details are correctly saved and displayed in the dashboard."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Reading Statistics Visualization per Child",
+    "description": "Ensure that reading statistics for each child are correctly retrieved from backend and displayed on the dashboard in a comprehensible format.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in and navigate to MyPage dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Locate the reading statistics section for a child."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that statistics data (e.g., number of books read, reading progress) matches backend data."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that the visualization components render properly with no graphical glitches."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "Display of Books Read List for Each Child",
+    "description": "Validate that the system fetches and displays detailed lists of books read per child accurately on the MyPage dashboard.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Select a specific child profile on the dashboard."
+      },
+      {
+        "type": "action",
+        "description": "View the list of books read by that child."
+      },
+      {
+        "type": "assertion",
+        "description": "Ensure all books read are correctly listed with relevant details such as title and read date."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "UI Responsiveness and Layout on Desktop",
+    "description": "Confirm that the user dashboard UI adapts responsively and renders correctly on desktop screen sizes using Tailwind CSS styling.",
+    "category": "ui",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Access MyPage dashboard on various desktop screen resolutions."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the layout adjusts appropriately without content overlapping or being cut off."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm all interactive elements remain usable and visible."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Session Termination on Logout",
+    "description": "Ensure that when the user logs out, the session ends properly and the user is redirected to the login or home page.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in and navigate to MyPage dashboard."
+      },
+      {
+        "type": "action",
+        "description": "Use the logout button or link to end the session."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm the user session is terminated and user is redirected to login or landing page."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to navigate back to MyPage dashboard using browser back button."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that access is restricted and the user is redirected again to login."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Handling No Children Associated with User",
+    "description": "Verify the dashboard behavior when a user has no children profiles associated, ensuring proper messaging and UI handling.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in as a user with no child profiles."
+      },
+      {
+        "type": "action",
+        "description": "Navigate to MyPage dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm a friendly message is displayed indicating no children profiles are found."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that UI prompts the user to add a child profile."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Handling No Books Read for a Child",
+    "description": "Ensure that when a child has no recorded read books, the dashboard displays appropriate messaging and no errors occur.",
+    "category": "error handling",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Log in and select a child profile that has no read books recorded."
+      },
+      {
+        "type": "assertion",
+        "description": "Check that an appropriate message indicating no books read is shown."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that no empty or broken UI elements are present."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Backend Data Fetch Failure Handling on Dashboard Load",
+    "description": "Test the system’s response and error handling when backend calls for user profile, children list, or reading stats fail during dashboard load.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Simulate backend failure or timeout for profile, children list, or reading stats APIs."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to load the MyPage dashboard."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm appropriate error messages or UI indicators are shown."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the dashboard does not hang or crash and allows retry or graceful fallback."
+      }
+    ]
+  }
+]
