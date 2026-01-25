@@ -14,10 +14,10 @@ export const RECOMMENDATION_TABS: Record<string, { label: string; query: string;
         { label: '국립어린이청소년도서관', query: '국립어린이청소년도서관', categoryId: '1108' }
     ],
     '연령별 추천 도서': [
-        { label: '영유아 (0-4세)', query: 'ItemList', categoryId: '13789' },
-        { label: '유치 (5-7세)', query: 'ItemList', categoryId: '13789' },
-        { label: '초등 저학년 (8-10세)', query: 'ItemList', categoryId: '1108' },
-        { label: '초등 고학년 (11-13세)', query: 'ItemList', categoryId: '1108' }
+        { label: '영유아 (0-4세)', query: '0~3세', categoryId: '13789' },
+        { label: '유치 (5-7세)', query: '4~7세', categoryId: '13789' },
+        { label: '초등 저학년 (8-10세)', query: '초등저학년', categoryId: '1108' },
+        { label: '초등 고학년 (11-13세)', query: '초등고학년', categoryId: '1108' }
     ],
     '수상 도서작': [
         { label: '전체', query: '문학상' },
