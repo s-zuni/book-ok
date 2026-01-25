@@ -1,6 +1,6 @@
 import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Book, Child } from "../../types";
-import ReadingRadarChart from "./ReadingRadarChart";
+import ReadingCategoryChart from "./ReadingCategoryChart";
 import AIRecommendationList from "./AIRecommendationList";
 import LoadingState from "../LoadingState";
 import EmptyState from "../EmptyState";
@@ -154,35 +154,38 @@ export default function ReadingAnalysis({
                             "최적의 독서 솔루션을 생성하고 있어요..."
                         ]} />
                     </div>
-                ) : chartData.length > 0 ? (
-                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center animate-in fade-in">
-                        <h3 className="text-xl font-black mb-4 text-center text-gray-800">독서 성향 분석 차트</h3>
-                        <ReadingRadarChart data={chartData} />
-                    </div>
                 ) : (
-                    <div className="space-y-6 animate-in slide-in-from-right-5">
-                        <div className="bg-linear-to-br from-blue-50 to-indigo-50/50 rounded-[2.5rem] p-8 border border-blue-100/50 text-blue-900">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="p-3 bg-white rounded-2xl shadow-sm text-blue-600">
-                                    <Bot size={24} strokeWidth={2.5} />
-                                    <h3 className="text-xl font-black m-0">왜 관찰 기록이 중요한가요?</h3>
-                                </div>
+                    // Always show the chart if we have books, regardless of "Analysis" button click state?
+                    // The user said "Analysis Results" are fake. We want to show REAL STATS.
+                    // So we should show this chart ALWAYS if there are books.
+                    // But layout puts it on the Right.
+                    // If no analysis result yet, show Chart? Yes.
+                    // If result exists, still show Chart? Yes.
+                    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center animate-in fade-in min-h-[400px]">
+                        <h3 className="text-xl font-black mb-4 text-center text-gray-800">선호 독서 주제 통계</h3>
+                        {userReadBooks.length > 0 ? (
+                            <>
+                                <ReadingCategoryChart books={userReadBooks} />
+                                <p className="text-center text-xs text-gray-400 mt-4 font-medium">
+                                    * 최근 읽은 {userReadBooks.length}권의 데이터를 분석했습니다.
+                                </p>
+                            </>
+                        ) : (
+                            <div className="text-center text-gray-400 py-10 font-bold">
+                                <p className="mb-2">아직 데이터가 부족해요.</p>
+                                <p className="text-sm font-normal">책을 읽고 기록을 남기면 그래프가 나타납니다.</p>
                             </div>
-                            <ul className="space-y-4 font-medium text-gray-600">
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
-                                    <span>단순히 책을 읽은 양보다 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">어떻게 읽었는지</span>가 더 중요해요.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
-                                    <span>특히 7~9세는 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">읽기 유창성(Fluency)</span>이 완성되는 결정적 시기입니다.</span>
-                                </li>
-                                <li className="flex items-start gap-3">
-                                    <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
-                                    <span>부모님의 작은 관찰이 AI에게는 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">정밀 진단을 위한 핵심 열쇠</span>가 됩니다.</span>
-                                </li>
-                            </ul>
-                        </div>
+                        )}
+
+                        {/* Insufficient Data Warning */}
+                        {userReadBooks.length < 3 && userReadBooks.length > 0 && (
+                            <div className="mt-6 p-4 bg-yellow-50 rounded-2xl flex items-start gap-3">
+                                <ShieldCheck className="text-yellow-600 shrink-0 mt-0.5" size={18} />
+                                <p className="text-xs text-yellow-800 font-bold break-keep">
+                                    데이터가 충분하지 않아 AI 분석이 제한적일 수 있습니다. (권장: 3권 이상)
+                                </p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
