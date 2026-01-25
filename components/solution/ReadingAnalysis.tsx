@@ -1,15 +1,16 @@
-import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen } from "lucide-react";
+import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
 import { Book, Child } from "../../types";
 import ReadingRadarChart from "./ReadingRadarChart";
 import AIRecommendationList from "./AIRecommendationList";
 import LoadingState from "../LoadingState";
 import EmptyState from "../EmptyState";
 import { marked } from 'marked';
+import { useState } from "react";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
     userReadBooks: Book[];
-    getReadingAnalysis: () => void;
+    getReadingAnalysis: (observations?: any) => void;
     loading: boolean;
     result: string;
     chartData: { subject: string; A: number; fullMark: number; }[];
@@ -25,16 +26,54 @@ export default function ReadingAnalysis({
     chartData,
     keywords = []
 }: ReadingAnalysisProps) {
+    const [isObservationOpen, setIsObservationOpen] = useState(false);
+    const [observations, setObservations] = useState<{ [key: string]: string }>({});
+
+    const handleObservationChange = (key: string, value: string) => {
+        setObservations(prev => ({ ...prev, [key]: value }));
+    };
+
+    const getAgeGroupQuestions = (age: number) => {
+        if (age < 5) {
+            return [
+                { id: 'interest', label: '아이가 그림이나 소리에 반응하나요?', placeholder: '예: 그림을 짚으며 옹알이를 합니다.' },
+                { id: 'interaction', label: '책을 읽어줄 때 상호작용은 어떤가요?', placeholder: '예: 페이지를 직접 넘기려고 합니다.' }
+            ];
+        } else if (age >= 5 && age < 7) {
+            return [
+                { id: 'decoding', label: '글자를 소리내어 읽을 수 있나요?', placeholder: '예: 받침 없는 글자는 읽습니다.' },
+                { id: 'phonics', label: '발음이 명확한가요?', placeholder: '예: ㄹ 발음을 어려워합니다.' }
+            ];
+        } else if (age >= 7 && age < 9) { // 전환기 (핵심)
+            return [
+                { id: 'fluency', label: '책을 끊김 없이 술술 읽나요? (유창성)', placeholder: '예: 아직 떠듬떠듬 읽는 편입니다.' },
+                { id: 'independence', label: '혼자서 책 한 권을 끝까지 읽나요?', placeholder: '예: 20페이지 정도는 혼자 읽습니다.' }
+            ];
+        } else if (age >= 9 && age < 12) {
+            return [
+                { id: 'critical', label: '책 내용을 비판적으로 질문하나요?', placeholder: '예: 주인공의 행동이 이해 안 간다고 말했습니다.' },
+                { id: 'vocabulary', label: '모르는 단어를 자주 물어보나요?', placeholder: '예: 추상적인 어휘를 자주 물어봅니다.' }
+            ];
+        } else {
+            return [
+                { id: 'advanced', label: '책을 읽고 자신의 생각을 글로 표현하나요?', placeholder: '예: 독후감을 짧게 씁니다.' },
+                { id: 'preference', label: '선호하는 장르가 뚜렷한가요?', placeholder: '예: 판타지 소설만 읽으려 합니다.' }
+            ];
+        }
+    };
+
+    const questions = activeChild ? getAgeGroupQuestions(activeChild.age) : [];
+
     return (
         <div className="animate-in fade-in pb-20">
             <h2 className="text-4xl font-black tracking-tight mb-4">우리 아이 독서 성향 AI 분석</h2>
-            <p className="text-gray-500 mb-10">AI가 아이의 독서 기록을 바탕으로 독서 성향을 분석하고, 다음 책을 추천해 드립니다.</p>
+            <p className="text-gray-500 mb-10">AI가 아이의 독서 기록과 부모님의 관찰을 결합하여, 발달 단계에 맞는 초개인화된 분석을 제공합니다.</p>
 
             <div className="grid lg:grid-cols-2 gap-8">
                 {/* Left: Input & Button */}
                 <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 h-fit">
                     <h3 className="text-2xl font-black mb-6">'{activeChild?.name}' 아이가 읽은 책 목록</h3>
-                    <div className="max-h-60 overflow-y-auto space-y-3 mb-8 border p-4 rounded-2xl bg-gray-50/50">
+                    <div className="max-h-60 overflow-y-auto space-y-3 mb-6 border p-4 rounded-2xl bg-gray-50/50">
                         {userReadBooks.length > 0 ? userReadBooks.map(book => (
                             <div key={book.id} className="p-3 bg-white rounded-lg shadow-sm text-sm font-medium">{book.title}</div>
                         )) : (
@@ -48,15 +87,53 @@ export default function ReadingAnalysis({
                         )}
                     </div>
 
+                    {/* Detailed Observation Input (Optional) */}
+                    {activeChild && (
+                        <div className="mb-6">
+                            <button
+                                onClick={() => setIsObservationOpen(!isObservationOpen)}
+                                className="flex items-center justify-between w-full p-4 bg-blue-50 text-blue-700 rounded-2xl font-bold hover:bg-blue-100 transition-colors"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <ShieldCheck size={18} />
+                                    더 정확한 분석을 위해 관찰 내용 입력하기
+                                </span>
+                                {isObservationOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                            </button>
+
+                            {isObservationOpen && (
+                                <div className="mt-4 space-y-4 p-4 border border-blue-100 rounded-2xl animate-in slide-in-from-top-2">
+                                    <p className="text-sm text-gray-500 mb-2">
+                                        아이의 현재 나이(만 {activeChild.age}세)에 맞는 질문입니다. 편하게 적어주세요.
+                                    </p>
+                                    {questions.map((q) => (
+                                        <div key={q.id}>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">
+                                                {q.label}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={observations[q.id] || ''}
+                                                onChange={(e) => handleObservationChange(q.id, e.target.value)}
+                                                placeholder={q.placeholder}
+                                                className="w-full p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <button
-                        onClick={getReadingAnalysis}
+                        onClick={() => getReadingAnalysis(observations)}
                         disabled={loading || userReadBooks.length === 0}
                         className="w-full bg-green-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:bg-gray-400"
                     >
                         {loading ? (
                             <>
                                 <div className="w-6 h-6 border-2 border-white/50 border-t-white rounded-full animate-spin"></div>
-                                <span>성향 분석 중...</span>
+                                <span>발달 단계 정밀 분석 중...</span>
                             </>
                         ) : (
                             <>
@@ -65,13 +142,17 @@ export default function ReadingAnalysis({
                             </>
                         )}
                     </button>
+                    {isObservationOpen && <p className="text-xs text-gray-400 text-center mt-2">* 입력한 정보는 AI 분석에만 활용됩니다.</p>}
                 </div>
 
-                {/* Right: Chart (Only visible when there is data) */}
-                {/* Right: Chart (Only visible when there is data) OR Educational Info */}
+                {/* Right: Chart or Info */}
                 {loading ? (
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center items-center animate-in fade-in min-h-[400px]">
-                        <LoadingState messages={["아이의 독서 기록을 분석하고 있어요...", "5대 독서 지표를 계산 중이에요...", "딱 맞는 책을 찾고 있어요..."]} />
+                        <LoadingState messages={[
+                            `만 ${activeChild?.age || ''}세 발달 단계(SAV)를 확인하고 있어요...`,
+                            "부모님의 관찰 기록을 분석에 반영 중이에요...",
+                            "최적의 독서 솔루션을 생성하고 있어요..."
+                        ]} />
                     </div>
                 ) : chartData.length > 0 ? (
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 flex flex-col justify-center animate-in fade-in">
@@ -84,31 +165,23 @@ export default function ReadingAnalysis({
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="p-3 bg-white rounded-2xl shadow-sm text-blue-600">
                                     <Bot size={24} strokeWidth={2.5} />
+                                    <h3 className="text-xl font-black m-0">왜 관찰 기록이 중요한가요?</h3>
                                 </div>
-                                <h3 className="text-xl font-black">왜 분석이 필요한가요?</h3>
                             </div>
                             <ul className="space-y-4 font-medium text-gray-600">
                                 <li className="flex items-start gap-3">
                                     <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
-                                    <span>우리 아이가 편식 없이 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">골고루 읽고 있는지</span> 점검해요.</span>
+                                    <span>단순히 책을 읽은 양보다 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">어떻게 읽었는지</span>가 더 중요해요.</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
-                                    <span>어휘력, 이해력, 상상력 등 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">5대 독서지표</span>를 진단해요.</span>
+                                    <span>특히 7~9세는 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">읽기 유창성(Fluency)</span>이 완성되는 결정적 시기입니다.</span>
                                 </li>
                                 <li className="flex items-start gap-3">
                                     <CheckCircle2 className="text-blue-500 shrink-0 mt-0.5" size={20} />
-                                    <span>결과에 따라 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">부족한 영역을 보완할 책</span>을 추천받아요.</span>
+                                    <span>부모님의 작은 관찰이 AI에게는 <span className="text-blue-700 font-bold bg-blue-100/50 px-1 rounded">정밀 진단을 위한 핵심 열쇠</span>가 됩니다.</span>
                                 </li>
                             </ul>
-                        </div>
-
-                        <div className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm flex items-center justify-between">
-                            <div>
-                                <h4 className="font-bold text-gray-900 mb-1 text-lg">아동 심리 전문가 자문</h4>
-                                <p className="text-sm text-gray-500">독서 교육 전문 모델 기반 분석 알고리즘</p>
-                            </div>
-                            <ShieldCheck size={48} className="text-green-500/20" strokeWidth={1.5} />
                         </div>
                     </div>
                 )}
@@ -120,7 +193,7 @@ export default function ReadingAnalysis({
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 animate-in slide-in-from-bottom-5">
                         <h3 className="text-2xl font-black mb-6 flex items-center gap-2">
                             <Sparkles className="text-green-500" />
-                            AI 분석 결과
+                            AI 솔루션 레포트
                         </h3>
                         <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: marked.parse(result as string) as string }}

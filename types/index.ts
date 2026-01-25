@@ -11,6 +11,7 @@ export interface Book {
     category: string;
     pubDate?: string;
     description?: string;
+    toc?: string;
 }
 
 export interface Review {

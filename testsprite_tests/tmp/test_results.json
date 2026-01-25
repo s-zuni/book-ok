@@ -1,30 +1,44 @@
 [
   {
-    "projectId": "6a8d73c7-1380-48e3-a8ad-4372497db3ed",
-    "testId": "7d5d6165-7b0c-4775-8800-a20105193803",
+    "projectId": "6aeaca76-684c-4a4e-ac9a-b479f7cc0860",
+    "testId": "7bce1daf-26fe-4e2f-9ff1-0fdc034eb05b",
     "userId": "14d83498-50e1-709f-8b30-84fbc157a68d",
     "title": "TC001-get librarian recommended books",
     "description": "Test the GET /api/librarian-books endpoint to verify it returns a successful response with the expected JSON structure containing librarian recommended books from the National Library for Children and Young Adults.",
-    "code": "import requests\n\ndef test_get_librarian_recommended_books():\n    base_url = \"http://localhost:3000\"\n    url = f\"{base_url}/api/librarian-books\"\n    headers = {\n        \"Accept\": \"application/json\"\n    }\n    try:\n        response = requests.get(url, headers=headers, timeout=30)\n    except requests.RequestException as e:\n        assert False, f\"Request to {url} failed: {e}\"\n\n    assert response.status_code == 200, f\"Expected status code 200, got {response.status_code}\"\n    try:\n        json_data = response.json()\n    except ValueError:\n        assert False, \"Response is not valid JSON\"\n\n    assert isinstance(json_data, dict), \"Response JSON is not an object\"\n    assert \"response\" in json_data, \"'response' key not found in JSON\"\n    assert isinstance(json_data[\"response\"], dict), \"'response' is not an object\"\n\ntest_get_librarian_recommended_books()",
+    "code": "import requests\nfrom requests.auth import HTTPBasicAuth\n\ndef test_get_librarian_recommended_books():\n    base_url = \"http://localhost:3000\"\n    endpoint = \"/api/librarian-books\"\n    url = base_url + endpoint\n    auth = HTTPBasicAuth(\"zxzx729@gmail.com\", \"lsj103820@\")\n    headers = {\n        \"Accept\": \"application/json\"\n    }\n    try:\n        response = requests.get(url, headers=headers, auth=auth, timeout=30)\n        assert response.status_code == 200, f\"Expected status code 200, got {response.status_code}\"\n        json_data = response.json()\n        assert isinstance(json_data, dict), \"Response is not a JSON object\"\n        assert \"response\" in json_data, \"'response' key not in JSON\"\n        assert isinstance(json_data[\"response\"], dict), \"'response' key does not contain an object\"\n    except requests.RequestException as e:\n        assert False, f\"Request failed with exception: {e}\"\n\ntest_get_librarian_recommended_books()",
     "testStatus": "PASSED",
     "testError": "",
     "testType": "BACKEND",
     "createFrom": "mcp",
-    "created": "2025-12-31T13:24:59.051Z",
-    "modified": "2025-12-31T13:25:04.353Z"
+    "created": "2026-01-25T01:12:40.033Z",
+    "modified": "2026-01-25T01:12:50.989Z"
   },
   {
-    "projectId": "6a8d73c7-1380-48e3-a8ad-4372497db3ed",
-    "testId": "1e751e4d-d464-4cc0-951f-707afc3614fb",
+    "projectId": "6aeaca76-684c-4a4e-ac9a-b479f7cc0860",
+    "testId": "89f76745-5cd9-4b3c-a0dc-32d6977f7fcf",
     "userId": "14d83498-50e1-709f-8b30-84fbc157a68d",
-    "title": "TC002-search books with query and pagination",
-    "description": "Test the GET /api/search endpoint with a valid query parameter and optional page parameter to ensure it returns successful search results from the Aladin Open API, including correct handling of pagination.",
-    "code": "import requests\n\nBASE_URL = \"http://localhost:3000\"\nTIMEOUT = 30\nHEADERS = {\n    \"Accept\": \"application/json\"\n}\n\ndef test_search_books_with_query_and_pagination():\n    query = \"children\"\n    page = \"1\"\n    params = {\n        \"query\": query,\n        \"page\": page\n    }\n\n    try:\n        # Test with query and page parameter\n        response = requests.get(f\"{BASE_URL}/api/search\", headers=HEADERS, params=params, timeout=TIMEOUT)\n        assert response.status_code == 200, f\"Expected status code 200 but got {response.status_code}\"\n        json_data = response.json()\n        assert isinstance(json_data, dict) or isinstance(json_data, list), \"Response should be JSON object or array\"\n        # Check that some results exist and pagination info might be present\n        assert json_data, \"Response JSON should not be empty\"\n\n        # Test with query parameter only (no page)\n        params_no_page = {\n            \"query\": query\n        }\n        response_no_page = requests.get(f\"{BASE_URL}/api/search\", headers=HEADERS, params=params_no_page, timeout=TIMEOUT)\n        assert response_no_page.status_code == 200, f\"Expected status code 200 but got {response_no_page.status_code}\"\n        json_data_no_page = response_no_page.json()\n        assert isinstance(json_data_no_page, dict) or isinstance(json_data_no_page, list), \"Response should be JSON object or array\"\n        assert json_data_no_page, \"Response JSON should not be empty\"\n\n    except requests.exceptions.Timeout:\n        assert False, \"Request timed out\"\n    except requests.exceptions.RequestException as e:\n        assert False, f\"Request failed: {e}\"\n\ntest_search_books_with_query_and_pagination()",
+    "title": "TC002-search books with valid query and optional page",
+    "description": "Test the GET /api/search endpoint with a valid query parameter and optional page parameter to ensure it returns successful search results from the Aladin Open API with correct pagination support.",
+    "code": "import requests\nfrom requests.auth import HTTPBasicAuth\n\ndef test_search_books_with_valid_query_and_optional_page():\n    base_url = \"http://localhost:3000\"\n    endpoint = \"/api/search\"\n    url = base_url + endpoint\n    auth = HTTPBasicAuth(\"zxzx729@gmail.com\", \"lsj103820@\")\n    headers = {\"Accept\": \"application/json\"}\n    timeout = 30\n\n    # Test case with query only\n    params_query_only = {\"query\": \"children\"}\n    response_query_only = requests.get(url, headers=headers, auth=auth, params=params_query_only, timeout=timeout)\n    assert response_query_only.status_code == 200, f\"Expected 200, got {response_query_only.status_code}\"\n    json_data = response_query_only.json()\n    assert isinstance(json_data, dict), \"Response is not a JSON object\"\n    # We expect some keys related to search results and pagination - since no schema is detailed,\n    # check that results or similar key is present or response is not empty\n    assert len(json_data) > 0, \"Empty response for search query only\"\n\n    # Test case with query and page parameter\n    params_query_page = {\"query\": \"adventure\", \"page\": \"2\"}\n    response_query_page = requests.get(url, headers=headers, auth=auth, params=params_query_page, timeout=timeout)\n    assert response_query_page.status_code == 200, f\"Expected 200, got {response_query_page.status_code}\"\n    json_data_page = response_query_page.json()\n    assert isinstance(json_data_page, dict), \"Response is not a JSON object\"\n    assert len(json_data_page) > 0, \"Empty response for search query with page\"\n    # If the response supports pagination, it might include page info:\n    # Just check page param used correctly by presence of some key or count difference if possible (no schema detail)\n    # Minimal validation due to lack of schema, just ensure successful response and json body\n\ntest_search_books_with_valid_query_and_optional_page()",
     "testStatus": "PASSED",
     "testError": "",
     "testType": "BACKEND",
     "createFrom": "mcp",
-    "created": "2025-12-31T13:24:59.056Z",
-    "modified": "2025-12-31T13:25:07.260Z"
+    "created": "2026-01-25T01:12:40.039Z",
+    "modified": "2026-01-25T01:12:54.233Z"
+  },
+  {
+    "projectId": "6aeaca76-684c-4a4e-ac9a-b479f7cc0860",
+    "testId": "fbbae3a2-d327-4149-bb14-07ee4e8739dc",
+    "userId": "14d83498-50e1-709f-8b30-84fbc157a68d",
+    "title": "TC003-search books without query parameter",
+    "description": "Test the GET /api/search endpoint without the required query parameter to verify that the API returns an appropriate error response indicating the missing required parameter.",
+    "code": "import requests\nfrom requests.auth import HTTPBasicAuth\n\ndef test_search_books_without_query_parameter():\n    base_url = \"http://localhost:3000\"\n    endpoint = \"/api/search\"\n    url = base_url + endpoint\n    auth = HTTPBasicAuth(\"zxzx729@gmail.com\", \"lsj103820@\")\n    headers = {\n        \"Accept\": \"application/json\"\n    }\n    try:\n        response = requests.get(url, headers=headers, auth=auth, timeout=30)\n    except requests.RequestException as e:\n        assert False, f\"Request failed: {e}\"\n\n    # The API requires the 'query' parameter, so it should return an error response due to missing required param.\n    # Assert the response status code is 4xx (likely 400 Bad Request)\n    assert response.status_code >= 400 and response.status_code < 500, f\"Expected 4xx status code, got {response.status_code}\"\n\n    # Optionally, check the response contains an error message related to missing query parameter\n    try:\n        json_resp = response.json()\n    except ValueError:\n        # Response is not JSON, fail the test\n        assert False, \"Response is not valid JSON\"\n\n    # Expected that the error message or code indicates missing query parameter\n    # This depends on API implementation but generally error keys or messages like 'query' or 'missing' appear\n    error_found = False\n    if isinstance(json_resp, dict):\n        # Check typical keys\n        error_keys = ['error', 'message', 'detail', 'errors']\n        for key in error_keys:\n            if key in json_resp:\n                val = json_resp[key]\n                # Check if message mentions 'query'\n                if isinstance(val, str) and \"query\" in val.lower():\n                    error_found = True\n                    break\n                if isinstance(val, dict):\n                    for v in val.values():\n                        if isinstance(v, str) and \"query\" in v.lower():\n                            error_found = True\n                            break\n                if error_found:\n                    break\n\n    assert error_found, \"Response JSON does not indicate missing required 'query' parameter\"\n\ntest_search_books_without_query_parameter()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2026-01-25T01:12:40.044Z",
+    "modified": "2026-01-25T01:12:55.274Z"
   }
 ]

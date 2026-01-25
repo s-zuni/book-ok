@@ -3,15 +3,17 @@
   "type": "backend",
   "scope": "codebase",
   "localEndpoint": "http://localhost:3000",
-  "backendAuthType": "public",
+  "backendAuthType": "basic token",
+  "backendUsername": "zxzx729@gmail.com",
+  "backendPassword": "lsj103820@",
   "executionArgs": {
     "projectName": "bookok-app",
     "projectPath": "c:\\Users\\zxzx7\\Desktop\\bookok-app",
     "testIds": [],
-    "additionalInstruction": "Use Jest and supertest for API testing. Ensure strict type checking.",
+    "additionalInstruction": "Ensure tests run against the local dev server at http://localhost:3000",
     "envs": {
       "API_KEY": "sk-user-1PERtQ1OMbX6vlRy7yUsrQLmNmzz4uJ4lk7VUGyVpBEgKbAtZwPW_jfQQxIqfvm-loa_OBwQrA7nENpEkc5BmqH4CwWfO2cMpgE7fJFzu2XP1pzNwnZxs2iC5ZMPx1DB-QY"
     }
   },
-  "proxy": "http://cfe35e23-463e-44d5-967e-c8c13d819919:TKiH64zlhY6DVV14jgmraZ6X0YWyr9Jk@tun.testsprite.com:8080"
+  "proxy": "http://c417a601-53d7-4ead-8f61-eb98e90327db:CBgabmIGAkXbNMVOtYe7n2SHz0A6bbFk@tun.testsprite.com:8080"
 }
