@@ -209,9 +209,9 @@ export default function MyPage() {
                                             <button onClick={() => setIsAddingChild(false)}><X size={16} className="text-gray-400" /></button>
                                         </div>
                                         <div className="space-y-3">
-                                            <input type="text" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
-                                            <input type="date" value={newChildBirthdate} onChange={e => setNewChildBirthdate(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
-                                            <select value={newChildType} onChange={e => setNewChildType(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50">
+                                            <input type="text" id="childNickname" name="childNickname" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
+                                            <input type="date" id="childBirthdate" name="childBirthdate" value={newChildBirthdate} onChange={e => setNewChildBirthdate(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
+                                            <select id="childType" name="childType" value={newChildType} onChange={e => setNewChildType(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50">
                                                 <option value="영아">영아 (0-4세)</option>
                                                 <option value="유아">유아 (5-7세)</option>
                                                 <option value="초등저학년">초등 저학년 (8-10세)</option>
