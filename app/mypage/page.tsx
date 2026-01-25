@@ -51,8 +51,9 @@ export default function MyPage() {
 
         const { data, error, count } = await supabase
             .from('read_books')
-            .select('*', { count: 'exact' })
-            .eq('child_id', activeChild.id);
+            .select('*, books(*)', { count: 'exact' })
+            .eq('child_id', activeChild.id)
+            .order('read_date', { ascending: false });
 
         if (error) {
             console.error("Error fetching read books:", error);
@@ -60,17 +61,7 @@ export default function MyPage() {
         }
 
         setReadBookCount(count || 0);
-
-        // Fetch details if needed for modal
-        if (data) {
-            const { data: booksData } = await supabase
-                .from('read_books')
-                .select('*, books(*)')
-                .eq('child_id', activeChild.id)
-                .order('read_date', { ascending: false });
-
-            if (booksData) setReadBooks(booksData);
-        }
+        if (data) setReadBooks(data);
     };
 
     const [isLoading, setIsLoading] = useState(false);
