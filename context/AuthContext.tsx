@@ -41,6 +41,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     const timeout = new Promise((_, reject) => setTimeout(() => reject("Timeout"), 5000));
 
                     await Promise.race([fetchData, timeout]);
+                } else if (session?.user?.user_metadata) {
+                    setUserProfile({
+                        nickname: session.user.user_metadata.name,
+                        ...session.user.user_metadata
+                    });
                 }
             } catch (error) {
                 console.error("Auth initialization error:", error);
@@ -65,8 +70,21 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     const timeout = new Promise((_, reject) => setTimeout(() => reject("Timeout"), 5000));
 
                     await Promise.race([fetchData, timeout]);
+                } else if (session?.user?.user_metadata) {
+                    setUserProfile({
+                        nickname: session.user.user_metadata.name,
+                        ...session.user.user_metadata
+                    });
                 } else {
-                    setUserProfile(null);
+                    // Fallback to metadata if profile fetch fails or while loading
+                    if (session?.user?.user_metadata) {
+                        setUserProfile({
+                            nickname: session.user.user_metadata.name,
+                            ...session.user.user_metadata
+                        });
+                    } else {
+                        setUserProfile(null);
+                    }
                     setChildren([]);
                 }
             } catch (error) {

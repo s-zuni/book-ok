@@ -21,7 +21,7 @@ export default function CommunityPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, userProfile } = useAuth();
 
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -158,7 +158,7 @@ export default function CommunityPage() {
                                                 title: `테스트 게시글 ${Date.now()}_${i + 1}`,
                                                 content: `이것은 테스트를 위해 자동으로 생성된 게시글 내용입니다. ${i + 1}`,
                                                 author_id: user.id,
-                                                author_nickname: user.user_metadata?.name || '익명',
+                                                author_nickname: userProfile?.nickname || user.user_metadata?.name || '익명',
                                                 views: Math.floor(Math.random() * 100),
                                                 likes: Math.floor(Math.random() * 20),
                                             }));
@@ -191,7 +191,7 @@ export default function CommunityPage() {
 
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className="w-6 h-6 rounded-full bg-gray-200" />
-                                                <span className="text-xs font-bold text-gray-800">{post.author_nickname}</span>
+                                                <span className="text-xs font-bold text-gray-800">{post.author_nickname || '익명'}</span>
                                                 <span className="text-xs text-gray-400">· {new Date(post.created_at).toLocaleDateString()}</span>
                                             </div>
 

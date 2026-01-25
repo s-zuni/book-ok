@@ -29,7 +29,7 @@ export default function Header({
     handleSearch,
     activeSubMenu = '',
 }: HeaderProps) {
-    const { user, signOut } = useAuth();
+    const { user, signOut, userProfile } = useAuth();
     const router = useRouter();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -97,7 +97,7 @@ export default function Header({
                                     className="flex items-center gap-2 font-bold text-sm text-gray-700 p-2 rounded-full hover:bg-gray-100"
                                 >
                                     <User size={22} />
-                                    <span className="hidden md:inline">마이페이지</span>
+                                    <span className="hidden md:inline">{userProfile?.nickname || user?.user_metadata?.name || '마이페이지'}</span>
                                 </button>
                                 <button
                                     onClick={async () => {
