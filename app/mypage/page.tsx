@@ -13,7 +13,7 @@ import { toast } from "sonner";
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
-    const { user, userProfile, signOut, loading: authLoading } = useAuth();
+    const { user, userProfile, signOut, loading: authLoading, refreshChildren } = useAuth();
     const [children, setChildren] = useState<Child[]>([]);
     const router = useRouter();
 
@@ -116,6 +116,7 @@ export default function MyPage() {
                 setNewChildBirthdate('');
                 setIsAddingChild(false);
                 fetchChildren();
+                await refreshChildren(); // Refresh global context
             }
         } catch (err: any) {
             toast.error("오류가 발생했습니다: " + err.message);

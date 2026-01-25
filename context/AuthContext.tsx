@@ -3,22 +3,26 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "../lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
+import { Child } from "../types";
 
 interface AuthContextType {
     user: User | null;
     session: Session | null;
     userProfile: any | null;
+    children: Child[];
     loading: boolean;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
+    refreshChildren: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children: providerChildren }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [userProfile, setUserProfile] = useState<any | null>(null);
+    const [children, setChildren] = useState<Child[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -28,6 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(session?.user ?? null);
             if (session?.user) {
                 await fetchUserProfile(session.user.id);
+                await fetchChildren(session.user.id);
             }
             setLoading(false);
         };
@@ -39,8 +44,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setUser(session?.user ?? null);
             if (session?.user) {
                 await fetchUserProfile(session.user.id);
+                await fetchChildren(session.user.id);
             } else {
                 setUserProfile(null);
+                setChildren([]);
             }
             setLoading(false);
         });
@@ -55,6 +62,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUserProfile(data);
     };
 
+    const fetchChildren = async (userId: string) => {
+        const { data } = await supabase.from('children').select('*, birthdate').eq('parent_id', userId);
+        if (data) {
+            const childrenWithAge = data.map((child: any) => {
+                const birthYear = new Date(child.birthdate).getFullYear();
+                const currentYear = new Date().getFullYear();
+                const age = currentYear - birthYear;
+                return { ...child, age };
+            });
+            setChildren(childrenWithAge);
+        }
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
     };
@@ -65,9 +85,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
     };
 
+    const refreshChildren = async () => {
+        if (user) {
+            await fetchChildren(user.id);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, session, userProfile, loading, signOut, refreshProfile }}>
-            {children}
+        <AuthContext.Provider value={{ user, session, userProfile, children, loading, signOut, refreshProfile, refreshChildren }}>
+            {providerChildren}
         </AuthContext.Provider>
     );
 }
