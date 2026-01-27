@@ -5,7 +5,7 @@ export const MENU_CONFIG = {
     comm: { label: '커뮤니티', sub: ['전체 게시글', '인기 게시판', '유아동 독서 고민', '유아동 교육 고민'] }
 } as const;
 
-export const RECOMMENDATION_TABS: Record<string, { label: string; query: string; categoryId?: string }[]> = {
+export const RECOMMENDATION_TABS: Record<string, { label: string; query: string; categoryId?: string; apiType?: string; queryType?: string }[]> = {
     '사서 추천': [
         { label: '전체', query: '사서추천' },
         { label: '국립중앙도서관', query: '국립중앙도서관' },
@@ -14,17 +14,17 @@ export const RECOMMENDATION_TABS: Record<string, { label: string; query: string;
         { label: '국립어린이청소년도서관', query: '국립어린이청소년도서관', categoryId: '1108' }
     ],
     '연령별 추천 도서': [
-        { label: '영유아 (0-4세)', query: '0~3세', categoryId: '13789' },
-        { label: '유치 (5-7세)', query: '4~7세', categoryId: '13789' },
-        { label: '초등 저학년 (8-10세)', query: '초등저학년', categoryId: '1108' },
-        { label: '초등 고학년 (11-13세)', query: '초등고학년', categoryId: '1108' }
+        { label: '영유아 (0-4세)', query: '', categoryId: '13789', apiType: 'ItemList', queryType: 'Bestseller' },
+        { label: '유치 (5-7세)', query: '', categoryId: '13789', apiType: 'ItemList', queryType: 'Bestseller' },
+        { label: '초등 저학년 (8-10세)', query: '', categoryId: '1108', apiType: 'ItemList', queryType: 'Bestseller' },
+        { label: '초등 고학년 (11-13세)', query: '', categoryId: '1108', apiType: 'ItemList', queryType: 'Bestseller' }
     ],
     '수상 도서작': [
-        { label: '전체', query: '문학상' },
-        { label: '칼데콧상', query: '칼데콧상' },
-        { label: '뉴베리상', query: '뉴베리상' },
-        { label: '볼로냐 라가치상', query: '볼로냐 라가치상' },
-        { label: '안데르센상', query: '안데르센상' },
-        { label: '한국 그림책상', query: '한국그림책상' }
+        { label: '전체', query: '문학상', apiType: 'ItemSearch' }, // Use 'Moonhak' which means Literature Prize
+        { label: '칼데콧상', query: '칼데콧', apiType: 'ItemSearch' },
+        { label: '뉴베리상', query: '뉴베리', apiType: 'ItemSearch' },
+        { label: '볼로냐 라가치상', query: '볼로냐라가치', apiType: 'ItemSearch' },
+        { label: '안데르센상', query: '안데르센', apiType: 'ItemSearch' },
+        { label: '한국 그림책상', query: '한국그림책상', apiType: 'ItemSearch' }
     ]
 };

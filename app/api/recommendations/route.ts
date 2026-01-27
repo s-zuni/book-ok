@@ -6,7 +6,8 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get('query');
     const categoryId = searchParams.get('categoryId');
     const sort = searchParams.get('sort') || 'Accuracy'; // Default to Accuracy
-    const requestType = searchParams.get('type') || 'Search'; // 'Search' or 'List'
+    const apiType = searchParams.get('apiType') || 'ItemSearch'; // 'ItemSearch' or 'ItemList'
+    const queryType = searchParams.get('queryType') || 'Bestseller'; // Only for ItemList
 
     // Use the specific TTBKey
     const TTBKey = "ttbzxzx7290920001";
@@ -16,18 +17,18 @@ export async function GET(request: NextRequest) {
 
     let url = '';
 
-    // If query is explicitly valid for search, OR type is Search
-    if (requestType === 'Search' && query && query !== 'ItemList') {
-        // Sort options for ItemSearch: Accuracy, PublishTime, SalesPoint, CustomerRating
-        url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(query)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=50&Cover=Big&Sort=${sort}`;
-        console.log(`Fetching Search from Aladin: Query="${query}", CategoryId=${targetCategory}`);
-    } else {
+    if (apiType === 'ItemList') {
         // Use ItemList for category-based recommendations (Bestseller/New)
         // QueryType: Bestseller, ItemNewAll, ItemNewSpecial, ItemEditorChoice
-        // When using ItemList, 'Sort' param is not used in the same way, usually determined by QueryType.
-        const queryType = 'Bestseller';
         url = `https://www.aladin.co.kr/ttb/api/ItemList.aspx?ttbkey=${TTBKey}&QueryType=${queryType}&MaxResults=50&start=1&SearchTarget=Book&Output=js&Version=20131101&Cover=Big&CategoryId=${targetCategory}`;
         console.log(`Fetching List from Aladin: QueryType="${queryType}", CategoryId=${targetCategory}`);
+    } else {
+        // Default to ItemSearch
+        // Sort options: Accuracy, PublishTime, SalesPoint, CustomerRating
+        // Ensure query is valid
+        const targetQuery = query || '아동';
+        url = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${TTBKey}&Query=${encodeURIComponent(targetQuery)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=${targetCategory}&MaxResults=50&Cover=Big&Sort=${sort}`;
+        console.log(`Fetching Search from Aladin: Query="${targetQuery}", CategoryId=${targetCategory}, Sort="${sort}"`);
     }
 
     try {
