@@ -14,9 +14,11 @@ interface RecommendationSectionProps {
     categoryId?: string;
     backgroundColor?: string;
     limit?: number;
+    apiType?: string;
+    queryType?: string;
 }
 
-export default function RecommendationSection({ title, subtitle, query, categoryId = "1108", backgroundColor = "bg-white", limit }: RecommendationSectionProps) {
+export default function RecommendationSection({ title, subtitle, query, categoryId = "1108", backgroundColor = "bg-white", limit, apiType, queryType }: RecommendationSectionProps) {
     const [books, setBooks] = useState<Book[]>([]);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
@@ -27,9 +29,12 @@ export default function RecommendationSection({ title, subtitle, query, category
     const [sortBy, setSortBy] = useState('SalesPoint'); // Default to Best Selling to ensure results
 
     // Determine the actual query to use
+    // Determine the actual query to use
     const activeTabConfig = tabs.find(t => t.label === activeTab);
     const currentQuery = activeTabConfig?.query || query;
     const currentCategoryId = activeTabConfig?.categoryId || categoryId;
+    const currentApiType = activeTabConfig?.apiType || 'ItemSearch';
+    const currentQueryType = activeTabConfig?.queryType || 'Bestseller';
 
     const [displayCount, setDisplayCount] = useState(12); // Initial display count
 
@@ -51,7 +56,7 @@ export default function RecommendationSection({ title, subtitle, query, category
                 // Existing logic for Aladin API
                 // Determine sort param
                 // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                const fetchUrl = `/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&_t=${Date.now()}`;
+                const fetchUrl = `/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&apiType=${currentApiType}&queryType=${currentQueryType}&_t=${Date.now()}`;
                 console.log(`Fetching Aladin: ${fetchUrl}`);
                 const res = await fetch(fetchUrl);
                 if (!res.ok) throw new Error("Failed");
