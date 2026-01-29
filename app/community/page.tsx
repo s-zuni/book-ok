@@ -55,7 +55,7 @@ export default function CommunityPage() {
             let query = supabase.from('posts').select('*', { count: 'exact' });
 
             if (filterCategory === '인기 게시판') {
-                query = query.order('likes', { ascending: false });
+                query = query.order('views', { ascending: false });
             } else if (filterCategory && filterCategory !== '전체 게시글') {
                 query = query.eq('category', filterCategory);
             } else {
@@ -157,7 +157,7 @@ export default function CommunityPage() {
                                                 category: ['자유게시판', '질문과 답변', '정보 공유'][Math.floor(Math.random() * 3)],
                                                 title: `테스트 게시글 ${Date.now()}_${i + 1}`,
                                                 content: `이것은 테스트를 위해 자동으로 생성된 게시글 내용입니다. ${i + 1}`,
-                                                author_id: user.id,
+                                                user_id: user.id,
                                                 author_nickname: userProfile?.nickname || user.user_metadata?.name || '익명',
                                                 views: Math.floor(Math.random() * 100),
                                                 likes: Math.floor(Math.random() * 20),

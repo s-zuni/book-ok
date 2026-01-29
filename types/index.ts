@@ -32,7 +32,7 @@ export interface Post {
     title: string;
     content: string;
     author_nickname: string;
-    author_id: string;
+    user_id: string;
     views: number;
     likes: number;
     created_at: string;
@@ -42,9 +42,9 @@ export interface Post {
 export interface Comment {
     id: number;
     post_id: number;
-    author_nickname: string;
+    author_name: string;
     content: string;
-    author_id: string;
+    user_id: string;
     created_at: string;
     parent_id?: number | null;
 }

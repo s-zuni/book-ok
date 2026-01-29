@@ -54,8 +54,8 @@ export default function PostDetailPage() {
 
         const { error } = await supabase.from('comments').insert({
             post_id: postId,
-            author_id: user.id,
-            author_nickname: userProfile?.nickname || '사용자',
+            user_id: user.id,
+            author_name: userProfile?.nickname || '사용자',
             content: newComment
         });
 
@@ -145,7 +145,7 @@ export default function PostDetailPage() {
                             {comments.map(comment => (
                                 <div key={comment.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                                     <div className="flex justify-between mb-2">
-                                        <span className="font-bold text-gray-800">{comment.author_nickname}</span>
+                                        <span className="font-bold text-gray-800">{comment.author_name}</span>
                                         <span className="text-xs text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <p className="text-gray-600">{comment.content}</p>
