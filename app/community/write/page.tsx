@@ -57,7 +57,7 @@ export default function WritePage() {
             title,
             content,
             category,
-            author_id: user.id,
+            user_id: user.id,
             author_nickname: userProfile?.nickname || user.user_metadata?.name || '익명',
             views: 0,
             likes: 0,
