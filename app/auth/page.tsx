@@ -8,7 +8,7 @@ import { BookMarked, ArrowLeft } from "lucide-react";
 export default function AuthPage() {
     const router = useRouter();
     const [isLogin, setIsLogin] = useState(true);
-    const [email, setEmail] = useState('');
+    const [userId, setUserId] = useState('');
     const [password, setPassword] = useState('');
     const [nickname, setNickname] = useState('');
     const [phone, setPhone] = useState('');
@@ -16,16 +16,27 @@ export default function AuthPage() {
 
     const [isLoading, setIsLoading] = useState(false);
 
+    // 아이디를 가짜 이메일로 변환
+    const convertToEmail = (id: string) => `${id}@bookok.app`;
+
     const handleLogin = async () => {
         setAuthError('');
+        if (!userId.trim()) {
+            setAuthError('아이디를 입력해주세요.');
+            return;
+        }
         setIsLoading(true);
+        const email = convertToEmail(userId);
         const { error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error) {
-            setAuthError(error.message);
+            if (error.message.includes('Invalid login credentials')) {
+                setAuthError('아이디 또는 비밀번호가 올바르지 않습니다.');
+            } else {
+                setAuthError(error.message);
+            }
             setIsLoading(false);
         } else {
-            // Use router.push + refresh for smoother Next.js navigation while ensuring auth state flows
             router.refresh();
             router.push('/');
         }
@@ -33,12 +44,21 @@ export default function AuthPage() {
 
     const handleSignUp = async () => {
         setAuthError('');
+        if (!userId.trim()) {
+            setAuthError('아이디를 입력해주세요.');
+            return;
+        }
+        if (userId.includes('@') || userId.includes(' ')) {
+            setAuthError('아이디에 @ 또는 공백을 포함할 수 없습니다.');
+            return;
+        }
         if (!nickname || !phone) {
             setAuthError('이름과 핸드폰 번호를 모두 입력해주세요.');
             return;
         }
 
         setIsLoading(true);
+        const email = convertToEmail(userId);
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -46,13 +66,18 @@ export default function AuthPage() {
                 data: {
                     name: nickname,
                     phone: phone,
-                    role: 'user'
+                    role: 'user',
+                    user_id: userId
                 }
             }
         });
 
         if (error) {
-            setAuthError(error.message);
+            if (error.message.includes('already registered')) {
+                setAuthError('이미 사용 중인 아이디입니다.');
+            } else {
+                setAuthError(error.message);
+            }
             setIsLoading(false);
         } else {
             if (data.user) {
@@ -92,13 +117,13 @@ export default function AuthPage() {
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">이메일</label>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">아이디</label>
                         <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            type="text"
+                            value={userId}
+                            onChange={(e) => setUserId(e.target.value)}
                             className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
-                            placeholder="example@email.com"
+                            placeholder="아이디를 입력하세요"
                             onKeyDown={(e) => e.key === 'Enter' && (isLogin ? handleLogin() : handleSignUp())}
                             disabled={isLoading}
                         />
