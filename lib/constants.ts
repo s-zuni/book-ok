@@ -25,6 +25,6 @@ export const RECOMMENDATION_TABS: Record<string, { label: string; query: string;
         { label: '뉴베리상', query: '뉴베리', apiType: 'ItemSearch' },
         { label: '볼로냐 라가치상', query: '볼로냐라가치', apiType: 'ItemSearch' },
         { label: '안데르센상', query: '안데르센', apiType: 'ItemSearch' },
-        { label: '한국 그림책상', query: '그림책상 수상', apiType: 'ItemSearch' }
+        { label: '방정환문학상', query: '방정환문학상', apiType: 'ItemSearch' }
     ]
 };
