@@ -169,7 +169,7 @@ export default function BookDetailContent() {
         setShowChildModal(true);
     };
 
-    const handleChildSelect = async (childId: string, observations?: any) => {
+    const handleChildSelect = async (childId: string, recordData?: { rating?: number; difficulty_rating?: '쉬움' | '적당' | '어려움'; reading_time_minutes?: number; observations?: Record<string, string> }) => {
         if (!book) return;
 
         try {
@@ -178,12 +178,15 @@ export default function BookDetailContent() {
                 child_id: childId,
                 book_id: book.id,
                 read_date: new Date().toISOString(),
-                observation_data: observations // New JSONB column
+                rating: recordData?.rating || null,
+                difficulty_rating: recordData?.difficulty_rating || null,
+                reading_time_minutes: recordData?.reading_time_minutes || null,
+                observation_data: recordData?.observations || null
             });
 
             if (error) throw error;
 
-            toast.success("읽은 책으로 기록되었습니다! (관찰 내용 저장 완료)");
+            toast.success("읽은 책으로 기록되었습니다!");
             setIsRead(true);
             setShowChildModal(false);
         } catch (err: any) {
