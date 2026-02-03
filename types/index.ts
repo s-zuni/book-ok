@@ -64,5 +64,22 @@ export interface ReadBook {
     child_id: string;
     book_id: string;
     read_date: string;
+    rating?: number; // 1-5 별점
+    difficulty_rating?: '쉬움' | '적당' | '어려움'; // 난이도
+    reading_time_minutes?: number; // 독서 시간 (분)
+    observation_data?: Record<string, string>; // 관찰 데이터
     books?: Book; // Joined book data
+}
+
+export interface ReadingGoal {
+    id: string;
+    user_id: string;
+    child_id: string;
+    goal_type: 'weekly' | 'monthly';
+    target_books: number;
+    start_date: string;
+    end_date: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
 }

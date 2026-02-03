@@ -5,10 +5,11 @@ import Header from "../../components/Header";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Child, MainMenu, ReadBook } from "../../types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import EmptyState from "../../components/EmptyState";
 import { toast } from "sonner";
+import ReadingGoalWidget from "../../components/ReadingGoalWidget";
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -272,6 +273,15 @@ export default function MyPage() {
                                 </div>
                                 <ChevronRight size={20} className="text-gray-300" />
                             </button>
+
+                            {/* Reading Goal Widget */}
+                            {activeChild && user && (
+                                <ReadingGoalWidget
+                                    child={activeChild}
+                                    userId={user.id}
+                                    readBooks={readBooks}
+                                />
+                            )}
                         </div>
 
                         <div className="mt-8 text-center">
@@ -299,9 +309,39 @@ export default function MyPage() {
                                         <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
                                             {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
                                         </div>
-                                        <div>
+                                        <div className="flex-1 min-w-0">
                                             <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
                                             <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
+
+                                            {/* Rating & Difficulty Display */}
+                                            <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                {item.rating && (
+                                                    <div className="flex items-center gap-0.5">
+                                                        {[...Array(5)].map((_, i) => (
+                                                            <Star
+                                                                key={i}
+                                                                size={12}
+                                                                className={i < item.rating! ? 'text-yellow-400' : 'text-gray-300'}
+                                                                fill={i < item.rating! ? 'currentColor' : 'none'}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                {item.difficulty_rating && (
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.difficulty_rating === '쉬움' ? 'bg-blue-100 text-blue-700' :
+                                                        item.difficulty_rating === '적당' ? 'bg-green-100 text-green-700' :
+                                                            'bg-orange-100 text-orange-700'
+                                                        }`}>
+                                                        {item.difficulty_rating}
+                                                    </span>
+                                                )}
+                                                {item.reading_time_minutes && (
+                                                    <span className="text-xs text-gray-400">
+                                                        {item.reading_time_minutes}분
+                                                    </span>
+                                                )}
+                                            </div>
+
                                             <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
                                                 {new Date(item.read_date).toLocaleDateString()} 읽음
                                             </div>

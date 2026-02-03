@@ -2,6 +2,7 @@ import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen, ChevronDown, Chevro
 import { Book, Child } from "../../types";
 import ReadingCategoryChart from "./ReadingCategoryChart";
 import AIRecommendationList from "./AIRecommendationList";
+import ReadingPlanRoadmap from "./ReadingPlanRoadmap";
 import LoadingState from "../LoadingState";
 import EmptyState from "../EmptyState";
 import { marked } from 'marked';
@@ -205,8 +206,16 @@ export default function ReadingAnalysis({
 
                     {/* AI Recommendation List */}
                     {keywords.length > 0 && (
-                        <AIRecommendationList keywords={keywords} />
+                        <AIRecommendationList keywords={keywords} readBooks={userReadBooks} />
                     )}
+
+                    {/* Reading Plan Roadmap */}
+                    <ReadingPlanRoadmap
+                        child={activeChild}
+                        readBooks={userReadBooks}
+                        keywords={keywords}
+                        analysisResult={result}
+                    />
                 </div>
             )}
         </div>
