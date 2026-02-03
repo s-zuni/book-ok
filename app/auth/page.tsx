@@ -25,27 +25,76 @@ export default function AuthPage() {
             setAuthError('아이디를 입력해주세요.');
             return;
         }
+        if (!password.trim()) {
+            setAuthError('비밀번호를 입력해주세요.');
+            return;
+        }
         setIsLoading(true);
         const email = convertToEmail(userId);
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-        if (error) {
-            if (error.message.includes('Invalid login credentials')) {
-                setAuthError('아이디 또는 비밀번호가 올바르지 않습니다.');
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                // Comprehensive Korean error messages
+                const errorMessage = getKoreanErrorMessage(error.message);
+                setAuthError(errorMessage);
+                setIsLoading(false);
+            } else if (data.session) {
+                // Ensure session is properly set before navigation
+                router.refresh();
+                router.push('/');
             } else {
-                setAuthError(error.message);
+                setAuthError('로그인에 실패했습니다. 다시 시도해주세요.');
+                setIsLoading(false);
             }
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setAuthError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
             setIsLoading(false);
-        } else {
-            router.refresh();
-            router.push('/');
         }
+    };
+
+    // Korean error message mapping
+    const getKoreanErrorMessage = (message: string): string => {
+        const errorMap: { [key: string]: string } = {
+            'Invalid login credentials': '아이디 또는 비밀번호가 올바르지 않습니다.',
+            'Email not confirmed': '이메일 인증이 필요합니다. 이메일을 확인해주세요.',
+            'User not found': '존재하지 않는 사용자입니다.',
+            'Invalid email': '올바르지 않은 이메일 형식입니다.',
+            'Signup requires a valid password': '유효한 비밀번호를 입력해주세요.',
+            'Password should be at least 6 characters': '비밀번호는 최소 6자 이상이어야 합니다.',
+            'User already registered': '이미 등록된 사용자입니다.',
+            'Email rate limit exceeded': '너무 많은 요청이 있었습니다. 잠시 후 다시 시도해주세요.',
+            'Rate limit exceeded': '너무 많은 요청이 있었습니다. 잠시 후 다시 시도해주세요.',
+            'Network request failed': '네트워크 연결에 실패했습니다. 인터넷 연결을 확인해주세요.',
+            'Failed to fetch': '서버 연결에 실패했습니다. 잠시 후 다시 시도해주세요.',
+            'Database error': '데이터베이스 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        };
+
+        // Check for partial matches
+        for (const [key, value] of Object.entries(errorMap)) {
+            if (message.toLowerCase().includes(key.toLowerCase())) {
+                return value;
+            }
+        }
+
+        // Return original message if no match (or generic message)
+        return `오류가 발생했습니다: ${message}`;
     };
 
     const handleSignUp = async () => {
         setAuthError('');
         if (!userId.trim()) {
             setAuthError('아이디를 입력해주세요.');
+            return;
+        }
+        if (!password.trim()) {
+            setAuthError('비밀번호를 입력해주세요.');
+            return;
+        }
+        if (password.length < 6) {
+            setAuthError('비밀번호는 최소 6자 이상이어야 합니다.');
             return;
         }
         if (userId.includes('@') || userId.includes(' ')) {
@@ -59,38 +108,42 @@ export default function AuthPage() {
 
         setIsLoading(true);
         const email = convertToEmail(userId);
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    name: nickname,
-                    phone: phone,
-                    role: 'user',
-                    user_id: userId
+
+        try {
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        name: nickname,
+                        phone: phone,
+                        role: 'user',
+                        user_id: userId
+                    }
+                }
+            });
+
+            if (error) {
+                const errorMessage = getKoreanErrorMessage(error.message);
+                setAuthError(errorMessage);
+                setIsLoading(false);
+            } else {
+                if (data.user) {
+                    await supabase.from('profiles').insert({
+                        id: data.user.id,
+                        nickname,
+                        phone,
+                        role: 'user'
+                    });
+                    alert('회원가입이 완료되었습니다!');
+                    setIsLoading(false);
+                    setIsLogin(true);
                 }
             }
-        });
-
-        if (error) {
-            if (error.message.includes('already registered')) {
-                setAuthError('이미 사용 중인 아이디입니다.');
-            } else {
-                setAuthError(error.message);
-            }
+        } catch (err: any) {
+            console.error('Signup error:', err);
+            setAuthError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
             setIsLoading(false);
-        } else {
-            if (data.user) {
-                await supabase.from('profiles').insert({
-                    id: data.user.id,
-                    nickname,
-                    phone,
-                    role: 'user'
-                });
-                alert('회원가입이 완료되었습니다!');
-                setIsLoading(false);
-                setIsLogin(true);
-            }
         }
     };
 
