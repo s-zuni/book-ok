@@ -74,10 +74,10 @@ export default function AIChatbot() {
     return (
         <>
             {/* Overlay for Mobile (Optional, currently just modal) */}
-            <div className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 transition-all duration-300 ${isChatOpen ? 'visible bg-black/30 backdrop-blur-sm' : 'invisible bg-transparent pointer-events-none'}`}>
+            <div className={`fixed inset-0 z-60 flex items-end sm:items-center justify-center sm:p-4 transition-all duration-300 ${isChatOpen ? 'visible bg-black/30 backdrop-blur-sm' : 'invisible bg-transparent pointer-events-none'}`}>
 
                 {/* Chat Window */}
-                <div className={`bg-white w-full sm:max-w-md h-[85vh] sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform ${isChatOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
+                <div className={`bg-white w-full sm:max-w-md h-dvh sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform ${isChatOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
 
                     {/* Header */}
                     <div className="bg-green-600 p-4 flex items-center justify-between text-white shrink-0">
