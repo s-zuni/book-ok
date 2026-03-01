@@ -9,7 +9,7 @@ interface BookGridProps {
 
 export default function BookGrid({ books, onSelectBook, size = 'default' }: BookGridProps) {
     const gridCols = size === 'small'
-        ? 'grid-cols-3 md:grid-cols-4 xl:grid-cols-6'
+        ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6'
         : 'grid-cols-2 md:grid-cols-3 xl:grid-cols-4';
 
     const gap = size === 'small' ? 'gap-4' : 'gap-8';
