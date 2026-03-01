@@ -7,7 +7,7 @@ export default function HeroSection() {
     const router = useRouter();
 
     return (
-        <section className="relative overflow-hidden bg-green-50 rounded-[3rem] mx-6 my-6 min-h-[500px] flex items-center">
+        <section className="relative overflow-hidden bg-green-50 rounded-3xl lg:rounded-[3rem] mx-4 lg:mx-6 my-4 lg:my-6 py-12 lg:py-0 lg:min-h-[500px] flex items-center">
             {/* Background Decorative Circles */}
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-green-100/50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-yellow-100/50 rounded-full blur-2xl translate-y-1/4 -translate-x-1/4 pointer-events-none" />

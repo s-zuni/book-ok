@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, User, Minimize2, Sparkles } from "lucide-react";
 import { useChatbot } from "../context/ChatbotContext";
 import { marked } from 'marked';
@@ -16,6 +16,8 @@ export default function AIChatbot() {
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [keyboardOffset, setKeyboardOffset] = useState(0);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,6 +26,27 @@ export default function AIChatbot() {
     useEffect(() => {
         scrollToBottom();
     }, [messages, isChatOpen]);
+
+    // C4: Handle mobile keyboard visibility
+    useEffect(() => {
+        if (!isChatOpen || typeof window === 'undefined') return;
+        const vv = window.visualViewport;
+        if (!vv) return;
+
+        const handleResize = () => {
+            const offset = window.innerHeight - vv.height;
+            setKeyboardOffset(offset > 0 ? offset : 0);
+            // Scroll to bottom when keyboard opens
+            setTimeout(scrollToBottom, 100);
+        };
+
+        vv.addEventListener('resize', handleResize);
+        vv.addEventListener('scroll', handleResize);
+        return () => {
+            vv.removeEventListener('resize', handleResize);
+            vv.removeEventListener('scroll', handleResize);
+        };
+    }, [isChatOpen]);
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -136,16 +159,18 @@ export default function AIChatbot() {
                         <div ref={messagesEndRef} />
                     </div>
 
-                    {/* Input Area */}
-                    <div className="p-4 bg-white border-t border-gray-100 shrink-0">
+                    {/* Input Area — keyboard-aware */}
+                    <div className="p-4 bg-white border-t border-gray-100 shrink-0" style={{ paddingBottom: `calc(0.5rem + ${keyboardOffset}px + env(safe-area-inset-bottom, 0px))` }}>
                         <div className="flex gap-2">
                             <input
+                                ref={inputRef}
                                 type="text"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                 placeholder="궁금한 책 이야기를 해보세요..."
                                 className="flex-1 bg-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 text-sm font-medium text-gray-900 transition-all"
+                                enterKeyHint="send"
                             />
                             <button
                                 onClick={handleSend}

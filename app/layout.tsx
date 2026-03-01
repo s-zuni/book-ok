@@ -17,6 +17,11 @@ import { Toaster } from "sonner"; // Import Toaster
 export const metadata: Metadata = {
   title: "Book,ok | 우리 아이 맞춤 독서 플랫폼",
   description: "AI 기반 독서 성향 분석과 연령별 맞춤 도서 추천으로 우리 아이 독서 습관을 길러주세요.",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    viewportFit: 'cover',
+  },
   openGraph: {
     title: "Book,ok - 우리 아이 맞춤 독서 플랫폼",
     description: "AI 독서 성향 분석 & 맞춤 도서 추천",

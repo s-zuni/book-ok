@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
 import { BookMarked, ArrowLeft, KeyRound } from "lucide-react";
+import { toast } from "sonner";
 
 type AuthMode = 'login' | 'signup' | 'reset';
 
@@ -140,7 +141,7 @@ export default function AuthPage() {
                         phone,
                         role: 'user'
                     });
-                    alert('회원가입이 완료되었습니다!');
+                    toast.success('회원가입이 완료되었습니다! 로그인해주세요.');
                     setIsLoading(false);
                     setAuthMode('login');
                 }
@@ -214,7 +215,7 @@ export default function AuthPage() {
             // we'll show instructions or use Supabase's built-in method
 
             // For now, show a success message and guide user
-            setSuccessMessage('본인 확인이 완료되었습니다. 관리자에게 비밀번호 재설정을 요청해주세요.');
+            setSuccessMessage('아이디와 전화번호가 확인되었습니다. 새 비밀번호로 변경하려면 카카오톡 채널 또는 고객센터(bookok.help@gmail.com)로 문의해주세요.');
             setIsLoading(false);
 
             // Alternative: If you have an edge function for password reset:

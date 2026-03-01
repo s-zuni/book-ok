@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import EmptyState from "../../components/EmptyState";
 import { toast } from "sonner";
 import ReadingGoalWidget from "../../components/ReadingGoalWidget";
+import MobileDrawer from "../../components/MobileDrawer";
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -252,7 +253,7 @@ export default function MyPage() {
                                 <ChevronRight size={20} className="text-gray-300" />
                             </button>
 
-                            <button className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <button className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between opacity-60 cursor-not-allowed relative">
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 bg-yellow-50 text-yellow-500 rounded-xl flex items-center justify-center"><Bookmark size={20} strokeWidth={2.5} /></div>
                                     <div className="text-left">
@@ -260,7 +261,7 @@ export default function MyPage() {
                                         <p className="text-xs text-gray-400 mt-0.5">나중에 읽으려고 저장한 책</p>
                                     </div>
                                 </div>
-                                <ChevronRight size={20} className="text-gray-300" />
+                                <span className="px-2.5 py-1 bg-gray-100 text-gray-400 text-[10px] font-bold rounded-full">준비 중</span>
                             </button>
 
                             <button onClick={() => router.push('/solution')} className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors">
@@ -291,73 +292,100 @@ export default function MyPage() {
                 )}
             </div>
 
-            {/* Read Books Modal */}
+            {/* Read Books - Mobile Drawer / Desktop Modal */}
             {showReadBooksModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white rounded-3xl w-full max-w-lg h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900">{activeChild?.name}의 서재</h3>
-                                <p className="text-xs text-gray-500 mt-1">총 {readBookCount}권의 책을 읽었어요!</p>
+                <>
+                    {/* Mobile: Bottom sheet drawer */}
+                    <div className="lg:hidden">
+                        <MobileDrawer
+                            isOpen={showReadBooksModal}
+                            onClose={() => setShowReadBooksModal(false)}
+                            title={`${activeChild?.name}의 서재 (${readBookCount}권)`}
+                        >
+                            <div className="space-y-4">
+                                {readBooks.length > 0 ? (
+                                    readBooks.map((item, idx) => (
+                                        <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
+                                                {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
+                                                <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    {item.rating && (
+                                                        <div className="flex items-center gap-0.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star key={i} size={12} className={i < item.rating! ? 'text-yellow-400' : 'text-gray-300'} fill={i < item.rating! ? 'currentColor' : 'none'} />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {item.difficulty_rating && (
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.difficulty_rating === '쉬움' ? 'bg-blue-100 text-blue-700' : item.difficulty_rating === '적당' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                            {item.difficulty_rating}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
+                                                    {new Date(item.read_date).toLocaleDateString()} 읽음
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <EmptyState icon={BookMarked} title="아직 읽은 책이 없어요" description="아이와 함께 책을 읽고 기록을 남겨보세요!" />
+                                )}
                             </div>
-                            <button onClick={() => setShowReadBooksModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={24} /></button>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                            {readBooks.length > 0 ? (
-                                readBooks.map((item, idx) => (
-                                    <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                        <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
-                                            {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
-                                            <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
+                        </MobileDrawer>
+                    </div>
 
-                                            {/* Rating & Difficulty Display */}
-                                            <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                {item.rating && (
-                                                    <div className="flex items-center gap-0.5">
-                                                        {[...Array(5)].map((_, i) => (
-                                                            <Star
-                                                                key={i}
-                                                                size={12}
-                                                                className={i < item.rating! ? 'text-yellow-400' : 'text-gray-300'}
-                                                                fill={i < item.rating! ? 'currentColor' : 'none'}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                )}
-                                                {item.difficulty_rating && (
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.difficulty_rating === '쉬움' ? 'bg-blue-100 text-blue-700' :
-                                                        item.difficulty_rating === '적당' ? 'bg-green-100 text-green-700' :
-                                                            'bg-orange-100 text-orange-700'
-                                                        }`}>
-                                                        {item.difficulty_rating}
-                                                    </span>
-                                                )}
-                                                {item.reading_time_minutes && (
-                                                    <span className="text-xs text-gray-400">
-                                                        {item.reading_time_minutes}분
-                                                    </span>
-                                                )}
+                    {/* Desktop: Center modal */}
+                    <div className="hidden lg:flex fixed inset-0 z-50 items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                        <div className="bg-white rounded-3xl w-full max-w-lg h-[80vh] flex flex-col shadow-2xl animate-in zoom-in-95">
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-xl font-bold text-gray-900">{activeChild?.name}의 서재</h3>
+                                    <p className="text-xs text-gray-500 mt-1">총 {readBookCount}권의 책을 읽었어요!</p>
+                                </div>
+                                <button onClick={() => setShowReadBooksModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={24} /></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                                {readBooks.length > 0 ? (
+                                    readBooks.map((item, idx) => (
+                                        <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                            <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
+                                                {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
                                             </div>
-
-                                            <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
-                                                {new Date(item.read_date).toLocaleDateString()} 읽음
+                                            <div className="flex-1 min-w-0">
+                                                <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
+                                                <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
+                                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                                    {item.rating && (
+                                                        <div className="flex items-center gap-0.5">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star key={i} size={12} className={i < item.rating! ? 'text-yellow-400' : 'text-gray-300'} fill={i < item.rating! ? 'currentColor' : 'none'} />
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                    {item.difficulty_rating && (
+                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.difficulty_rating === '쉬움' ? 'bg-blue-100 text-blue-700' : item.difficulty_rating === '적당' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                            {item.difficulty_rating}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
+                                                    {new Date(item.read_date).toLocaleDateString()} 읽음
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <EmptyState
-                                    icon={BookMarked}
-                                    title="아직 읽은 책이 어요"
-                                    description="아이와 함께 책을 읽고 기록을 남겨보세요!"
-                                />
-                            )}
+                                    ))
+                                ) : (
+                                    <EmptyState icon={BookMarked} title="아직 읽은 책이 없어요" description="아이와 함께 책을 읽고 기록을 남겨보세요!" />
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
+                </>
             )}
         </div>
     );
