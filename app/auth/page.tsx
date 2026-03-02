@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { BookMarked, ArrowLeft, KeyRound } from "lucide-react";
+import { BookMarked, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 type AuthMode = 'login' | 'signup' | 'reset';
@@ -19,27 +19,46 @@ export default function AuthPage() {
     const [phone, setPhone] = useState('');
     const [authError, setAuthError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
 
-    // 아이디를 가짜 이메일로 변환
-    const convertToEmail = (id: string) => `${id}@bookok.app`;
+    // 아이디를 가짜 이메일로 변환 (공백 제거 + 소문자 통일)
+    const convertToEmail = (id: string) => `${id.trim().toLowerCase()}@bookok.app`;
+
+    // authMode 전환 시 폼 초기화
+    const switchAuthMode = (mode: AuthMode) => {
+        setAuthError('');
+        setSuccessMessage('');
+        setPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
+        setAuthMode(mode);
+    };
 
     const handleLogin = async () => {
         setAuthError('');
-        if (!userId.trim()) {
+        const trimmedId = userId.trim().toLowerCase();
+        const trimmedPassword = password;
+
+        if (!trimmedId) {
             setAuthError('아이디를 입력해주세요.');
             return;
         }
-        if (!password.trim()) {
+        if (!trimmedPassword) {
             setAuthError('비밀번호를 입력해주세요.');
             return;
         }
         setIsLoading(true);
-        const email = convertToEmail(userId);
+        const email = convertToEmail(trimmedId);
 
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password: trimmedPassword });
 
             if (error) {
                 // Comprehensive Korean error messages
@@ -91,11 +110,15 @@ export default function AuthPage() {
 
     const handleSignUp = async () => {
         setAuthError('');
-        if (!userId.trim()) {
+        const trimmedId = userId.trim().toLowerCase();
+        const trimmedNickname = nickname.trim();
+        const trimmedPhone = phone.trim();
+
+        if (!trimmedId) {
             setAuthError('아이디를 입력해주세요.');
             return;
         }
-        if (!password.trim()) {
+        if (!password) {
             setAuthError('비밀번호를 입력해주세요.');
             return;
         }
@@ -103,17 +126,17 @@ export default function AuthPage() {
             setAuthError('비밀번호는 최소 6자 이상이어야 합니다.');
             return;
         }
-        if (userId.includes('@') || userId.includes(' ')) {
-            setAuthError('아이디에 @ 또는 공백을 포함할 수 없습니다.');
+        if (trimmedId.includes('@')) {
+            setAuthError('아이디에 @를 포함할 수 없습니다.');
             return;
         }
-        if (!nickname || !phone) {
+        if (!trimmedNickname || !trimmedPhone) {
             setAuthError('이름과 핸드폰 번호를 모두 입력해주세요.');
             return;
         }
 
         setIsLoading(true);
-        const email = convertToEmail(userId);
+        const email = convertToEmail(trimmedId);
 
         try {
             const { data, error } = await supabase.auth.signUp({
@@ -121,10 +144,10 @@ export default function AuthPage() {
                 password,
                 options: {
                     data: {
-                        name: nickname,
-                        phone: phone,
+                        name: trimmedNickname,
+                        phone: trimmedPhone,
                         role: 'user',
-                        user_id: userId
+                        user_id: trimmedId
                     }
                 }
             });
@@ -135,15 +158,25 @@ export default function AuthPage() {
                 setIsLoading(false);
             } else {
                 if (data.user) {
+                    // 프로필 저장
                     await supabase.from('profiles').insert({
                         id: data.user.id,
-                        nickname,
-                        phone,
+                        nickname: trimmedNickname,
+                        phone: trimmedPhone,
                         role: 'user'
                     });
-                    toast.success('회원가입이 완료되었습니다! 로그인해주세요.');
-                    setIsLoading(false);
-                    setAuthMode('login');
+
+                    // 회원가입 시 자동 로그인됨 → 바로 홈으로 이동
+                    if (data.session) {
+                        toast.success('회원가입이 완료되었습니다! 환영합니다 🎉');
+                        router.refresh();
+                        router.push('/');
+                    } else {
+                        // 세션이 없는 경우 (이메일 확인 필요 등) → 로그인으로 안내
+                        toast.success('회원가입이 완료되었습니다! 로그인해주세요.');
+                        setIsLoading(false);
+                        switchAuthMode('login');
+                    }
                 }
             }
         } catch (err: any) {
@@ -263,6 +296,8 @@ export default function AuthPage() {
                             className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
                             placeholder="아이디를 입력하세요"
                             onKeyDown={(e) => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : authMode === 'signup' ? handleSignUp() : handlePasswordReset())}
+                            autoCapitalize="off"
+                            autoCorrect="off"
                             disabled={isLoading}
                         />
                     </div>
@@ -286,15 +321,25 @@ export default function AuthPage() {
                     {authMode !== 'reset' && (
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">비밀번호</label>
-                            <input
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
-                                placeholder="••••••••"
-                                onKeyDown={(e) => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignUp())}
-                                disabled={isLoading}
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-gray-50 rounded-xl px-5 py-4 pr-12 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-green-200 transition-all border border-transparent focus:border-green-500"
+                                    placeholder="••••••••"
+                                    onKeyDown={(e) => e.key === 'Enter' && (authMode === 'login' ? handleLogin() : handleSignUp())}
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -303,25 +348,45 @@ export default function AuthPage() {
                         <>
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">새 비밀번호</label>
-                                <input
-                                    type="password"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-                                    className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-amber-200 transition-all border border-transparent focus:border-amber-500"
-                                    placeholder="6자 이상"
-                                    disabled={isLoading}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showNewPassword ? 'text' : 'password'}
+                                        value={newPassword}
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="w-full bg-gray-50 rounded-xl px-5 py-4 pr-12 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-amber-200 transition-all border border-transparent focus:border-amber-500"
+                                        placeholder="6자 이상"
+                                        disabled={isLoading}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword(!showNewPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        tabIndex={-1}
+                                    >
+                                        {showNewPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">새 비밀번호 확인</label>
-                                <input
-                                    type="password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full bg-gray-50 rounded-xl px-5 py-4 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-amber-200 transition-all border border-transparent focus:border-amber-500"
-                                    placeholder="비밀번호 재입력"
-                                    disabled={isLoading}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                        className="w-full bg-gray-50 rounded-xl px-5 py-4 pr-12 font-bold text-gray-900 outline-none focus:ring-2 focus:ring-amber-200 transition-all border border-transparent focus:border-amber-500"
+                                        placeholder="비밀번호 재입력"
+                                        disabled={isLoading}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                                        tabIndex={-1}
+                                    >
+                                        {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                    </button>
+                                </div>
                             </div>
                         </>
                     )}
@@ -374,18 +439,18 @@ export default function AuthPage() {
                         {authMode !== 'reset' && (
                             <div className="flex items-center gap-2">
                                 <span className="text-gray-400 font-medium text-sm">{authMode === 'login' ? '계정이 없으신가요?' : '이미 계정이 있으신가요?'}</span>
-                                <button onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} className="text-green-600 font-black text-sm hover:underline" disabled={isLoading}>
+                                <button onClick={() => switchAuthMode(authMode === 'login' ? 'signup' : 'login')} className="text-green-600 font-black text-sm hover:underline" disabled={isLoading}>
                                     {authMode === 'login' ? '회원가입' : '로그인'}
                                 </button>
                             </div>
                         )}
                         {authMode === 'login' && (
-                            <button onClick={() => setAuthMode('reset')} className="text-amber-600 font-bold text-sm hover:underline" disabled={isLoading}>
+                            <button onClick={() => switchAuthMode('reset')} className="text-amber-600 font-bold text-sm hover:underline" disabled={isLoading}>
                                 비밀번호를 잊으셨나요?
                             </button>
                         )}
                         {authMode === 'reset' && (
-                            <button onClick={() => setAuthMode('login')} className="text-gray-500 font-bold text-sm hover:underline" disabled={isLoading}>
+                            <button onClick={() => switchAuthMode('login')} className="text-gray-500 font-bold text-sm hover:underline" disabled={isLoading}>
                                 ← 로그인으로 돌아가기
                             </button>
                         )}
