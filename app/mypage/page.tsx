@@ -11,6 +11,7 @@ import EmptyState from "../../components/EmptyState";
 import { toast } from "sonner";
 import ReadingGoalWidget from "../../components/ReadingGoalWidget";
 import MobileDrawer from "../../components/MobileDrawer";
+import SkeletonLoader from "../../components/SkeletonLoader";
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -50,23 +51,33 @@ export default function MyPage() {
 
     const fetchReadBooks = async () => {
         if (!activeChild) return;
+        setIsBooksLoading(true);
 
-        const { data, error, count } = await supabase
-            .from('read_books')
-            .select('*, books(*)', { count: 'exact' })
-            .eq('child_id', activeChild.id)
-            .order('read_date', { ascending: false });
+        try {
+            const { data, error, count } = await supabase
+                .from('read_books')
+                .select('*, books(*)', { count: 'exact' })
+                .eq('child_id', activeChild.id)
+                .order('read_date', { ascending: false });
 
-        if (error) {
+            if (error) {
+                throw error;
+            }
+
+            setReadBookCount(count || 0);
+            if (data) setReadBooks(data);
+        } catch (error: any) {
             console.error("Error fetching read books:", error);
-            return;
+            toast.error("읽은 책 목록을 불러오는데 실패했습니다: " + error.message);
+            setReadBookCount(0);
+            setReadBooks([]);
+        } finally {
+            setIsBooksLoading(false);
         }
-
-        setReadBookCount(count || 0);
-        if (data) setReadBooks(data);
     };
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isBooksLoading, setIsBooksLoading] = useState(false);
 
     const handleChildProfileSubmit = async () => {
         if (!newChildNickname || !newChildBirthdate || !user) {
@@ -77,12 +88,12 @@ export default function MyPage() {
         setIsLoading(true);
 
         try {
-            const { error } = await supabase.from('children').insert({
+            const { data, error } = await supabase.from('children').insert({
                 name: newChildNickname,
                 birthdate: newChildBirthdate,
                 type: newChildType,
                 parent_id: user.id
-            });
+            }).select().single();
 
             if (error) {
                 toast.error('아이 프로필 추가 실패: ' + error.message);
@@ -91,9 +102,13 @@ export default function MyPage() {
                 setNewChildNickname('');
                 setNewChildBirthdate('');
                 setIsAddingChild(false);
-                setIsAddingChild(false);
-                // fetchChildren(); // Removed: handled by refreshChildren
                 await refreshChildren(); // Refresh global context
+                
+                if (data) {
+                    const birthYear = new Date(data.birthdate).getFullYear();
+                    const age = new Date().getFullYear() - birthYear;
+                    setActiveChild({ ...data, age });
+                }
             }
         } catch (err: any) {
             toast.error("오류가 발생했습니다: " + err.message);
@@ -107,10 +122,10 @@ export default function MyPage() {
     const handleLogout = async () => {
         try {
             await signOut();
-            window.location.href = '/'; // Force clear state and navigation
+            router.replace('/'); 
         } catch (e) {
             console.error(e);
-            window.location.replace('/');
+            router.replace('/');
         }
     };
 
@@ -303,7 +318,9 @@ export default function MyPage() {
                             title={`${activeChild?.name}의 서재 (${readBookCount}권)`}
                         >
                             <div className="space-y-4">
-                                {readBooks.length > 0 ? (
+                                {isBooksLoading ? (
+                                    <SkeletonLoader type="list" count={3} />
+                                ) : readBooks.length > 0 ? (
                                     readBooks.map((item, idx) => (
                                         <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                             <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
@@ -350,7 +367,9 @@ export default function MyPage() {
                                 <button onClick={() => setShowReadBooksModal(false)} className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><X size={24} /></button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                                {readBooks.length > 0 ? (
+                                {isBooksLoading ? (
+                                    <SkeletonLoader type="list" count={3} />
+                                ) : readBooks.length > 0 ? (
                                     readBooks.map((item, idx) => (
                                         <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
                                             <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
