@@ -103,10 +103,9 @@ export default function Header({
                                     onClick={async () => {
                                         try {
                                             await signOut();
+                                            router.replace('/');
                                         } catch (e) {
                                             console.error("Logout failed", e);
-                                        } finally {
-                                            window.location.href = '/';
                                         }
                                     }}
                                     className="p-2 text-gray-400 hover:text-red-500"

@@ -100,25 +100,52 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     }, []);
 
     const fetchUserProfile = async (userId: string) => {
-        const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
-        setUserProfile(data);
+        try {
+            const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+            if (error) throw error;
+            setUserProfile(data);
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+            setUserProfile(null);
+        }
     };
 
     const fetchChildren = async (userId: string) => {
-        const { data } = await supabase.from('children').select('*, birthdate').eq('parent_id', userId);
-        if (data) {
-            const childrenWithAge = data.map((child: any) => {
-                const birthYear = new Date(child.birthdate).getFullYear();
-                const currentYear = new Date().getFullYear();
-                const age = currentYear - birthYear;
-                return { ...child, age };
-            });
-            setChildren(childrenWithAge);
+        try {
+            const { data, error } = await supabase.from('children').select('*, birthdate').eq('parent_id', userId);
+            if (error) throw error;
+            if (data) {
+                const childrenWithAge = data.map((child: any) => {
+                    const birthYear = new Date(child.birthdate).getFullYear();
+                    const currentYear = new Date().getFullYear();
+                    const age = currentYear - birthYear;
+                    return { ...child, age };
+                });
+                setChildren(childrenWithAge);
+            } else {
+                setChildren([]);
+            }
+        } catch (error) {
+            console.error("Error fetching children:", error);
+            setChildren([]);
         }
     };
 
     const signOut = async () => {
-        await supabase.auth.signOut();
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error("Error during signOut:", error);
+        } finally {
+            setUser(null);
+            setSession(null);
+            setUserProfile(null);
+            setChildren([]);
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem('bookok-auth-token');
+                sessionStorage.clear();
+            }
+        }
     };
 
     const refreshProfile = async () => {
