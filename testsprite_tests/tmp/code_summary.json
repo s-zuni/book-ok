@@ -1,0 +1,32 @@
+{
+    "tech_stack": [
+        "TypeScript",
+        "Next.js",
+        "Supabase",
+        "Tailwind CSS"
+    ],
+    "features": [
+        {
+            "name": "Authentication",
+            "description": "User authentication and session management using Supabase Auth.",
+            "files": [
+                "context/AuthContext.tsx"
+            ]
+        },
+        {
+            "name": "MyPage",
+            "description": "User dashboard displaying profile, children list, and reading stats. Includes child profile management.",
+            "files": [
+                "app/mypage/page.tsx",
+                "components/Header.tsx"
+            ]
+        },
+        {
+            "name": "Read Books",
+            "description": "Functionality to fetch and display books read by a child.",
+            "files": [
+                "app/mypage/page.tsx"
+            ]
+        }
+    ]
+}
