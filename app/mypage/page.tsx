@@ -31,6 +31,7 @@ export default function MyPage() {
     const [readBookCount, setReadBookCount] = useState(0);
     const [readBooks, setReadBooks] = useState<ReadBook[]>([]);
     const [showReadBooksModal, setShowReadBooksModal] = useState(false);
+;
 
     useEffect(() => {
         if (!authLoading && children.length > 0 && !activeChild) {

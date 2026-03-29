@@ -158,13 +158,13 @@ export default function AuthPage() {
                 setIsLoading(false);
             } else {
                 if (data.user) {
-                    // 프로필 저장
-                    await supabase.from('profiles').insert({
+                    // 프로필 저장 (트리거가 있을 수 있으므로 upsert 사용으로 충돌 방지)
+                    await supabase.from('profiles').upsert({
                         id: data.user.id,
                         nickname: trimmedNickname,
                         phone: trimmedPhone,
                         role: 'user'
-                    });
+                    }, { onConflict: 'id' });
 
                     // 회원가입 시 자동 로그인됨 → 바로 홈으로 이동
                     if (data.session) {

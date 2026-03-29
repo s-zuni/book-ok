@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { Child } from "../types";
@@ -24,72 +24,138 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     const [userProfile, setUserProfile] = useState<any | null>(null);
     const [children, setChildren] = useState<Child[]>([]);
     const [loading, setLoading] = useState(true);
+    
+    // To prevent redundant fetches and race conditions
+    const fetchInProgress = useRef<string | null>(null);
+
+    const fetchUserProfile = useCallback(async (userId: string) => {
+        try {
+            // Retry logic for profile fetching (needed after new signup for trigger latency)
+            let data = null;
+            let error = null;
+            let retries = 0;
+            const maxRetries = 3;
+
+            while (retries < maxRetries) {
+                const { data: profile, error: fetchError } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .maybeSingle();
+                
+                if (profile) {
+                    data = profile;
+                    break;
+                }
+                
+                // If not found, wait a bit and retry
+                retries++;
+                if (retries < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+                }
+            }
+
+            if (data) {
+                setUserProfile(data);
+                return data;
+            } else {
+                // Fallback to metadata if available
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session?.user?.user_metadata) {
+                    const metadata = session.user.user_metadata;
+                    const fallbackProfile = {
+                        id: userId,
+                        nickname: metadata.name || metadata.nickname || session.user.email?.split('@')[0],
+                        ...metadata
+                    };
+                    setUserProfile(fallbackProfile);
+                    return fallbackProfile;
+                }
+                setUserProfile(null);
+                return null;
+            }
+        } catch (error) {
+            console.error("Error fetching user profile:", error);
+            setUserProfile(null);
+            return null;
+        }
+    }, []);
+
+    const fetchChildrenData = useCallback(async (userId: string) => {
+        try {
+            const { data, error } = await supabase
+                .from('children')
+                .select('*, birthdate')
+                .eq('parent_id', userId);
+            
+            if (error) throw error;
+            
+            if (data) {
+                const childrenWithAge = data.map((child: any) => {
+                    const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : 0;
+                    const currentYear = new Date().getFullYear();
+                    const age = birthYear > 0 ? currentYear - birthYear : 0;
+                    return { ...child, age };
+                });
+                setChildren(childrenWithAge);
+                return childrenWithAge;
+            }
+            setChildren([]);
+            return [];
+        } catch (error) {
+            console.error("Error fetching children:", error);
+            setChildren([]);
+            return [];
+        }
+    }, []);
+
+    const syncUserData = useCallback(async (currentSession: Session | null) => {
+        const userId = currentSession?.user?.id;
+        
+        // Skip if same session already being processed
+        if (fetchInProgress.current === userId && userId) return;
+        fetchInProgress.current = userId || null;
+
+        try {
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
+
+            if (userId) {
+                // Fetch essential data in parallel
+                await Promise.allSettled([
+                    fetchUserProfile(userId),
+                    fetchChildrenData(userId)
+                ]);
+            } else {
+                setUserProfile(null);
+                setChildren([]);
+            }
+        } catch (err) {
+            console.error("Error syncing user data:", err);
+        } finally {
+            setLoading(false);
+            fetchInProgress.current = null;
+        }
+    }, [fetchUserProfile, fetchChildrenData]);
 
     useEffect(() => {
-        const initAuth = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                setSession(session);
-                setUser(session?.user ?? null);
-                if (session?.user) {
-                    // Fetch in parallel for performance, with timeout safeguard
-                    const fetchData = Promise.allSettled([
-                        fetchUserProfile(session.user.id),
-                        fetchChildren(session.user.id)
-                    ]);
-
-                    const timeout = new Promise((_, reject) => setTimeout(() => reject("Timeout"), 5000));
-
-                    await Promise.race([fetchData, timeout]);
-                } else if (session?.user?.user_metadata) {
-                    setUserProfile({
-                        nickname: session.user.user_metadata.name,
-                        ...session.user.user_metadata
-                    });
-                }
-            } catch (error) {
-                console.error("Auth initialization error:", error);
-            } finally {
-                setLoading(false);
-            }
+        // Initial session check
+        const init = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            await syncUserData(session);
         };
+        
+        init();
 
-        initAuth();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-            try {
-                setSession(session);
-                setUser(session?.user ?? null);
-                if (session?.user) {
-                    // Fetch in parallel for performance, with timeout safeguard
-                    const fetchData = Promise.allSettled([
-                        fetchUserProfile(session.user.id),
-                        fetchChildren(session.user.id)
-                    ]);
-
-                    const timeout = new Promise((_, reject) => setTimeout(() => reject("Timeout"), 5000));
-
-                    await Promise.race([fetchData, timeout]);
-                } else if (session?.user?.user_metadata) {
-                    setUserProfile({
-                        nickname: session.user.user_metadata.name,
-                        ...session.user.user_metadata
-                    });
-                } else {
-                    // Fallback to metadata if profile fetch fails or while loading
-                    if (session?.user?.user_metadata) {
-                        setUserProfile({
-                            nickname: session.user.user_metadata.name,
-                            ...session.user.user_metadata
-                        });
-                    } else {
-                        setUserProfile(null);
-                    }
-                    setChildren([]);
-                }
-            } catch (error) {
-                console.error("Auth state change error:", error);
-            } finally {
+        // Listen for auth changes
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                await syncUserData(session);
+            } else if (event === 'SIGNED_OUT') {
+                setSession(null);
+                setUser(null);
+                setUserProfile(null);
+                setChildren([]);
                 setLoading(false);
             }
         });
@@ -97,39 +163,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         return () => {
             authListener.subscription.unsubscribe();
         };
-    }, []);
-
-    const fetchUserProfile = async (userId: string) => {
-        try {
-            const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
-            if (error) throw error;
-            setUserProfile(data);
-        } catch (error) {
-            console.error("Error fetching user profile:", error);
-            setUserProfile(null);
-        }
-    };
-
-    const fetchChildren = async (userId: string) => {
-        try {
-            const { data, error } = await supabase.from('children').select('*, birthdate').eq('parent_id', userId);
-            if (error) throw error;
-            if (data) {
-                const childrenWithAge = data.map((child: any) => {
-                    const birthYear = new Date(child.birthdate).getFullYear();
-                    const currentYear = new Date().getFullYear();
-                    const age = currentYear - birthYear;
-                    return { ...child, age };
-                });
-                setChildren(childrenWithAge);
-            } else {
-                setChildren([]);
-            }
-        } catch (error) {
-            console.error("Error fetching children:", error);
-            setChildren([]);
-        }
-    };
+    }, [syncUserData]);
 
     const signOut = async () => {
         try {
@@ -149,19 +183,24 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     };
 
     const refreshProfile = async () => {
-        if (user) {
-            await fetchUserProfile(user.id);
-        }
+        if (user) await fetchUserProfile(user.id);
     };
 
     const refreshChildren = async () => {
-        if (user) {
-            await fetchChildren(user.id);
-        }
+        if (user) await fetchChildrenData(user.id);
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, userProfile, children, loading, signOut, refreshProfile, refreshChildren }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            session, 
+            userProfile, 
+            children, 
+            loading, 
+            signOut, 
+            refreshProfile, 
+            refreshChildren 
+        }}>
             {providerChildren}
         </AuthContext.Provider>
     );
