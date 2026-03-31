@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { MessageCircle, X, Send, Bot, User, Minimize2, Sparkles } from "lucide-react";
 import { useChatbot } from "../context/ChatbotContext";
+import { useAuth } from "../context/AuthContext";
+import { useLoginModal } from "../context/LoginModalContext";
 import { marked } from 'marked';
 
 interface Message {
@@ -11,6 +13,8 @@ interface Message {
 }
 
 export default function AIChatbot() {
+    const { user } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const { isChatOpen, closeChat, toggleChat } = useChatbot();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
@@ -80,7 +84,10 @@ export default function AIChatbot() {
     // Desktop Floating Button
     const DesktopTrigger = () => (
         <button
-            onClick={toggleChat}
+            onClick={() => {
+                if (!user) return openLoginModal();
+                toggleChat();
+            }}
             className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-2xl transition-all duration-300 hidden lg:flex items-center gap-2 group ${isChatOpen ? 'bg-gray-800 rotate-90 scale-0' : 'bg-green-600 hover:bg-green-700 scale-100 hover:scale-110'}`}
         >
             <Sparkles className="text-yellow-300 fill-current animate-pulse" size={24} />

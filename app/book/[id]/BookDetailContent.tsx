@@ -8,6 +8,7 @@ import { Star, ChevronLeft, Bookmark, BookOpen, Check } from "lucide-react";
 import Header from "../../../components/Header";
 import Sidebar from "../../../components/Sidebar";
 import { useAuth } from "../../../context/AuthContext";
+import { useLoginModal } from "../../../context/LoginModalContext";
 import ChildSelectionModal from "../../../components/ChildSelectionModal";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ export default function BookDetailContent() {
 
     // Auth & Sidebar state
     const { user, children } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const [userChildren, setUserChildren] = useState<Child[]>([]);
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [activeMenu, setActiveMenu] = useState<any>('rec');
@@ -154,7 +156,7 @@ export default function BookDetailContent() {
     };
 
     const handleScrap = async () => {
-        if (!user) return toast.error("로그인이 필요합니다.");
+        if (!user) return openLoginModal();
         await ensureBookInDB();
         setIsScrapped(!isScrapped);
         // Implement actual scrap logic if needed
@@ -162,7 +164,7 @@ export default function BookDetailContent() {
     };
 
     const handleMarkRead = async () => {
-        if (!user) return toast.error("로그인이 필요합니다.");
+        if (!user) return openLoginModal();
         if (userChildren.length === 0) return toast.error("먼저 자녀 프로필을 등록해주세요.");
 
         await ensureBookInDB();
@@ -196,7 +198,8 @@ export default function BookDetailContent() {
     };
 
     const handleSubmitReview = async () => {
-        if (!user || !newRating || !newReviewText) return;
+        if (!user) return openLoginModal();
+        if (!newRating || !newReviewText) return;
 
         await ensureBookInDB(); // Ensure book is saved first
 

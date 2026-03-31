@@ -4,6 +4,7 @@ import { Child, MainMenu } from "../types";
 import { MENU_CONFIG } from "../lib/constants";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
+import { useLoginModal } from "../context/LoginModalContext";
 
 interface SidebarProps {
     activeChild: Child | null;
@@ -25,6 +26,7 @@ export default function Sidebar({
     onNavigate
 }: SidebarProps) {
     const { user, userProfile, children } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -110,8 +112,9 @@ export default function Sidebar({
                     </div>
                 </div>
             ) : (
-                <div className="bg-white rounded-4xl p-8 shadow-sm border border-dashed border-gray-200 text-center">
+                <div className="bg-white rounded-4xl p-8 shadow-sm border border-dashed border-gray-200 text-center flex flex-col items-center justify-center gap-3">
                     <p className="text-sm text-gray-400 font-bold">로그인 후 아이 프로필을 확인하세요</p>
+                    <button onClick={openLoginModal} className="text-xs bg-gray-900 text-white px-4 py-2 rounded-full font-bold hover:bg-gray-800 transition">로그인/가입</button>
                 </div>
             )}
 

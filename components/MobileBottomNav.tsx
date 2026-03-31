@@ -4,12 +4,14 @@ import { BookOpen, Brain, MessageCircle, User, Sparkles } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { useChatbot } from "../context/ChatbotContext";
+import { useLoginModal } from "../context/LoginModalContext";
 
 export default function MobileBottomNav() {
     const router = useRouter();
     const pathname = usePathname();
     const { user } = useAuth();
     const { toggleChat } = useChatbot();
+    const { openLoginModal } = useLoginModal();
 
     const navItems = [
         {
@@ -24,12 +26,11 @@ export default function MobileBottomNav() {
             path: "/solution",
             isActive: pathname === "/solution"
         },
-        // Central AI Button Placeholder
         {
             label: "AI 사서",
             icon: Sparkles,
             isSpecial: true,
-            action: toggleChat
+            action: user ? toggleChat : openLoginModal
         },
         {
             label: "커뮤니티",
@@ -40,8 +41,9 @@ export default function MobileBottomNav() {
         {
             label: "프로필",
             icon: User,
-            path: user ? "/mypage" : "/auth",
-            isActive: pathname === "/mypage" || pathname === "/auth"
+            path: user ? "/mypage" : undefined,
+            action: !user ? openLoginModal : undefined,
+            isActive: pathname === "/mypage"
         },
     ];
 
@@ -63,7 +65,7 @@ export default function MobileBottomNav() {
                     ) : (
                         <button
                             key={item.label}
-                            onClick={() => router.push(item.path!)}
+                            onClick={() => item.action ? item.action() : router.push(item.path!)}
                             className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${item.isActive ? "text-green-600" : "text-gray-400 hover:text-gray-600"
                                 }`}
                         >

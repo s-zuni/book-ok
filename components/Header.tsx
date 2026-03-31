@@ -1,10 +1,11 @@
-import { BookMarked, Search, User, LogOut, X } from "lucide-react";
+import { BookMarked, Search, User, LogOut, X, Shield } from "lucide-react";
 import { MainMenu, ViewState } from "../types";
 import { MENU_CONFIG } from "../lib/constants";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import MobileSubMenu from "./MobileSubMenu";
 import { useState } from "react";
+import { useLoginModal } from "../context/LoginModalContext";
 
 interface HeaderProps {
     view: ViewState;
@@ -30,6 +31,7 @@ export default function Header({
     activeSubMenu = '',
 }: HeaderProps) {
     const { user, signOut, userProfile } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -99,6 +101,15 @@ export default function Header({
                                     <User size={22} />
                                     <span className="hidden md:inline">{userProfile?.nickname || user?.user_metadata?.name || '마이페이지'}</span>
                                 </button>
+                                {userProfile?.is_admin && (
+                                    <button
+                                        onClick={() => router.push('/manage')}
+                                        className="flex items-center gap-2 font-bold text-sm text-green-700 bg-green-50 px-4 py-2 rounded-full hover:bg-green-100 transition-colors"
+                                    >
+                                        <Shield size={18} />
+                                        <span>관리</span>
+                                    </button>
+                                )}
                                 <button
                                     onClick={async () => {
                                         try {
@@ -115,7 +126,7 @@ export default function Header({
                             </div>
                         ) : (
                             <button
-                                onClick={() => router.push('/auth')}
+                                onClick={openLoginModal}
                                 className="bg-black text-white px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm hover:bg-gray-800 transition whitespace-nowrap"
                             >
                                 로그인/가입

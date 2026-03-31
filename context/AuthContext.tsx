@@ -3,12 +3,12 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "../lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
-import { Child } from "../types";
+import { Child, Profile } from "../types";
 
 interface AuthContextType {
     user: User | null;
     session: Session | null;
-    userProfile: any | null;
+    userProfile: Profile | null;
     children: Child[];
     loading: boolean;
     signOut: () => Promise<void>;
@@ -21,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children: providerChildren }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
-    const [userProfile, setUserProfile] = useState<any | null>(null);
+    const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [children, setChildren] = useState<Child[]>([]);
     const [loading, setLoading] = useState(true);
     
@@ -63,10 +63,13 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session?.user?.user_metadata) {
                     const metadata = session.user.user_metadata;
-                    const fallbackProfile = {
+                    const fallbackProfile: Profile = {
                         id: userId,
-                        nickname: metadata.name || metadata.nickname || session.user.email?.split('@')[0],
-                        ...metadata
+                        nickname: metadata.name || metadata.nickname || session.user.email?.split('@')[0] || "User",
+                        role: metadata.role || 'parent',
+                        is_admin: metadata.is_admin || false,
+                        phone: metadata.phone || '',
+                        created_at: new Date().toISOString(),
                     };
                     setUserProfile(fallbackProfile);
                     return fallbackProfile;

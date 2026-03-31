@@ -38,6 +38,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "../context/AuthContext";
 import { ChatbotProvider } from "../context/ChatbotContext"; // Import Context
+import { LoginModalProvider } from "../context/LoginModalContext"; // Import Login Modal Context
 import MobileBottomNav from "../components/MobileBottomNav";
 import SplashScreen from "../components/SplashScreen";
 import AIChatbot from "../components/AIChatbot"; // Import Chatbot
@@ -53,15 +54,17 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased pb-16 lg:pb-0`}
       >
         <AuthProvider>
-          <ChatbotProvider>
-            <Toaster position="top-center" richColors closeButton />
-            <SplashScreen />
-            {children}
-            <AIChatbot /> {/* Global Chatbot Component */}
-            <div className="lg:hidden">
-              <MobileBottomNav />
-            </div>
-          </ChatbotProvider>
+          <LoginModalProvider>
+            <ChatbotProvider>
+              <Toaster position="top-center" richColors closeButton />
+              <SplashScreen />
+              {children}
+              <AIChatbot /> {/* Global Chatbot Component */}
+              <div className="lg:hidden">
+                <MobileBottomNav />
+              </div>
+            </ChatbotProvider>
+          </LoginModalProvider>
         </AuthProvider>
       </body>
     </html>

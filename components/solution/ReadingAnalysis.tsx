@@ -7,6 +7,8 @@ import LoadingState from "../LoadingState";
 import EmptyState from "../EmptyState";
 import { marked } from 'marked';
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
+import { useLoginModal } from "../../context/LoginModalContext";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -27,6 +29,8 @@ export default function ReadingAnalysis({
     chartData,
     keywords = []
 }: ReadingAnalysisProps) {
+    const { user } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const [isObservationOpen, setIsObservationOpen] = useState(false);
     const [observations, setObservations] = useState<{ [key: string]: string }>({});
 
@@ -127,8 +131,11 @@ export default function ReadingAnalysis({
                     )}
 
                     <button
-                        onClick={() => getReadingAnalysis(observations)}
-                        disabled={loading || userReadBooks.length === 0}
+                        onClick={() => {
+                            if (!user) return openLoginModal();
+                            getReadingAnalysis(observations);
+                        }}
+                        disabled={loading || (user ? userReadBooks.length === 0 : false)}
                         className="w-full bg-green-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:bg-gray-400"
                     >
                         {loading ? (

@@ -1,6 +1,8 @@
 import { Sparkles, MessageCircle, Quote } from "lucide-react";
 import LoadingState from "../LoadingState";
 import { marked } from 'marked';
+import { useAuth } from "../../context/AuthContext";
+import { useLoginModal } from "../../context/LoginModalContext";
 
 interface AISolutionProps {
     prompt: string;
@@ -17,6 +19,8 @@ export default function AISolution({
     loading,
     result
 }: AISolutionProps) {
+    const { user } = useAuth();
+    const { openLoginModal } = useLoginModal();
     return (
         <div className="animate-in fade-in">
             <h2 className="text-4xl font-black tracking-tight mb-4">AI 독서 솔루션</h2>
@@ -35,7 +39,10 @@ export default function AISolution({
                         className="w-full h-40 bg-gray-50 rounded-2xl p-6 text-base resize-none border border-gray-200 outline-none focus:ring-2 focus:ring-green-300 transition placeholder:text-gray-400"
                     />
                     <button
-                        onClick={getSolution}
+                        onClick={() => {
+                            if (!user) return openLoginModal();
+                            getSolution();
+                        }}
                         disabled={loading}
                         className="mt-6 w-full bg-green-600 text-white font-black py-5 rounded-2xl shadow-lg hover:bg-green-700 transition-all flex items-center justify-center gap-2 disabled:bg-gray-400"
                     >
