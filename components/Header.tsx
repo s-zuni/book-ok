@@ -96,10 +96,15 @@ export default function Header({
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => router.push('/mypage')}
-                                    className="flex items-center gap-2 font-bold text-sm text-gray-700 p-2 rounded-full hover:bg-gray-100"
+                                    className="flex items-center gap-2 group"
                                 >
-                                    <User size={22} />
-                                    <span className="hidden md:inline">{userProfile?.nickname || user?.user_metadata?.name || '마이페이지'}</span>
+                                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform">
+                                        {(userProfile?.nickname?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                                    </div>
+                                    <div className="hidden md:flex flex-col items-start -space-y-1">
+                                        <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-tighter">My Page</span>
+                                        <span className="text-sm font-black text-gray-900">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</span>
+                                    </div>
                                 </button>
                                 {userProfile?.is_admin && (
                                     <button

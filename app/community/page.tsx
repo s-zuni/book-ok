@@ -6,7 +6,7 @@ import Sidebar from "../../components/Sidebar";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { Child, Post, MainMenu } from "../../types";
-import { Edit3, MessageSquare, Heart, Eye, Menu } from "lucide-react";
+import { Edit3, MessageSquare, Heart, Eye, Menu, Megaphone } from "lucide-react";
 import { useRouter } from "next/navigation";
 import SkeletonLoader from "../../components/SkeletonLoader";
 import MobileDrawer from "../../components/MobileDrawer";
@@ -54,12 +54,15 @@ export default function CommunityPage() {
         try {
             let query = supabase.from('posts').select('*', { count: 'exact' });
 
+            // Filter out hidden posts
+            query = query.eq('is_deleted', false);
+
             if (filterCategory === '인기 게시판') {
-                query = query.order('views', { ascending: false });
+                query = query.order('is_notice', { ascending: false }).order('views', { ascending: false });
             } else if (filterCategory && filterCategory !== '전체 게시글') {
-                query = query.eq('category', filterCategory);
+                query = query.eq('category', filterCategory).order('is_notice', { ascending: false }).order('created_at', { ascending: false });
             } else {
-                query = query.order('created_at', { ascending: false });
+                query = query.order('is_notice', { ascending: false }).order('created_at', { ascending: false });
             }
 
             // Pagination range
@@ -197,7 +200,15 @@ export default function CommunityPage() {
 
                                             <div className="flex justify-between gap-6">
                                                 <div className="flex-1">
-                                                    <h3 className="font-black text-xl text-gray-900 group-hover:text-green-600 transition-colors mb-2 leading-tight">{post.title}</h3>
+                                                    {post.is_notice && (
+                                                        <div className="flex items-center gap-1.5 mb-2">
+                                                            <Megaphone size={14} className="text-emerald-600 fill-emerald-50" />
+                                                            <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 shadow-sm shadow-emerald-50">NOTICE</span>
+                                                        </div>
+                                                    )}
+                                                    <h3 className={`font-black text-xl group-hover:text-green-600 transition-colors mb-2 leading-tight ${post.is_notice ? 'text-emerald-700' : 'text-gray-900'}`}>
+                                                        {post.title}
+                                                    </h3>
                                                     <p className="text-gray-500 text-sm line-clamp-2 md:line-clamp-3 mb-4 leading-relaxed font-medium">
                                                         {post.content.replace(/<[^>]*>?/gm, '').substring(0, 100)}...
                                                     </p>

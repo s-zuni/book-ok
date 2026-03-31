@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import HeroSection from "./HeroSection";
 import RecommendationSection from "./RecommendationSection";
 import { ChevronLeft, BookOpen, UserCheck, Trophy, ChevronRight } from "lucide-react";
+import MainPopup from "./MainPopup";
 
 export default function HomeContent() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -154,6 +155,7 @@ export default function HomeContent() {
                     )}
                 </div>
             </main>
+            <MainPopup />
         </div>
     );
 }

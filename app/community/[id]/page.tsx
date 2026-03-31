@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronLeft, MessageSquare, Heart, Eye } from "lucide-react";
+import { ChevronLeft, MessageSquare, Heart, Eye, Megaphone } from "lucide-react";
 import Header from "../../../components/Header";
 import Sidebar from "../../../components/Sidebar";
 import { useAuth } from "../../../context/AuthContext";
@@ -38,6 +38,11 @@ export default function PostDetailPage() {
     const fetchPost = async () => {
         const { data } = await supabase.from('posts').select('*').eq('id', postId).single();
         if (data) {
+            if (data.is_deleted && !userProfile?.is_admin) {
+                alert('삭제된 게시글입니다.');
+                router.push('/community');
+                return;
+            }
             setPost(data);
             // Update views (simple increment, ideally should handle concurrency/dedup)
             supabase.from('posts').update({ views: data.views + 1 }).eq('id', postId).then(() => { });
@@ -45,7 +50,11 @@ export default function PostDetailPage() {
     };
 
     const fetchComments = async () => {
-        const { data } = await supabase.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
+        const { data } = await supabase.from('comments')
+            .select('*')
+            .eq('post_id', postId)
+            .eq('is_deleted', false)
+            .order('created_at', { ascending: true });
         if (data) setComments(data);
     };
 
@@ -105,6 +114,12 @@ export default function PostDetailPage() {
                     </button>
 
                     <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-100 mb-8">
+                        {post.is_notice && (
+                            <div className="flex items-center gap-2 mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
+                                <Megaphone className="text-emerald-600" size={20} />
+                                <span className="font-black text-emerald-800 tracking-tight">서비스 공지사항입니다.</span>
+                            </div>
+                        )}
                         <div className="flex items-center gap-3 mb-4">
                             <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-black">{post.category}</span>
                             <span className="text-gray-400 text-sm">{new Date(post.created_at).toLocaleDateString()}</span>

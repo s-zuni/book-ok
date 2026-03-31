@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { useRouter } from "next/navigation";
-import { BookMarked, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react";
+import { BookMarked, ArrowLeft, KeyRound, Eye, EyeOff, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 type AuthMode = 'login' | 'signup' | 'reset';
@@ -446,6 +446,22 @@ export default function AuthPage() {
                                 ← 로그인으로 돌아가기
                             </button>
                         )}
+                    </div>
+
+                    {/* Admin Login Notice Footer */}
+                    <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+                        <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest mb-2">Internal Access</p>
+                        <button 
+                            onClick={() => {
+                                setAuthMode('login');
+                                setUserId('admin');
+                                toast.info('기존 관리자 계정(이메일)으로 로그인해주세요.');
+                            }}
+                            className="text-xs font-bold text-gray-400 hover:text-green-600 transition-colors flex items-center justify-center gap-1 mx-auto group"
+                        >
+                            <Shield size={12} className="group-hover:animate-pulse" />
+                            관리자 전용 로그인
+                        </button>
                     </div>
                 </div>
             </div>

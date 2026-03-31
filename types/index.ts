@@ -37,6 +37,8 @@ export interface Post {
     likes: number;
     created_at: string;
     image_url?: string;
+    is_notice: boolean;
+    is_deleted: boolean;
 }
 
 export interface Comment {
@@ -47,6 +49,7 @@ export interface Comment {
     user_id: string;
     created_at: string;
     parent_id?: number | null;
+    is_deleted: boolean;
 }
 
 export interface Child {
@@ -90,5 +93,16 @@ export interface Profile {
     role: 'parent' | 'children';
     is_admin: boolean;
     phone?: string;
+    created_at: string;
+}
+
+export interface Popup {
+    id: string;
+    title: string;
+    content: string;
+    image_url?: string;
+    link_url?: string;
+    is_active: boolean;
+    expires_at?: string;
     created_at: string;
 }
