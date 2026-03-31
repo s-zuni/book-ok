@@ -57,7 +57,7 @@ export default function MainPopup() {
         <div className={`fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm transition-opacity duration-500 ${isVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
             <div className={`bg-white w-full max-w-sm rounded-[3rem] shadow-2xl shadow-black/20 overflow-hidden transition-all duration-500 transform ${isVisible ? 'scale-100 translate-y-0' : 'scale-90 translate-y-8'}`}>
                 {/* Header/Image Area */}
-                <div className="relative aspect-[4/5] bg-gray-100">
+                <div className="relative aspect-4/5 bg-gray-100">
                     {activePopup.image_url ? (
                         <img 
                             src={activePopup.image_url} 
@@ -65,7 +65,7 @@ export default function MainPopup() {
                             className="w-full h-full object-cover"
                         />
                     ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-green-600 bg-green-50">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-[#2E5A44] bg-[#E8F5E9]">
                             <div className="text-6xl font-black italic opacity-20 select-none">Book,ok</div>
                         </div>
                     )}
@@ -78,7 +78,7 @@ export default function MainPopup() {
                     </button>
 
                     <div className="absolute bottom-0 left-0 w-full p-8 bg-linear-to-t from-black/80 via-black/40 to-transparent text-white">
-                        <span className="inline-block px-3 py-1 bg-green-500 text-[10px] font-black rounded-lg mb-3 tracking-widest animate-pulse">EVENT</span>
+                        <span className="inline-block px-3 py-1 bg-[#2E5A44] text-[10px] font-black rounded-lg mb-3 tracking-widest animate-pulse uppercase">Event</span>
                         <h2 className="text-2xl font-black leading-tight mb-2">{activePopup.title}</h2>
                         <p className="text-sm font-medium text-gray-200 line-clamp-2">{activePopup.content}</p>
                     </div>

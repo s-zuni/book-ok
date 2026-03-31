@@ -61,7 +61,7 @@ export default function Header({
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <div className="bg-green-600 p-1.5 lg:p-2 rounded-xl text-white shadow-lg shadow-green-100">
+                    <div className="bg-[#2E5A44] p-1.5 lg:p-2 rounded-xl text-white shadow-lg shadow-[#2E5A44]/10">
                         <BookMarked size={24} className="lg:w-7 lg:h-7" />
                     </div>
                     <span className="text-lg lg:text-2xl font-black italic">Book,ok</span>
@@ -73,7 +73,7 @@ export default function Header({
                     <input
                         type="text"
                         placeholder="어떤 유아/아동 도서를 찾으시나요?"
-                        className="w-full bg-gray-100 rounded-full py-3.5 pl-12 pr-6 outline-none focus:bg-white focus:ring-4 focus:ring-green-100 transition-all font-medium border border-transparent focus:border-green-500"
+                        className="w-full bg-gray-100 rounded-full py-3.5 pl-12 pr-6 outline-none focus:bg-white focus:ring-4 focus:ring-[#E8F5E9] transition-all font-medium border border-transparent focus:border-[#2E5A44]/30"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}
@@ -109,7 +109,7 @@ export default function Header({
                                 {userProfile?.is_admin && (
                                     <button
                                         onClick={() => router.push('/manage')}
-                                        className="flex items-center gap-2 font-bold text-sm text-green-700 bg-green-50 px-4 py-2 rounded-full hover:bg-green-100 transition-colors"
+                                        className="flex items-center gap-2 font-bold text-sm text-[#2E5A44] bg-[#E8F5E9] px-4 py-2 rounded-full hover:bg-[#2E5A44]/10 transition-colors"
                                     >
                                         <Shield size={18} />
                                         <span>관리</span>
@@ -164,9 +164,9 @@ export default function Header({
                 <div className="max-w-7xl mx-auto px-6 flex items-center gap-12 overflow-x-auto scrollbar-hide">
                     {(Object.keys(MENU_CONFIG) as MainMenu[]).map((key) => (
                         <button key={key} onClick={() => handleMenuClick(key)}
-                            className={`py-5 text-[15px] font-black tracking-tight whitespace-nowrap transition-all relative ${activeMenu === key ? 'text-green-600' : 'text-gray-400 hover:text-gray-900'}`}>
+                            className={`py-5 text-[15px] font-black tracking-tight whitespace-nowrap transition-all relative ${activeMenu === key ? 'text-[#2E5A44]' : 'text-gray-400 hover:text-gray-900'}`}>
                             {MENU_CONFIG[key].label}
-                            {activeMenu === key && <div className="absolute bottom-0 left-0 w-full h-1 bg-green-600 rounded-t-full" />}
+                            {activeMenu === key && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#2E5A44] rounded-t-full" />}
                         </button>
                     ))}
                 </div>
