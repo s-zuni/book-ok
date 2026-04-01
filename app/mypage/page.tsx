@@ -123,10 +123,10 @@ export default function MyPage() {
     const handleLogout = async () => {
         try {
             await signOut();
-            router.replace('/'); 
+            window.location.href = '/'; 
         } catch (e) {
             console.error(e);
-            router.replace('/');
+            window.location.href = '/';
         }
     };
 

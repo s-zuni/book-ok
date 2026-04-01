@@ -66,8 +66,7 @@ export default function AuthPage() {
                 setAuthError(errorMessage);
                 setIsLoading(false);
             } else if (data.session) {
-                // Ensure session is properly set before navigation
-                router.refresh();
+                // Navigate to home after successful session establishment
                 router.push('/');
             } else {
                 setAuthError('로그인에 실패했습니다. 다시 시도해주세요.');
@@ -161,7 +160,6 @@ export default function AuthPage() {
                     // 회원가입 시 자동 로그인됨 → 바로 홈으로 이동
                     if (data.session) {
                         toast.success('회원가입이 완료되었습니다! 환영합니다 🎉');
-                        router.refresh();
                         router.push('/');
                     } else {
                         // 세션이 없는 경우 (이메일 확인 필요 등) → 로그인으로 안내

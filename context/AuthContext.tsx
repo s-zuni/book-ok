@@ -59,21 +59,45 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 setUserProfile(data);
                 return data;
             } else {
-                // Fallback to metadata if available
+                // Fallback for social login or missing profile
+                // We attempt to UPSERT a new profile so that foreign key constraints (like children, read_books) don't fail
                 const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user?.user_metadata) {
-                    const metadata = session.user.user_metadata;
-                    const fallbackProfile: Profile = {
+                if (session?.user) {
+                    const metadata = session.user.user_metadata || {};
+                    const nickname = metadata.name || metadata.nickname || metadata.full_name || session.user.email?.split('@')[0] || "User";
+                    
+                    const newProfile = {
                         id: userId,
-                        nickname: metadata.name || metadata.nickname || session.user.email?.split('@')[0] || "User",
+                        nickname: nickname,
                         role: metadata.role || 'parent',
                         is_admin: metadata.is_admin || false,
                         phone: metadata.phone || '',
-                        created_at: new Date().toISOString(),
                     };
-                    setUserProfile(fallbackProfile);
-                    return fallbackProfile;
+
+                    console.log("Upserting missing profile for user:", userId);
+                    const { data: upsertedData, error: upsertError } = await supabase
+                        .from('profiles')
+                        .upsert([newProfile], { onConflict: 'id' })
+                        .select()
+                        .maybeSingle();
+
+                    if (upsertError) {
+                        console.error("Failed to upsert profile record in DB:", upsertError);
+                        // Fallback to local state if DB insert fails (e.g. RLS issues)
+                        const localFallback: Profile = {
+                            ...newProfile,
+                            created_at: new Date().toISOString()
+                        } as Profile;
+                        setUserProfile(localFallback);
+                        return localFallback;
+                    }
+
+                    if (upsertedData) {
+                        setUserProfile(upsertedData);
+                        return upsertedData;
+                    }
                 }
+                
                 setUserProfile(null);
                 return null;
             }
@@ -174,13 +198,16 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         } catch (error) {
             console.error("Error during signOut:", error);
         } finally {
+            // Force clear all states regardless of Supabase response
             setUser(null);
             setSession(null);
             setUserProfile(null);
             setChildren([]);
             if (typeof window !== 'undefined') {
                 localStorage.removeItem('bookok-auth-token');
-                sessionStorage.clear();
+                // Remove specific keys instead of clear() to avoid breaking Next.js hydration state
+                localStorage.removeItem('supabase.auth.token'); 
+                sessionStorage.removeItem('bookok-auth-token');
             }
         }
     };

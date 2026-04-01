@@ -30,7 +30,7 @@ export default function Header({
     handleSearch,
     activeSubMenu = '',
 }: HeaderProps) {
-    const { user, signOut, userProfile } = useAuth();
+    const { user, signOut, userProfile, loading: authLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -91,8 +91,16 @@ export default function Header({
                     </button>
 
                     {/* Desktop Auth Buttons */}
-                    <div className="hidden lg:flex items-center gap-3">
-                        {user ? (
+                    <div className="hidden lg:flex items-center gap-3 min-w-[80px] justify-end">
+                        {authLoading ? (
+                            <div className="flex items-center gap-3 animate-pulse">
+                                <div className="w-10 h-10 rounded-full bg-gray-100"></div>
+                                <div className="hidden md:flex flex-col gap-1">
+                                    <div className="h-2 w-12 bg-gray-100 rounded"></div>
+                                    <div className="h-3 w-16 bg-gray-100 rounded"></div>
+                                </div>
+                            </div>
+                        ) : user ? (
                             <div className="flex items-center gap-3">
                                 <button
                                     onClick={() => router.push('/mypage')}
@@ -119,9 +127,11 @@ export default function Header({
                                     onClick={async () => {
                                         try {
                                             await signOut();
-                                            router.replace('/');
+                                            // Hard reload to clear App Router cache and ensure clean state
+                                            window.location.href = '/';
                                         } catch (e) {
                                             console.error("Logout failed", e);
+                                            window.location.href = '/';
                                         }
                                     }}
                                     className="p-2 text-gray-400 hover:text-red-500"

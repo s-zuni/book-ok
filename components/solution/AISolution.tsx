@@ -19,7 +19,7 @@ export default function AISolution({
     loading,
     result
 }: AISolutionProps) {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
     return (
         <div className="animate-in fade-in">
@@ -40,6 +40,7 @@ export default function AISolution({
                     />
                     <button
                         onClick={() => {
+                            if (authLoading) return;
                             if (!user) return openLoginModal();
                             getSolution();
                         }}

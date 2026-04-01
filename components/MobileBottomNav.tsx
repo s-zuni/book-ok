@@ -57,7 +57,7 @@ const ProfileIcon = ({ active }: { active: boolean }) => (
 export default function MobileBottomNav() {
     const router = useRouter();
     const pathname = usePathname();
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const { toggleChat } = useChatbot();
     const { openLoginModal } = useLoginModal();
 
@@ -78,7 +78,7 @@ export default function MobileBottomNav() {
             label: "AI 사서",
             icon: LibrarianIcon,
             isSpecial: true,
-            action: user ? toggleChat : openLoginModal
+            action: authLoading ? undefined : (user ? toggleChat : openLoginModal)
         },
         {
             label: "커뮤니티",
@@ -90,7 +90,7 @@ export default function MobileBottomNav() {
             label: "프로필",
             icon: ProfileIcon,
             path: user ? "/mypage" : undefined,
-            action: !user ? openLoginModal : undefined,
+            action: authLoading ? undefined : (!user ? openLoginModal : undefined),
             isActive: pathname === "/mypage"
         },
     ];
