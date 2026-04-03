@@ -116,7 +116,7 @@ export default function Header({
                                 </button>
                                 {userProfile?.is_admin && (
                                     <button
-                                        onClick={() => router.push('/manage')}
+                                        onClick={() => router.push('/admin')}
                                         className="flex items-center gap-2 font-bold text-sm text-[#2E5A44] bg-[#E8F5E9] px-4 py-2 rounded-full hover:bg-[#2E5A44]/10 transition-colors"
                                     >
                                         <Shield size={18} />

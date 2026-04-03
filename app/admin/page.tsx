@@ -7,18 +7,20 @@ import Header from "../../components/Header";
 import { 
     Shield, Users, BookOpen, BarChart3, 
     MessageSquare, Megaphone, Trash2, CheckCircle, 
-    XCircle, Plus, Layout, ExternalLink, Calendar
+    XCircle, Plus, Layout, ExternalLink, Calendar, 
+    Lock, LogIn, PieChart, TrendingUp
 } from "lucide-react";
 import { supabase } from "../../lib/supabase";
 import { Post, Comment, Popup } from "../../types";
 import { toast } from "sonner";
+import AdminStatistics from "@/components/AdminStatistics";
 
-type ManageTab = 'dashboard' | 'community' | 'popups';
+type AdminTab = 'dashboard' | 'statistics' | 'community' | 'popups';
 
-export default function ManagePage() {
-    const { user, userProfile, loading } = useAuth();
+export default function AdminPage() {
+    const { user, userProfile, loading, signOut } = useAuth();
     const router = useRouter();
-    const [activeTab, setActiveTab] = useState<ManageTab>('dashboard');
+    const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     
     // Data states
     const [posts, setPosts] = useState<Post[]>([]);
@@ -26,6 +28,9 @@ export default function ManagePage() {
     const [popups, setPopups] = useState<Popup[]>([]);
     const [isDataLoading, setIsDataLoading] = useState(false);
     const [communitySubTab, setCommunitySubTab] = useState<'posts' | 'comments'>('posts');
+
+    // Stats states
+    const [stats, setStats] = useState<any>(null);
 
     // Form states for Popups
     const [isPopupModalOpen, setIsPopupModalOpen] = useState(false);
@@ -38,20 +43,30 @@ export default function ManagePage() {
     });
 
     useEffect(() => {
-        if (!loading && (!user || !userProfile?.is_admin)) {
-            router.push('/');
-        }
-    }, [user, userProfile, loading, router]);
-
-    useEffect(() => {
         if (userProfile?.is_admin) {
             if (activeTab === 'community') {
                 if (communitySubTab === 'posts') fetchPosts();
                 else fetchComments();
             }
             if (activeTab === 'popups') fetchPopups();
+            if (activeTab === 'dashboard' || activeTab === 'statistics') fetchStats();
         }
     }, [activeTab, communitySubTab, userProfile]);
+
+    const fetchStats = async () => {
+        // We will implement the RPC next, for now use a temporary query
+        const { count: totalUsers } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+        const { count: totalPosts } = await supabase.from('posts').select('*', { count: 'exact', head: true });
+        const { count: todaySignups } = await supabase.from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString());
+
+        setStats({
+            totalUsers: totalUsers || 0,
+            totalPosts: totalPosts || 0,
+            todaySignups: todaySignups || 0,
+        });
+    };
 
     const fetchPosts = async () => {
         setIsDataLoading(true);
@@ -157,8 +172,41 @@ export default function ManagePage() {
         }
     };
 
-    if (loading || !userProfile?.is_admin) {
-        return <div className="h-screen flex items-center justify-center">접근 권한을 확인 중입니다...</div>;
+    if (loading) {
+        return <div className="h-screen flex items-center justify-center bg-gray-50">연결 정보를 확인 중입니다...</div>;
+    }
+
+    // Admin Auth Gate with Login Prompt
+    if (!user || !userProfile?.is_admin) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-gray-50 px-4">
+                <main className="max-w-md w-full bg-white rounded-[2.5rem] p-10 shadow-2xl border border-gray-100 text-center animate-in zoom-in-95 duration-500">
+                    <div className="w-20 h-20 bg-red-50 text-red-500 rounded-3xl flex items-center justify-center mx-auto mb-8">
+                        <Lock size={40} />
+                    </div>
+                    <h1 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">관리자 전용 공간</h1>
+                    <p className="text-gray-500 font-bold mb-10 leading-relaxed">
+                        이 구역은 승인된 관리자만 접근 가능합니다.<br/>
+                        계정이 있다면 로그인해 주세요.
+                    </p>
+                    <div className="space-y-4">
+                        <button 
+                            onClick={() => router.push('/')}
+                            className="w-full py-5 bg-gray-900 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2"
+                        >
+                            <LogIn size={20} />
+                            관리자 로그인하기
+                        </button>
+                        <button 
+                            onClick={() => router.push('/')}
+                            className="w-full py-5 bg-white text-gray-400 font-black rounded-2xl hover:bg-gray-50 transition-all"
+                        >
+                            홈으로 돌아가기
+                        </button>
+                    </div>
+                </main>
+            </div>
+        );
     }
 
     return (
@@ -184,12 +232,13 @@ export default function ManagePage() {
                         <nav className="space-y-2">
                             {[
                                 { id: 'dashboard', label: '대시보드', icon: BarChart3 },
+                                { id: 'statistics', label: '유입/재방문 통계', icon: TrendingUp },
                                 { id: 'community', label: '커뮤니티 관리', icon: MessageSquare },
                                 { id: 'popups', label: '팝업 관리', icon: Megaphone }
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
-                                    onClick={() => setActiveTab(tab.id as ManageTab)}
+                                    onClick={() => setActiveTab(tab.id as AdminTab)}
                                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold transition-all ${activeTab === tab.id ? 'bg-green-600 text-white shadow-lg shadow-green-100' : 'text-gray-500 hover:bg-gray-50'}`}
                                 >
                                     <tab.icon size={20} />
@@ -197,6 +246,16 @@ export default function ManagePage() {
                                 </button>
                             ))}
                         </nav>
+                        
+                        <div className="mt-8 pt-8 border-t border-gray-50">
+                            <button 
+                                onClick={() => signOut()}
+                                className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-red-400 hover:bg-red-50 transition-all"
+                            >
+                                <XCircle size={20} />
+                                로그아웃
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -209,9 +268,9 @@ export default function ManagePage() {
                             </header>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 {[
-                                    { label: "총 사용자", value: "1,284", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
-                                    { label: "신규 도서", value: "42", icon: BookOpen, color: "text-green-600", bg: "bg-green-50" },
-                                    { label: "오늘의 분석", value: "156", icon: BarChart3, color: "text-purple-600", bg: "bg-purple-50" },
+                                    { label: "총 사용자", value: stats?.totalUsers || "...", icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+                                    { label: "오늘 가입", value: stats?.todaySignups || "...", icon: TrendingUp, color: "text-green-600", bg: "bg-green-50" },
+                                    { label: "총 게시글", value: stats?.totalPosts || "...", icon: MessageSquare, color: "text-purple-600", bg: "bg-purple-50" },
                                 ].map((stat) => (
                                     <div key={stat.label} className="bg-white p-8 rounded-4xl border border-gray-100 shadow-sm flex items-center gap-6">
                                         <div className={`${stat.bg} ${stat.color} p-4 rounded-2xl`}>
@@ -224,6 +283,12 @@ export default function ManagePage() {
                                     </div>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'statistics' && (
+                        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <AdminStatistics />
                         </div>
                     )}
 
@@ -251,7 +316,9 @@ export default function ManagePage() {
                             </header>
 
                             <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-                                {communitySubTab === 'posts' ? (
+                                {isDataLoading ? (
+                                    <div className="py-20 text-center text-gray-400 font-bold">로딩 중...</div>
+                                ) : communitySubTab === 'posts' ? (
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="bg-gray-50 border-b border-gray-100">
@@ -335,7 +402,7 @@ export default function ManagePage() {
                                         </tbody>
                                     </table>
                                 )}
-                                {(posts.length === 0 && communitySubTab === 'posts') || (comments.length === 0 && communitySubTab === 'comments') ? (
+                                {(!isDataLoading && ((posts.length === 0 && communitySubTab === 'posts') || (comments.length === 0 && communitySubTab === 'comments'))) ? (
                                     <div className="py-20 text-center text-gray-400 font-bold">목록이 비어있습니다.</div>
                                 ) : null}
                             </div>
