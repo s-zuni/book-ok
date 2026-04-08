@@ -4,6 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Header from "../../components/Header";
+import { useLoginModal } from "../../context/LoginModalContext";
 import { 
     Shield, Users, BookOpen, BarChart3, 
     MessageSquare, Megaphone, Trash2, CheckCircle, 
@@ -19,6 +20,7 @@ type AdminTab = 'dashboard' | 'statistics' | 'community' | 'popups';
 
 export default function AdminPage() {
     const { user, userProfile, loading, signOut } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
     
@@ -191,7 +193,12 @@ export default function AdminPage() {
                     </p>
                     <div className="space-y-4">
                         <button 
-                            onClick={() => router.push('/')}
+                            onClick={async () => {
+                                if (user) {
+                                    await signOut();
+                                }
+                                openLoginModal();
+                            }}
                             className="w-full py-5 bg-gray-900 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2"
                         >
                             <LogIn size={20} />
