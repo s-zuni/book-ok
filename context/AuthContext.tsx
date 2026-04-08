@@ -11,6 +11,7 @@ interface AuthContextType {
     userProfile: Profile | null;
     children: Child[];
     loading: boolean;
+    isInitialized: boolean;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
     refreshChildren: () => Promise<void>;
@@ -24,11 +25,25 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [children, setChildren] = useState<Child[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isInitialized, setIsInitialized] = useState(false);
     
     // To prevent redundant fetches and race conditions
     const fetchInProgress = useRef<string | null>(null);
 
-    const fetchUserProfile = useCallback(async (userId: string) => {
+    const getProfileFromMetadata = (user: User): Profile => {
+        const metadata = user.user_metadata || {};
+        const nickname = metadata.name || metadata.nickname || metadata.full_name || user.email?.split('@')[0] || "User";
+        return {
+            id: user.id,
+            nickname: nickname,
+            role: (metadata.role as any) || 'parent',
+            is_admin: metadata.is_admin || false,
+            phone: metadata.phone || '',
+            created_at: user.created_at || new Date().toISOString()
+        };
+    };
+
+    const fetchUserProfile = useCallback(async (userId: string, currentUser?: User) => {
         try {
             // Retry logic for profile fetching (needed after new signup for trigger latency)
             let data = null;
@@ -58,49 +73,44 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             if (data) {
                 setUserProfile(data);
                 return data;
-            } else {
-                // Fallback for social login or missing profile
-                // We attempt to UPSERT a new profile so that foreign key constraints (like children, read_books) don't fail
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session?.user) {
-                    const metadata = session.user.user_metadata || {};
-                    const nickname = metadata.name || metadata.nickname || metadata.full_name || session.user.email?.split('@')[0] || "User";
-                    
-                    const newProfile = {
-                        id: userId,
-                        nickname: nickname,
-                        role: metadata.role || 'parent',
-                        is_admin: metadata.is_admin || false,
-                        phone: metadata.phone || '',
-                    };
+            } else if (currentUser) {
+                // Initial fallback from metadata while waiting/retrying
+                const fallback = getProfileFromMetadata(currentUser);
+                setUserProfile(p => p || fallback);
 
-                    console.log("Upserting missing profile for user:", userId);
-                    const { data: upsertedData, error: upsertError } = await supabase
-                        .from('profiles')
-                        .upsert([newProfile], { onConflict: 'id' })
-                        .select()
-                        .maybeSingle();
-
-                    if (upsertError) {
-                        console.error("Failed to upsert profile record in DB:", upsertError);
-                        // Fallback to local state if DB insert fails (e.g. RLS issues)
-                        const localFallback: Profile = {
-                            ...newProfile,
-                            created_at: new Date().toISOString()
-                        } as Profile;
-                        setUserProfile(localFallback);
-                        return localFallback;
-                    }
-
-                    if (upsertedData) {
-                        setUserProfile(upsertedData);
-                        return upsertedData;
-                    }
-                }
+                // We attempt to UPSERT a new profile so that foreign key constraints don't fail
+                const metadata = currentUser.user_metadata || {};
+                const nickname = metadata.name || metadata.nickname || metadata.full_name || currentUser.email?.split('@')[0] || "User";
                 
-                setUserProfile(null);
-                return null;
+                const newProfile = {
+                    id: userId,
+                    nickname: nickname,
+                    role: metadata.role || 'parent',
+                    is_admin: metadata.is_admin || false,
+                    phone: metadata.phone || '',
+                };
+
+                console.log("Upserting missing profile for user:", userId);
+                const { data: upsertedData, error: upsertError } = await supabase
+                    .from('profiles')
+                    .upsert([newProfile], { onConflict: 'id' })
+                    .select()
+                    .maybeSingle();
+
+                if (upsertError) {
+                    console.error("Failed to upsert profile record in DB:", upsertError);
+                    setUserProfile(fallback);
+                    return fallback;
+                }
+
+                if (upsertedData) {
+                    setUserProfile(upsertedData);
+                    return upsertedData;
+                }
             }
+            
+            setUserProfile(null);
+            return null;
         } catch (error) {
             console.error("Error fetching user profile:", error);
             setUserProfile(null);
@@ -140,17 +150,30 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         const userId = currentSession?.user?.id;
         
         // Skip if same session already being processed
-        if (fetchInProgress.current === userId && userId) return;
+        if (fetchInProgress.current === userId && userId) {
+            setLoading(false);
+            return;
+        }
         fetchInProgress.current = userId || null;
 
         try {
             setSession(currentSession);
-            setUser(currentSession?.user ?? null);
+            const currentUser = currentSession?.user ?? null;
+            setUser(currentUser);
 
-            if (userId) {
+            if (userId && currentUser) {
+                // Immediate fallback from metadata for UI smoothness
+                // We generate a fresh fallback for this specific user
+                const metadataFallback = getProfileFromMetadata(currentUser);
+                setUserProfile(prev => {
+                    // Only update if current profile is missing OR belongs to a different user
+                    if (!prev || prev.id !== userId) return metadataFallback;
+                    return prev;
+                });
+                
                 // Fetch essential data in parallel
                 await Promise.allSettled([
-                    fetchUserProfile(userId),
+                    fetchUserProfile(userId, currentUser),
                     fetchChildrenData(userId)
                 ]);
             } else {
@@ -161,6 +184,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             console.error("Error syncing user data:", err);
         } finally {
             setLoading(false);
+            setIsInitialized(true);
             fetchInProgress.current = null;
         }
     }, [fetchUserProfile, fetchChildrenData]);
@@ -168,22 +192,39 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     useEffect(() => {
         // Initial session check
         const init = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            await syncUserData(session);
+            try {
+                // Use getUser() for more reliable check on initialization
+                const { data: { user: initialUser } } = await supabase.auth.getUser();
+                if (initialUser) {
+                    const { data: { session: initialSession } } = await supabase.auth.getSession();
+                    await syncUserData(initialSession);
+                } else {
+                    // No user found, finalize initialization
+                    setLoading(false);
+                    setIsInitialized(true);
+                }
+            } catch (e) {
+                console.error("Initial auth check failed:", e);
+                setLoading(false);
+                setIsInitialized(true);
+            }
         };
         
         init();
 
         // Listen for auth changes
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+            console.log("Auth event:", event);
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                await syncUserData(session);
+                setLoading(true);
+                await syncUserData(currentSession);
             } else if (event === 'SIGNED_OUT') {
                 setSession(null);
                 setUser(null);
                 setUserProfile(null);
                 setChildren([]);
                 setLoading(false);
+                setIsInitialized(true);
             }
         });
 
@@ -227,6 +268,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             userProfile, 
             children, 
             loading, 
+            isInitialized,
             signOut, 
             refreshProfile, 
             refreshChildren 

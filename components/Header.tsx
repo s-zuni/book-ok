@@ -30,7 +30,7 @@ export default function Header({
     handleSearch,
     activeSubMenu = '',
 }: HeaderProps) {
-    const { user, signOut, userProfile, loading: authLoading } = useAuth();
+    const { user, signOut, userProfile, loading: authLoading, isInitialized } = useAuth();
     const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -92,7 +92,7 @@ export default function Header({
 
                     {/* Desktop Auth Buttons */}
                     <div className="hidden lg:flex items-center gap-3 min-w-[80px] justify-end">
-                        {authLoading ? (
+                        {!isInitialized ? (
                             <div className="flex items-center gap-3 animate-pulse">
                                 <div className="w-10 h-10 rounded-full bg-gray-100"></div>
                                 <div className="hidden md:flex flex-col gap-1">
@@ -106,12 +106,14 @@ export default function Header({
                                     onClick={() => router.push('/mypage')}
                                     className="flex items-center gap-2 group"
                                 >
-                                    <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform">
-                                        {(userProfile?.nickname?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg shadow-emerald-100 group-hover:scale-110 transition-transform ${authLoading ? 'bg-gray-300 animate-pulse' : 'bg-emerald-500'}`}>
+                                        {(userProfile?.nickname?.charAt(0) || user?.user_metadata?.name?.charAt(0) || user?.email?.charAt(0) || 'U').toUpperCase()}
                                     </div>
                                     <div className="hidden md:flex flex-col items-start -space-y-1">
                                         <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-tighter">My Page</span>
-                                        <span className="text-sm font-black text-gray-900">{userProfile?.nickname || user?.user_metadata?.name || '사용자'}</span>
+                                        <span className={`text-sm font-black text-gray-900 ${authLoading && !userProfile ? 'opacity-50' : ''}`}>
+                                            {userProfile?.nickname || user?.user_metadata?.name || '사용자'}
+                                        </span>
                                     </div>
                                 </button>
                                 {userProfile?.is_admin && (
@@ -127,7 +129,6 @@ export default function Header({
                                     onClick={async () => {
                                         try {
                                             await signOut();
-                                            // Hard reload to clear App Router cache and ensure clean state
                                             window.location.href = '/';
                                         } catch (e) {
                                             console.error("Logout failed", e);

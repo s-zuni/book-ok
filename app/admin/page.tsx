@@ -19,7 +19,7 @@ import AdminStatistics from "@/components/AdminStatistics";
 type AdminTab = 'dashboard' | 'statistics' | 'community' | 'popups';
 
 export default function AdminPage() {
-    const { user, userProfile, loading, signOut } = useAuth();
+    const { user, userProfile, loading, isInitialized, signOut } = useAuth();
     const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
@@ -174,8 +174,14 @@ export default function AdminPage() {
         }
     };
 
-    if (loading) {
-        return <div className="h-screen flex items-center justify-center bg-gray-50">연결 정보를 확인 중입니다...</div>;
+    // Show full screen loader during initial authentication check
+    if (!isInitialized || (user && loading && !userProfile)) {
+        return (
+            <div className="h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
+                <div className="w-12 h-12 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+                <div className="text-gray-500 font-bold animate-pulse">관리자 권한을 확인하고 있습니다...</div>
+            </div>
+        );
     }
 
     // Admin Auth Gate with Login Prompt
