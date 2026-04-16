@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Header from "../../components/Header";
-import Sidebar from "../../components/Sidebar";
-import ServiceIntro from "../../components/intro/ServiceIntro";
-import VisionIntro from "../../components/intro/VisionIntro";
-import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
-import { Child } from "../../types";
+import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
+import ServiceIntro from "@widgets/intro/ServiceIntro";
+import VisionIntro from "@widgets/intro/VisionIntro";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
+import { Child } from "@shared/types";
 
 export default function IntroPage() {
     const [activeMenu, setActiveMenu] = useState<any>('intro');

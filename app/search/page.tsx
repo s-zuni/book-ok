@@ -2,15 +2,15 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Book } from "../../types";
-import BookGrid from "../../components/BookGrid";
-import BookList from "../../components/BookList";
+import { Book } from "@shared/types";
+import BookGrid from "@features/books/BookGrid";
+import BookList from "@features/books/BookList";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import Header from "../../components/Header";
-import Sidebar from "../../components/Sidebar";
-import { Child } from "../../types";
-import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
+import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
+import { Child } from "@shared/types";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
 
 export default function SearchPage() {
     return (

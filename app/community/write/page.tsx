@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import Header from "../../../components/Header";
-import { useAuth } from "../../../context/AuthContext";
-import { supabase } from "../../../lib/supabase";
+import Header from "@shared/ui/Header";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
 
 export default function WritePage() {

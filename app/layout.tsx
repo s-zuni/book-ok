@@ -1,28 +1,34 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Pretendard: self-hosted for Vercel build reliability
+const pretendard = localFont({
+  src: [
+    { path: "../public/fonts/Pretendard-Regular.subset.woff2", weight: "400", style: "normal" },
+    { path: "../public/fonts/Pretendard-Medium.subset.woff2", weight: "500", style: "normal" },
+    { path: "../public/fonts/Pretendard-SemiBold.subset.woff2", weight: "600", style: "normal" },
+    { path: "../public/fonts/Pretendard-Bold.subset.woff2", weight: "700", style: "normal" },
+    { path: "../public/fonts/Pretendard-ExtraBold.subset.woff2", weight: "800", style: "normal" },
+    { path: "../public/fonts/Pretendard-Black.subset.woff2", weight: "900", style: "normal" },
+  ],
+  variable: "--font-pretendard",
+  display: "swap",
+  fallback: ["-apple-system", "BlinkMacSystemFont", "system-ui", "sans-serif"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-import { Toaster } from "sonner"; // Import Toaster
+import { Toaster } from "sonner";
 
 export const viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
-  viewportFit: 'cover',
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
   title: "Book,ok | 우리 아이 맞춤 독서 플랫폼",
-  description: "AI 기반 독서 성향 분석과 연령별 맞춤 도서 추천으로 우리 아이 독서 습관을 길러주세요.",
+  description:
+    "AI 기반 독서 성향 분석과 연령별 맞춤 도서 추천으로 우리 아이 독서 습관을 길러주세요.",
   openGraph: {
     title: "Book,ok - 우리 아이 맞춤 독서 플랫폼",
     description: "AI 독서 성향 분석 & 맞춤 도서 추천",
@@ -30,19 +36,14 @@ export const metadata: Metadata = {
     locale: "ko_KR",
     siteName: "Book,ok",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Book,ok | 우리 아이 독서 친구",
-    description: "AI 분석으로 완성하는 우리 아이 독서 로드맵"
-  }
 };
 
-import { AuthProvider } from "../context/AuthContext";
-import { ChatbotProvider } from "../context/ChatbotContext"; // Import Context
-import { LoginModalProvider } from "../context/LoginModalContext"; // Import Login Modal Context
-import MobileBottomNav from "../components/MobileBottomNav";
-import SplashScreen from "../components/SplashScreen";
-import AIChatbot from "../components/AIChatbot"; // Import Chatbot
+import { AuthProvider } from "@features/auth/AuthContext";
+import { ChatbotProvider } from "@widgets/chatbot/ChatbotContext";
+import { LoginModalProvider } from "@features/auth/LoginModalContext";
+import MobileBottomNav from "@shared/ui/MobileBottomNav";
+import SplashScreen from "@shared/ui/SplashScreen";
+import AIChatbot from "@widgets/chatbot/AIChatbot";
 
 export default function RootLayout({
   children,
@@ -51,8 +52,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        {/* Pretendard CDN fallback */}
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pb-16 lg:pb-0`}
+        className={`${pretendard.variable} antialiased pb-16 lg:pb-0`}
+        style={{
+          fontFamily:
+            "var(--font-pretendard), 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
+        }}
       >
         <AuthProvider>
           <LoginModalProvider>
@@ -60,7 +72,7 @@ export default function RootLayout({
               <Toaster position="top-center" richColors closeButton />
               <SplashScreen />
               {children}
-              <AIChatbot /> {/* Global Chatbot Component */}
+              <AIChatbot />
               <div className="lg:hidden">
                 <MobileBottomNav />
               </div>

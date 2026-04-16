@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Header from "../../components/Header";
-import Sidebar from "../../components/Sidebar";
-import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
-import { Child, Post, MainMenu } from "../../types";
+import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
+import { Child, Post, MainMenu } from "@shared/types";
 import { Edit3, MessageSquare, Heart, Eye, Menu, Megaphone } from "lucide-react";
 import { useRouter } from "next/navigation";
-import SkeletonLoader from "../../components/SkeletonLoader";
-import MobileDrawer from "../../components/MobileDrawer";
+import SkeletonLoader from "@shared/ui/SkeletonLoader";
+import MobileDrawer from "@shared/ui/MobileDrawer";
 
 export default function CommunityPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('comm');

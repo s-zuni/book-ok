@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { supabase } from "../../../lib/supabase";
-import { Book, Review, Child } from "../../../types";
+import { supabase } from "@shared/lib/supabase";
+import { Book, Review, Child } from "@shared/types";
 import { Star, ChevronLeft, Bookmark, BookOpen, Check } from "lucide-react";
-import Header from "../../../components/Header";
-import Sidebar from "../../../components/Sidebar";
-import { useAuth } from "../../../context/AuthContext";
-import { useLoginModal } from "../../../context/LoginModalContext";
-import ChildSelectionModal from "../../../components/ChildSelectionModal";
+import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
+import { useAuth } from "@features/auth/AuthContext";
+import { useLoginModal } from "@features/auth/LoginModalContext";
+import ChildSelectionModal from "@features/children/ChildSelectionModal";
 import { toast } from "sonner";
 
 export default function BookDetailContent() {

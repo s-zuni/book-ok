@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "@shared/lib/supabase";
 import { useRouter } from "next/navigation";
 import { BookMarked, ArrowLeft, KeyRound, Eye, EyeOff, Shield } from "lucide-react";
 import { toast } from "sonner";

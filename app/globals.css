@@ -2,23 +2,48 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #1a1a1a;
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* Pretendard 기반 폰트 스택 */
+  --font-pretendard: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-pretendard);
 }
 
 /* Dark mode intentionally disabled — all components use light theme only */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: var(--font-pretendard);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Pretendard 기반 자간 최적화 */
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* Korean typography optimizations */
+h1, h2, h3, h4, h5, h6 {
+  word-break: keep-all;
+  letter-spacing: -0.02em;
 }
 
 /* Safe area padding utility for iOS notch/home bar */
@@ -28,4 +53,25 @@ body {
 
 .mb-safe {
   margin-bottom: var(--safe-area-bottom);
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Smooth scroll for anchor links */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus ring standardization */
+:focus-visible {
+  outline: 2px solid #2E5A44;
+  outline-offset: 2px;
+  border-radius: 4px;
 }

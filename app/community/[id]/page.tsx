@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft, MessageSquare, Heart, Eye, Megaphone } from "lucide-react";
-import Header from "../../../components/Header";
-import Sidebar from "../../../components/Sidebar";
-import { useAuth } from "../../../context/AuthContext";
-import { supabase } from "../../../lib/supabase";
-import { Child, Post, Comment } from "../../../types";
+import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
+import { Child, Post, Comment } from "@shared/types";
 
 export default function PostDetailPage() {
     const params = useParams();

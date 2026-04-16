@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Header from "../../components/Header";
-import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
-import { Child, MainMenu, ReadBook } from "../../types";
+import Header from "@shared/ui/Header";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
+import { Child, MainMenu, ReadBook } from "@shared/types";
 import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
-import EmptyState from "../../components/EmptyState";
+import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
-import ReadingGoalWidget from "../../components/ReadingGoalWidget";
-import MobileDrawer from "../../components/MobileDrawer";
-import SkeletonLoader from "../../components/SkeletonLoader";
+import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
+import MobileDrawer from "@shared/ui/MobileDrawer";
+import SkeletonLoader from "@shared/ui/SkeletonLoader";
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');

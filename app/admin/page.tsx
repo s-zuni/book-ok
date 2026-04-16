@@ -1,20 +1,20 @@
 "use client";
 
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "@features/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Header from "../../components/Header";
-import { useLoginModal } from "../../context/LoginModalContext";
+import Header from "@shared/ui/Header";
+import { useLoginModal } from "@features/auth/LoginModalContext";
 import { 
     Shield, Users, BookOpen, BarChart3, 
     MessageSquare, Megaphone, Trash2, CheckCircle, 
     XCircle, Plus, Layout, ExternalLink, Calendar, 
     Lock, LogIn, PieChart, TrendingUp
 } from "lucide-react";
-import { supabase } from "../../lib/supabase";
-import { Post, Comment, Popup } from "../../types";
+import { supabase } from "@shared/lib/supabase";
+import { Post, Comment, Popup } from "@shared/types";
 import { toast } from "sonner";
-import AdminStatistics from "@/components/AdminStatistics";
+import AdminStatistics from "@widgets/admin/AdminStatistics";
 
 type AdminTab = 'dashboard' | 'statistics' | 'community' | 'popups';
 

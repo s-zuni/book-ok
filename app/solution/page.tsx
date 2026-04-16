@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Header from "../../components/Header";
-import Sidebar from "../../components/Sidebar";
-import ReadingAnalysis from "../../components/solution/ReadingAnalysis";
-import AISolution from "../../components/solution/AISolution";
-import { useAuth } from "../../context/AuthContext";
-import { supabase } from "../../lib/supabase";
-import { Child, Book } from "../../types";
+import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
+import ReadingAnalysis from "@widgets/solution/ReadingAnalysis";
+import AISolution from "@widgets/solution/AISolution";
+import { useAuth } from "@features/auth/AuthContext";
+import { supabase } from "@shared/lib/supabase";
+import { Child, Book } from "@shared/types";
 
 
 

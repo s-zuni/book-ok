@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import BookDetailContent from './BookDetailContent';
-import { supabase } from '../../../lib/supabase'; // NOTE: This client might be configured for client-side. For server, usually we use createServerComponentClient but for public data standard client or fetch is okay-ish if no RLS blocks it.
+import { supabase } from '@shared/lib/supabase'; // NOTE: This client might be configured for client-side. For server, usually we use createServerComponentClient but for public data standard client or fetch is okay-ish if no RLS blocks it.
 // Actually, for Aladin API, we can just fetch directly or reuse logic.
 
 type Props = {

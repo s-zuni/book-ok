@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, User, Bot, Paperclip, ChevronLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Header from "../../components/Header";
+import Header from "@shared/ui/Header";
 
 // Mock Chat Logic or Real AI Integration Point
 export default function ChatPage() {
