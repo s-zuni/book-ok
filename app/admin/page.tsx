@@ -184,7 +184,7 @@ export default function AdminPage() {
         );
     }
 
-    // Admin Auth Gate with Login Prompt
+    // Admin Auth Gate with Redirect Prompt
     if (!user || !userProfile?.is_admin) {
         return (
             <div className="h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -193,26 +193,26 @@ export default function AdminPage() {
                         <Lock size={40} />
                     </div>
                     <h1 className="text-3xl font-black text-gray-900 mb-4 tracking-tight">관리자 전용 공간</h1>
-                    <p className="text-gray-500 font-bold mb-10 leading-relaxed">
+                    <p className="text-gray-500 font-bold mb-10 leading-relaxed text-sm">
                         이 구역은 승인된 관리자만 접근 가능합니다.<br/>
-                        계정이 있다면 로그인해 주세요.
+                        계정이 있다면 {user ? "관리자 계정으로 다시 " : ""}로그인해 주세요.
                     </p>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                         <button 
                             onClick={async () => {
                                 if (user) {
                                     await signOut();
                                 }
-                                openLoginModal();
+                                router.push('/admin/login');
                             }}
-                            className="w-full py-5 bg-gray-900 text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-gray-200 flex items-center justify-center gap-2"
+                            className="w-full py-5 bg-[#1e2939] text-white font-black rounded-2xl hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-[#1e2939]/10 flex items-center justify-center gap-2"
                         >
                             <LogIn size={20} />
-                            관리자 로그인하기
+                            {user ? "다른 계정으로 로그인" : "관리자 로그인하기"}
                         </button>
                         <button 
                             onClick={() => router.push('/')}
-                            className="w-full py-5 bg-white text-gray-400 font-black rounded-2xl hover:bg-gray-50 transition-all"
+                            className="w-full py-4 text-gray-400 font-bold text-sm hover:text-gray-600 transition-all"
                         >
                             홈으로 돌아가기
                         </button>
