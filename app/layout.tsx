@@ -66,6 +66,12 @@ export default function RootLayout({
             "var(--font-pretendard), 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         }}
       >
+        {/* Inject Supabase Anon Key safely for client-side use */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window._SUPABASE_ANON_KEY = "${process.env.NEXT_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}";`,
+          }}
+        />
         <AuthProvider>
           <LoginModalProvider>
             <ChatbotProvider>

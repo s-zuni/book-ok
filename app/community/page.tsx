@@ -10,6 +10,7 @@ import { Edit3, MessageSquare, Heart, Eye, Menu, Megaphone } from "lucide-react"
 import { useRouter } from "next/navigation";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 import MobileDrawer from "@shared/ui/MobileDrawer";
+import { toast } from "sonner";
 
 export default function CommunityPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('comm');
@@ -87,9 +88,9 @@ export default function CommunityPage() {
                     setHasMore(false);
                 }
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Error fetching posts:", err);
-            // Ideally define success/error state to show user feedback
+            toast.error("게시글을 불러오는데 실패했습니다: " + (err.message || "알 수 없는 오류"));
         } finally {
             if (isInitial) setLoading(false);
         }
