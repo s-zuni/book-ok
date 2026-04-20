@@ -18,6 +18,7 @@ const pretendard = localFont({
 });
 
 import { Toaster } from "sonner";
+import Script from "next/script";
 
 export const viewport = {
   width: "device-width",
@@ -58,6 +59,14 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
+        {/* Inject Supabase Anon Key safely before other scripts load */}
+        <Script
+          id="supabase-env"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `window._SUPABASE_ANON_KEY = "${process.env.NEXT_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}";`,
+          }}
+        />
       </head>
       <body
         className={`${pretendard.variable} antialiased pb-16 lg:pb-0`}
@@ -66,12 +75,6 @@ export default function RootLayout({
             "var(--font-pretendard), 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif",
         }}
       >
-        {/* Inject Supabase Anon Key safely for client-side use */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window._SUPABASE_ANON_KEY = "${process.env.NEXT_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''}";`,
-          }}
-        />
         <AuthProvider>
           <LoginModalProvider>
             <ChatbotProvider>
