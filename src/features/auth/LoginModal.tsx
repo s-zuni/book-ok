@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
@@ -35,12 +35,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
     const handleOAuthLogin = async (provider: 'google' | 'kakao') => {
         try {
-            await supabase.auth.signInWithOAuth({
+            const callbackUrl = `${window.location.origin}/auth/callback`;
+            const currentPath = window.location.pathname + window.location.search;
+            
+            const { error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: window.location.href, // Redirect back to the same page
+                    redirectTo: `${callbackUrl}?next=${encodeURIComponent(currentPath)}`,
                 },
             });
+            if (error) throw error;
         } catch (error) {
             console.error(`${provider} login error:`, error);
         }

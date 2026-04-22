@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@shared/lib/supabase";
@@ -98,22 +98,15 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     .maybeSingle();
 
                 if (upsertError) {
-                    console.error("Failed to upsert profile record in DB:", upsertError);
-                    setUserProfile(fallback);
-                    return fallback;
+                    console.error('Profile upsert error:', upsertError);
+                    return newProfile;
                 }
-
-                if (upsertedData) {
-                    setUserProfile(upsertedData);
-                    return upsertedData;
-                }
+                return upsertedData || newProfile;
             }
             
-            setUserProfile(null);
             return null;
         } catch (error) {
             console.error("Error fetching user profile:", error);
-            setUserProfile(null);
             return null;
         }
     }, []);
@@ -149,7 +142,6 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     const syncUserData = useCallback(async (currentSession: Session | null) => {
         const userId = currentSession?.user?.id;
         
-        // Skip if same session already being processed
         if (fetchInProgress.current === userId && userId) {
             setLoading(false);
             return;
@@ -162,29 +154,26 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             setUser(currentUser);
 
             if (userId && currentUser) {
-                // Immediate fallback from metadata for UI smoothness
-                // We generate a fresh fallback for this specific user
-                const metadataFallback = getProfileFromMetadata(currentUser);
-                setUserProfile(prev => {
-                    // Only update if current profile is missing OR belongs to a different user
-                    if (!prev || prev.id !== userId) return metadataFallback;
-                    return prev;
-                });
+                // 세션이 확인되면 즉시 초기화 완료 상태로 변경하여 UI를 표시
+                setLoading(false);
+                setIsInitialized(true);
                 
-                // Fetch essential data in parallel
-                await Promise.allSettled([
-                    fetchUserProfile(userId, currentUser),
-                    fetchChildrenData(userId)
-                ]);
+                // 프로필과 자녀 데이터는 백그라운드에서 동기화
+                const profile = await fetchUserProfile(userId, currentUser);
+                setUserProfile(profile);
+                await fetchChildrenData(userId);
             } else {
                 setUserProfile(null);
                 setChildren([]);
+                setLoading(false);
+                setIsInitialized(true);
             }
         } catch (err) {
             console.error("Error syncing user data:", err);
-        } finally {
+            if (currentSession?.user) setUser(currentSession.user);
             setLoading(false);
             setIsInitialized(true);
+        } finally {
             fetchInProgress.current = null;
         }
     }, [fetchUserProfile, fetchChildrenData]);

@@ -35,5 +35,6 @@ export const supabase = createClient(safeUrl, safeKey, {
         autoRefreshToken: true,
         detectSessionInUrl: true,
         storageKey: 'bookok-auth-token',
+        flowType: 'pkce', // Explicitly use PKCE for better Next.js compatibility
     }
 });
