@@ -262,7 +262,14 @@ export default function AdminPage() {
                         
                         <div className="mt-8 pt-8 border-t border-gray-50">
                             <button 
-                                onClick={() => signOut()}
+                                onClick={async () => {
+                                    try {
+                                        await signOut();
+                                        window.location.href = '/admin/login';
+                                    } catch (e) {
+                                        window.location.href = '/';
+                                    }
+                                }}
                                 className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-red-400 hover:bg-red-50 transition-all"
                             >
                                 <XCircle size={20} />

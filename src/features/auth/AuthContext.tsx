@@ -230,25 +230,42 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         };
     }, [syncUserData]);
 
-    const signOut = async () => {
-        try {
-            await supabase.auth.signOut();
-        } catch (error) {
-            console.error("Error during signOut:", error);
-        } finally {
-            // Force clear all states regardless of Supabase response
-            setUser(null);
-            setSession(null);
-            setUserProfile(null);
-            setChildren([]);
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem('bookok-auth-token');
-                // Remove specific keys instead of clear() to avoid breaking Next.js hydration state
-                localStorage.removeItem('supabase.auth.token'); 
-                sessionStorage.removeItem('bookok-auth-token');
-            }
+    const signOut = useCallback(async () => {
+        // 1. Clear local UI state immediately for responsive feel
+        setUser(null);
+        setSession(null);
+        setUserProfile(null);
+        setChildren([]);
+        setLoading(false);
+        setIsInitialized(true);
+
+        // 2. Clear all possible storage keys immediately
+        if (typeof window !== 'undefined') {
+            const keysToRemove = [
+                'bookok-auth-token',
+                'supabase.auth.token',
+                'sb-tffvsyarxfujmvbqlutr-auth-token', // Specific project ref key just in case
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
         }
-    };
+
+        try {
+            // 3. Attempt server-side sign out (with timeout to prevent hanging)
+            const signOutPromise = supabase.auth.signOut();
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("SignOut timeout")), 3000)
+            );
+            
+            await Promise.race([signOutPromise, timeoutPromise]);
+            console.log("Successfully signed out from Supabase");
+        } catch (error) {
+            console.warn("Supabase signOut error (handled):", error);
+        }
+    }, []);
 
     const refreshProfile = async () => {
         if (user) await fetchUserProfile(user.id);

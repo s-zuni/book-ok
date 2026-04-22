@@ -1,4 +1,4 @@
-﻿import { BookMarked, Search, User, LogOut, X, Shield } from "lucide-react";
+import { BookMarked, Search, User, LogOut, X, Shield } from "lucide-react";
 import { MainMenu, ViewState } from "@shared/types";
 import { MENU_CONFIG } from "@shared/lib/constants";
 import { useAuth } from "@features/auth/AuthContext";
@@ -34,6 +34,7 @@ export default function Header({
     const { openLoginModal } = useLoginModal();
     const router = useRouter();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const onSearchSubmit = () => {
         if (searchQuery.trim()) {
@@ -127,17 +128,22 @@ export default function Header({
                                 )}
                                 <button
                                     onClick={async () => {
+                                        if (isLoggingOut) return;
+                                        setIsLoggingOut(true);
                                         try {
                                             await signOut();
+                                            // Using href for a full clean state on redirect
                                             window.location.href = '/';
                                         } catch (e) {
                                             console.error("Logout failed", e);
                                             window.location.href = '/';
                                         }
                                     }}
-                                    className="p-2 text-gray-400 hover:text-red-500"
+                                    disabled={isLoggingOut}
+                                    className={`p-2 transition-colors ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : 'text-gray-400 hover:text-red-500'}`}
+                                    title="로그아웃"
                                 >
-                                    <LogOut size={20} />
+                                    <LogOut size={20} className={isLoggingOut ? 'animate-pulse' : ''} />
                                 </button>
                             </div>
                         ) : (

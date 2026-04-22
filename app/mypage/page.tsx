@@ -79,6 +79,7 @@ export default function MyPage() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [isBooksLoading, setIsBooksLoading] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const handleChildProfileSubmit = async () => {
         if (!newChildNickname || !newChildBirthdate || !user) {
@@ -121,11 +122,17 @@ export default function MyPage() {
     // ... (rest of code) ...
 
     const handleLogout = async () => {
+        if (isLoggingOut) return;
+        setIsLoggingOut(true);
+        const toastId = toast.loading("로그아웃 중...");
+        
         try {
             await signOut();
+            toast.success("로그아웃되었습니다.", { id: toastId });
             window.location.href = '/'; 
         } catch (e) {
             console.error(e);
+            toast.error("로그아웃 중 오류가 발생했습니다.", { id: toastId });
             window.location.href = '/';
         }
     };
@@ -302,7 +309,13 @@ export default function MyPage() {
                         </div>
 
                         <div className="mt-8 text-center">
-                            <button onClick={handleLogout} className="text-gray-400 text-xs font-bold underline hover:text-red-500">로그아웃</button>
+                            <button 
+                                onClick={handleLogout} 
+                                disabled={isLoggingOut}
+                                className={`text-gray-400 text-xs font-bold underline hover:text-red-500 transition-opacity ${isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
+                            </button>
                         </div>
                     </>
                 )}
