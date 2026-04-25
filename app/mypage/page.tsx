@@ -336,29 +336,41 @@ export default function MyPage() {
                                     <SkeletonLoader type="list" count={3} />
                                 ) : readBooks.length > 0 ? (
                                     readBooks.map((item, idx) => (
-                                        <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
-                                                {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
+                                        <div key={idx} className="flex gap-5 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+                                            <div className="w-20 h-28 bg-gray-100 rounded-xl overflow-hidden shrink-0 shadow-sm flex items-center justify-center text-gray-300">
+                                                {item.books?.imgsrc ? (
+                                                    <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <BookOpen size={32} />
+                                                )}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
-                                                <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
-                                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                    {item.rating && (
-                                                        <div className="flex items-center gap-0.5">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star key={i} size={12} className={i < item.rating! ? 'text-yellow-400' : 'text-gray-300'} fill={i < item.rating! ? 'currentColor' : 'none'} />
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {item.difficulty_rating && (
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.difficulty_rating === '쉬움' ? 'bg-blue-100 text-blue-700' : item.difficulty_rating === '적당' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                                            {item.difficulty_rating}
-                                                        </span>
-                                                    )}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{item.books?.title || '제목 없음'}</h4>
+                                                    <p className="text-sm text-gray-400 mt-1 line-clamp-1">{item.books?.author || '저자 미상'}</p>
                                                 </div>
-                                                <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
-                                                    {new Date(item.read_date).toLocaleDateString()} 읽음
+                                                
+                                                <div className="mt-3">
+                                                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                                                        {item.rating && (
+                                                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-lg border border-yellow-100">
+                                                                <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                                                                <span className="text-xs font-black text-yellow-700">{item.rating}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.difficulty_rating && (
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                                                                item.difficulty_rating === '쉬움' ? 'bg-blue-50 text-blue-600' : 
+                                                                item.difficulty_rating === '적당' ? 'bg-green-50 text-green-600' : 
+                                                                'bg-orange-50 text-orange-600'
+                                                            }`}>
+                                                                {item.difficulty_rating}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-bold">
+                                                        {new Date(item.read_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 읽음
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -385,29 +397,41 @@ export default function MyPage() {
                                     <SkeletonLoader type="list" count={3} />
                                 ) : readBooks.length > 0 ? (
                                     readBooks.map((item, idx) => (
-                                        <div key={idx} className="flex gap-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                                            <div className="w-16 h-24 bg-gray-200 rounded-lg overflow-hidden shrink-0">
-                                                {item.books?.imgsrc && <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />}
+                                        <div key={idx} className="flex gap-5 p-5 bg-white rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow border-l-4 border-l-green-500">
+                                            <div className="w-20 h-28 bg-gray-100 rounded-xl overflow-hidden shrink-0 shadow-sm flex items-center justify-center text-gray-300">
+                                                {item.books?.imgsrc ? (
+                                                    <img src={item.books.imgsrc} alt="" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <BookOpen size={32} />
+                                                )}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-bold text-gray-900 line-clamp-1">{item.books?.title || '제목 없음'}</h4>
-                                                <p className="text-xs text-gray-500 mb-2">{item.books?.author}</p>
-                                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                                    {item.rating && (
-                                                        <div className="flex items-center gap-0.5">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <Star key={i} size={12} className={i < item.rating! ? 'text-yellow-400' : 'text-gray-300'} fill={i < item.rating! ? 'currentColor' : 'none'} />
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    {item.difficulty_rating && (
-                                                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${item.difficulty_rating === '쉬움' ? 'bg-blue-100 text-blue-700' : item.difficulty_rating === '적당' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                                                            {item.difficulty_rating}
-                                                        </span>
-                                                    )}
+                                            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{item.books?.title || '제목 없음'}</h4>
+                                                    <p className="text-sm text-gray-400 mt-1 line-clamp-1">{item.books?.author || '저자 미상'}</p>
                                                 </div>
-                                                <div className="inline-block px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">
-                                                    {new Date(item.read_date).toLocaleDateString()} 읽음
+                                                
+                                                <div className="mt-3">
+                                                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                                                        {item.rating && (
+                                                            <div className="flex items-center gap-1 bg-yellow-50 px-2 py-0.5 rounded-lg border border-yellow-100">
+                                                                <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                                                                <span className="text-xs font-black text-yellow-700">{item.rating}</span>
+                                                            </div>
+                                                        )}
+                                                        {item.difficulty_rating && (
+                                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                                                                item.difficulty_rating === '쉬움' ? 'bg-blue-50 text-blue-600' : 
+                                                                item.difficulty_rating === '적당' ? 'bg-green-50 text-green-600' : 
+                                                                'bg-orange-50 text-orange-600'
+                                                            }`}>
+                                                                {item.difficulty_rating}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-gray-400 text-[11px] font-bold">
+                                                        {new Date(item.read_date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 읽음
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

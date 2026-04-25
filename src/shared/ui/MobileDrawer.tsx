@@ -27,7 +27,7 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
     if (!visible && !isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-[100] lg:hidden">
             {/* Backdrop */}
             <div
                 className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
@@ -36,7 +36,7 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
 
             {/* Drawer Content */}
             <div
-                className={`absolute bottom-0 left-0 right-0 max-h-[85vh] bg-white rounded-t-4xl shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`absolute bottom-0 left-0 right-0 max-h-[92vh] bg-white rounded-t-[40px] shadow-2xl flex flex-col transition-transform duration-300 ease-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
             >
                 {/* Handle Bar */}
                 <div className="flex justify-center pt-3 pb-1" onClick={onClose}>
@@ -45,14 +45,14 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
 
                 {/* Header */}
                 <div className="px-6 py-4 flex items-center justify-between border-b border-gray-50">
-                    <h3 className="text-lg font-black text-gray-900">{title}</h3>
+                    <h3 className="text-xl font-black text-gray-900">{title}</h3>
                     <button onClick={onClose} className="p-2 bg-gray-50 rounded-full text-gray-500 hover:bg-gray-100">
                         <X size={20} />
                     </button>
                 </div>
 
                 {/* Scrollable Body */}
-                <div className="flex-1 overflow-y-auto p-6 pb-safe">
+                <div className="flex-1 overflow-y-auto p-6 pb-24">
                     {children}
                 </div>
             </div>
