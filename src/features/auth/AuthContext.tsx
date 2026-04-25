@@ -36,7 +36,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         return {
             id: user.id,
             nickname: nickname,
-            role: (metadata.role as any) || 'parent',
+            role: (metadata.role as Profile["role"]) || 'parent',
             is_admin: metadata.is_admin || false,
             phone: metadata.phone || '',
             created_at: user.created_at || new Date().toISOString()
@@ -47,12 +47,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         try {
             // Retry logic for profile fetching (needed after new signup for trigger latency)
             let data = null;
-            let error = null;
             let retries = 0;
             const maxRetries = 3;
 
             while (retries < maxRetries) {
-                const { data: profile, error: fetchError } = await supabase
+                const { data: profile } = await supabase
                     .from('profiles')
                     .select('*')
                     .eq('id', userId)
@@ -121,7 +120,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             if (error) throw error;
             
             if (data) {
-                const childrenWithAge = data.map((child: any) => {
+                const childrenWithAge = data.map((child: Child) => {
                     const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : 0;
                     const currentYear = new Date().getFullYear();
                     const age = birthYear > 0 ? currentYear - birthYear : 0;
@@ -216,12 +215,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 setLoading(true);
                 await syncUserData(currentSession);
             } else if (event === 'SIGNED_OUT') {
-                setSession(null);
-                setUser(null);
-                setUserProfile(null);
-                setChildren([]);
-                setLoading(false);
-                setIsInitialized(true);
+                await syncUserData(null);
             }
         });
 
