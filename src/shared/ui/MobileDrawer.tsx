@@ -27,7 +27,7 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
     if (!visible && !isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] lg:hidden">
+        <div className="fixed inset-0 z-100 lg:hidden">
             {/* Backdrop */}
             <div
                 className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}
