@@ -29,6 +29,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     
     // To prevent redundant fetches and race conditions
     const fetchInProgress = useRef<string | null>(null);
+    const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+    const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
     const getProfileFromMetadata = (user: User): Profile => {
         const metadata = user.user_metadata || {};
@@ -177,6 +179,88 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         }
     }, [fetchUserProfile, fetchChildrenData]);
 
+    const signOut = useCallback(async () => {
+        // Clear timer if any
+        if (inactivityTimer.current) {
+            clearTimeout(inactivityTimer.current);
+            inactivityTimer.current = null;
+        }
+
+        // 1. Clear local UI state immediately for responsive feel
+        setUser(null);
+        setSession(null);
+        setUserProfile(null);
+        setChildren([]);
+        setLoading(false);
+        setIsInitialized(true);
+
+        // 2. Clear all possible storage keys immediately
+        if (typeof window !== 'undefined') {
+            const keysToRemove = [
+                'bookok-auth-token',
+                'supabase.auth.token',
+                'sb-tffvsyarxfujmvbqlutr-auth-token', // Specific project ref key just in case
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+        }
+
+        try {
+            // 3. Attempt server-side sign out (with timeout to prevent hanging)
+            const signOutPromise = supabase.auth.signOut();
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error("SignOut timeout")), 3000)
+            );
+            
+            await Promise.race([signOutPromise, timeoutPromise]);
+            console.log("Successfully signed out from Supabase");
+        } catch (error) {
+            console.warn("Supabase signOut error (handled):", error);
+        }
+    }, []);
+
+    // Auto Logout Logic
+    const resetInactivityTimer = useCallback(() => {
+        if (inactivityTimer.current) {
+            clearTimeout(inactivityTimer.current);
+        }
+        
+        if (user) {
+            inactivityTimer.current = setTimeout(() => {
+                console.log("Auto logging out due to inactivity");
+                signOut();
+            }, INACTIVITY_TIMEOUT);
+        }
+    }, [user, signOut]);
+
+    useEffect(() => {
+        if (user) {
+            const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+            
+            const handleActivity = () => {
+                resetInactivityTimer();
+            };
+
+            events.forEach(event => {
+                window.addEventListener(event, handleActivity);
+            });
+
+            resetInactivityTimer();
+
+            return () => {
+                events.forEach(event => {
+                    window.removeEventListener(event, handleActivity);
+                });
+                if (inactivityTimer.current) {
+                    clearTimeout(inactivityTimer.current);
+                }
+            };
+        }
+    }, [user, resetInactivityTimer]);
+
     useEffect(() => {
         // Failsafe: force initialization after 5s to prevent infinite loading
         const failsafeTimer = setTimeout(() => {
@@ -224,42 +308,6 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         };
     }, [syncUserData]);
 
-    const signOut = useCallback(async () => {
-        // 1. Clear local UI state immediately for responsive feel
-        setUser(null);
-        setSession(null);
-        setUserProfile(null);
-        setChildren([]);
-        setLoading(false);
-        setIsInitialized(true);
-
-        // 2. Clear all possible storage keys immediately
-        if (typeof window !== 'undefined') {
-            const keysToRemove = [
-                'bookok-auth-token',
-                'supabase.auth.token',
-                'sb-tffvsyarxfujmvbqlutr-auth-token', // Specific project ref key just in case
-            ];
-            
-            keysToRemove.forEach(key => {
-                localStorage.removeItem(key);
-                sessionStorage.removeItem(key);
-            });
-        }
-
-        try {
-            // 3. Attempt server-side sign out (with timeout to prevent hanging)
-            const signOutPromise = supabase.auth.signOut();
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error("SignOut timeout")), 3000)
-            );
-            
-            await Promise.race([signOutPromise, timeoutPromise]);
-            console.log("Successfully signed out from Supabase");
-        } catch (error) {
-            console.warn("Supabase signOut error (handled):", error);
-        }
-    }, []);
 
     const refreshProfile = async () => {
         if (user) await fetchUserProfile(user.id);
