@@ -38,7 +38,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         return {
             id: user.id,
             nickname: nickname,
-            role: (metadata.role as Profile["role"]) || 'parent',
+            role: (metadata.role as Profile["role"]) || 'user',
             is_admin: metadata.is_admin || false,
             phone: metadata.phone || '',
             created_at: user.created_at || new Date().toISOString()
@@ -86,7 +86,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 const newProfile = {
                     id: userId,
                     nickname: nickname,
-                    role: metadata.role || 'parent',
+                    role: metadata.role || 'user',
                     is_admin: metadata.is_admin || false,
                     phone: metadata.phone || '',
                 };

@@ -90,7 +90,7 @@ export interface ReadingGoal {
 export interface Profile {
     id: string;
     nickname: string;
-    role: 'parent' | 'children';
+    role: 'parent' | 'children' | 'user';
     is_admin: boolean;
     phone?: string;
     created_at: string;
