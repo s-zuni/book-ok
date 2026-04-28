@@ -199,7 +199,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             const keysToRemove = [
                 'bookok-auth-token',
                 'supabase.auth.token',
-                'sb-tffvsyarxfujmvbqlutr-auth-token', // Specific project ref key just in case
+                'sb-holaqlorkluptvrcfwtu-auth-token', // Specific project ref key just in case
             ];
             
             keysToRemove.forEach(key => {
