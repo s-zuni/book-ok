@@ -146,7 +146,7 @@ export default function AuthPage() {
                     data: {
                         name: trimmedNickname,
                         phone: trimmedPhone,
-                        role: 'user',
+                        role: 'parent',
                         user_id: trimmedId
                     }
                 }
