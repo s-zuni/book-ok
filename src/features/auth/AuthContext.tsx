@@ -194,8 +194,9 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         setLoading(false);
         setIsInitialized(true);
 
-        // 2. Clear all possible storage keys immediately
+        // 2. Clear all possible storage keys and cookies immediately
         if (typeof window !== 'undefined') {
+            // LocalStorage/SessionStorage
             const keysToRemove = [
                 'bookok-auth-token',
                 'supabase.auth.token',
@@ -205,6 +206,17 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             keysToRemove.forEach(key => {
                 localStorage.removeItem(key);
                 sessionStorage.removeItem(key);
+            });
+
+            // Cookies: SSR using @supabase/ssr often relies on cookies.
+            // We clear them explicitly to prevent the middleware or server components 
+            // from restoring the session.
+            const cookiePrefix = 'sb-holaqlorkluptvrcfwtu-auth-token';
+            document.cookie.split(';').forEach(cookie => {
+                const name = cookie.split('=')[0].trim();
+                if (name.includes('auth-token') || name.includes('supabase')) {
+                    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                }
             });
         }
 
