@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
+import { useNativeBridge } from "@shared/lib/native-bridge";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -16,6 +17,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const { vibrate } = useNativeBridge();
 
     useEffect(() => {
         if (isOpen) {
@@ -33,8 +35,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         };
     }, [isOpen]);
 
-    const handleOAuthLogin = async (provider: 'google' | 'kakao') => {
+    const handleOAuthLogin = async (provider: 'google' | 'kakao' | 'apple') => {
         try {
+            vibrate();
             const callbackUrl = `${window.location.origin}/auth/callback`;
             const currentPath = window.location.pathname + window.location.search;
             
@@ -146,6 +149,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                     </svg>
                                 </div>
                                 <span className="flex-1 text-black/85 font-bold text-[15px]">카카오 계정으로 계속하기</span>
+                            </button>
+
+                            <button
+                                onClick={() => handleOAuthLogin('apple')}
+                                className="flex items-center w-full bg-black rounded-xl p-3 hover:bg-black/90 transition-colors shadow-sm relative group"
+                            >
+                                <div className="absolute left-4">
+                                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M17.05 20.28c-.96.95-2.12 1.72-3.48 1.72-1.33 0-1.85-.83-3.47-.83-1.64 0-2.22.81-3.46.83-1.34.02-2.61-.85-3.6-2.16C1.02 17.26.11 13.91.95 10.7c.41-1.57 1.39-2.88 2.76-3.71 1.1-.67 2.37-1.07 3.59-1.07.82 0 1.9.3 2.6.59.5.21 1.05.44 1.54.44.43 0 .93-.2 1.4-.41.87-.39 2.06-.82 3.19-.82 1.48 0 2.87.5 3.86 1.44-.06.05-2.65 1.53-2.62 4.67.03 3.73 3.09 4.97 3.12 4.98-.02.05-.49 1.67-1.35 2.53zM13.2 2.76c.72-.88 1.2-2.11 1.07-3.32-1.04.04-2.3.69-3.04 1.56-.67.76-1.25 1.98-1.12 3.17 1.15.09 2.33-.53 3.09-1.41z" />
+                                    </svg>
+                                </div>
+                                <span className="flex-1 text-white font-bold text-[15px]">Apple로 계속하기</span>
                             </button>
                         </div>
 

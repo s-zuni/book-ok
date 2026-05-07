@@ -7,6 +7,8 @@ import MobileSubMenu from "./MobileSubMenu";
 import { useState } from "react";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 
+import { useNativeBridge } from "@shared/lib/native-bridge";
+
 interface HeaderProps {
     view: ViewState;
     setView: (view: ViewState) => void;
@@ -33,6 +35,7 @@ export default function Header({
     const { user, signOut, userProfile, loading: authLoading, isInitialized } = useAuth();
     const { openLoginModal } = useLoginModal();
     const router = useRouter();
+    const { isApp, notifyLogout } = useNativeBridge();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -55,7 +58,7 @@ export default function Header({
     };
 
     return (
-        <header className="bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)] sticky top-0 z-60">
+        <header className={`bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)] sticky top-0 z-60 ${isApp ? 'border-b border-gray-100' : ''}`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 lg:h-20 flex items-center justify-between gap-4">
                 {/* Logo */}
                 <div
@@ -131,6 +134,9 @@ export default function Header({
                                         if (isLoggingOut) return;
                                         setIsLoggingOut(true);
                                         try {
+                                            // 앱 환경이면 네이티브에 알림
+                                            if (isApp) notifyLogout();
+                                            
                                             await signOut();
                                             // Using href for a full clean state on redirect
                                             window.location.href = '/';
@@ -146,6 +152,7 @@ export default function Header({
                                     <LogOut size={20} className={isLoggingOut ? 'animate-pulse' : ''} />
                                 </button>
                             </div>
+
                         ) : (
                             <button
                                 onClick={openLoginModal}

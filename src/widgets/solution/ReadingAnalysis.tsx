@@ -1,4 +1,4 @@
-import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Sparkles, Bot, CheckCircle2, ShieldCheck, BookOpen, ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import { Book, Child } from "@shared/types";
 import ReadingCategoryChart from "@widgets/solution/ReadingCategoryChart";
 import AIRecommendationList from "@widgets/solution/AIRecommendationList";
@@ -9,6 +9,7 @@ import { marked } from 'marked';
 import { useState } from "react";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
+import { useNativeBridge } from "@shared/lib/native-bridge";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -31,8 +32,25 @@ export default function ReadingAnalysis({
 }: ReadingAnalysisProps) {
     const { user } = useAuth();
     const { openLoginModal } = useLoginModal();
+    const { isApp, vibrate, share } = useNativeBridge();
     const [isObservationOpen, setIsObservationOpen] = useState(false);
     const [observations, setObservations] = useState<{ [key: string]: string }>({});
+
+    const handleShare = () => {
+        const shareData = {
+            title: `[Book,ok] ${activeChild?.name} 아이 독서 성향 분석 리포트`,
+            message: `${activeChild?.name} 아이의 맞춤형 독서 분석 결과가 도착했습니다! 지금 확인해보세요.`,
+            url: window.location.href
+        };
+
+        if (isApp) {
+            share(shareData);
+        } else if (navigator.share) {
+            navigator.share(shareData).catch(() => {});
+        } else {
+            alert('공유 기능을 지원하지 않는 브라우저입니다. URL을 복사해주세요.');
+        }
+    };
 
     const handleObservationChange = (key: string, value: string) => {
         setObservations(prev => ({ ...prev, [key]: value }));
@@ -132,6 +150,7 @@ export default function ReadingAnalysis({
 
                     <button
                         onClick={() => {
+                            vibrate();
                             if (!user) return openLoginModal();
                             getReadingAnalysis(observations);
                         }}
@@ -202,10 +221,19 @@ export default function ReadingAnalysis({
             {result && (
                 <div className="space-y-8 mt-8">
                     <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-10 animate-in slide-in-from-bottom-5">
-                        <h3 className="text-2xl font-black mb-6 flex items-center gap-2">
-                            <Sparkles className="text-green-500" />
-                            AI 솔루션 레포트
-                        </h3>
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-black flex items-center gap-2">
+                                <Sparkles className="text-green-500" />
+                                AI 솔루션 레포트
+                            </h3>
+                            <button
+                                onClick={handleShare}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-xl font-bold transition-colors text-sm"
+                            >
+                                <Share2 size={18} />
+                                {isApp ? '앱 공유' : '공유하기'}
+                            </button>
+                        </div>
                         <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed"
                             dangerouslySetInnerHTML={{ __html: marked.parse(result as string) as string }}
                         />
