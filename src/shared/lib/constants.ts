@@ -13,11 +13,11 @@ export const RECOMMENDATION_TABS: Record<string, { label: string; query: string;
         { label: '서울시교육청', query: '서울시교육청' },
         { label: '국립어린이청소년도서관', query: '국립어린이청소년도서관', categoryId: '1108' }
     ],
-    '연령별 추천 도서': [
+    '연령별 매칭 도서': [
         { label: '0~3세', query: '', categoryId: '35088', apiType: 'ItemList', queryType: 'Bestseller' },
-        { label: '4~7세', query: '', categoryId: '35106', apiType: 'ItemList', queryType: 'Bestseller' },
-        { label: '초등 1~2학년', query: '', categoryId: '48803', apiType: 'ItemList', queryType: 'Bestseller' },
-        { label: '초등 3~4학년', query: '', categoryId: '48804', apiType: 'ItemList', queryType: 'Bestseller' }
+        { label: '3~6세', query: '', categoryId: '35106', apiType: 'ItemList', queryType: 'Bestseller' },
+        { label: '초등 저학년', query: '', categoryId: '48803', apiType: 'ItemList', queryType: 'Bestseller' },
+        { label: '초등 고학년', query: '', categoryId: '48804', apiType: 'ItemList', queryType: 'Bestseller' }
     ],
     '수상 도서작': [
         { label: '전체', query: '문학상', apiType: 'ItemSearch' },

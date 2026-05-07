@@ -34,7 +34,9 @@ export default function RecommendationSection({ title, subtitle, query, category
     const currentQuery = activeTabConfig?.query || query;
     const currentCategoryId = activeTabConfig?.categoryId || categoryId;
     const currentApiType = activeTabConfig?.apiType || 'ItemSearch';
-    const currentQueryType = activeTabConfig?.queryType || 'Bestseller';
+    const currentQueryType = (currentApiType === 'ItemList') 
+        ? (sortBy === 'PublishTime' ? 'ItemNewAll' : 'Bestseller')
+        : (activeTabConfig?.queryType || 'Bestseller');
 
     const [displayCount, setDisplayCount] = useState(12); // Initial display count
 
