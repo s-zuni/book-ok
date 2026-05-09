@@ -155,14 +155,15 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             setUser(currentUser);
 
             if (userId && currentUser) {
-                // 세션이 확인되면 즉시 초기화 완료 상태로 변경하여 UI를 표시
+                // 프로필과 자녀 데이터를 모두 불러온 후 초기화 완료 처리
+                // (children 데이터가 준비된 뒤 UI가 렌더링되어야 워터폴 지연 방지)
+                const [profile] = await Promise.all([
+                    fetchUserProfile(userId, currentUser),
+                    fetchChildrenData(userId),
+                ]);
+                setUserProfile(profile);
                 setLoading(false);
                 setIsInitialized(true);
-                
-                // 프로필과 자녀 데이터는 백그라운드에서 동기화
-                const profile = await fetchUserProfile(userId, currentUser);
-                setUserProfile(profile);
-                await fetchChildrenData(userId);
             } else {
                 setUserProfile(null);
                 setChildren([]);
