@@ -11,7 +11,7 @@ export default function PrivacyPage() {
           홈으로 돌아가기
         </Link>
         <h1 className="text-3xl font-black text-gray-900 mb-2">개인정보 처리방침</h1>
-        <p className="text-gray-400 mb-12">시행일자: 2024년 4월 16일</p>
+        <p className="text-gray-400 mb-12">시행일자: 2026년 5월 11일</p>
 
         <div className="prose prose-slate max-w-none space-y-10">
           <section>

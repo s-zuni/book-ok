@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Note: This only works when hosted on a server (Vercel, etc.)
+    // Ignored in static export (Capacitor)
     return [
       {
         source: "/api/:path*",
@@ -29,6 +31,8 @@ const nextConfig: NextConfig = {
     ];
   },
   async rewrites() {
+    // Note: This only works when hosted on a server (Vercel, etc.)
+    // Ignored in static export (Capacitor)
     return [
       // Supabase REST API proxy — resolves domain-level CORS on Vercel
       {

@@ -5,7 +5,7 @@ import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
 import { Child, MainMenu, ReadBook } from "@shared/types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
@@ -80,6 +80,31 @@ export default function MyPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isBooksLoading, setIsBooksLoading] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+    const handleDeleteAccount = async () => {
+        if (isDeletingAccount) return;
+        setIsDeletingAccount(true);
+        const toastId = toast.loading("계정 삭제 중...");
+
+        try {
+            const res = await fetch('/api/auth/delete-account', { method: 'DELETE' });
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || '계정 삭제 실패');
+            }
+
+            toast.success("계정이 삭제되었습니다. 이용해 주셔서 감사합니다.", { id: toastId, duration: 4000 });
+            setTimeout(() => { window.location.href = '/'; }, 2000);
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : '알 수 없는 오류';
+            toast.error("계정 삭제 중 오류: " + message, { id: toastId });
+            setIsDeletingAccount(false);
+            setShowDeleteModal(false);
+        }
+    };
 
     const handleChildProfileSubmit = async () => {
         if (!newChildNickname || !newChildBirthdate || !user) {
@@ -308,7 +333,7 @@ export default function MyPage() {
                             )}
                         </div>
 
-                        <div className="mt-8 text-center">
+                        <div className="mt-8 text-center space-y-3">
                             <button 
                                 onClick={handleLogout} 
                                 disabled={isLoggingOut}
@@ -316,6 +341,15 @@ export default function MyPage() {
                             >
                                 {isLoggingOut ? "로그아웃 중..." : "로그아웃"}
                             </button>
+                            <div>
+                                <button
+                                    onClick={() => setShowDeleteModal(true)}
+                                    disabled={isDeletingAccount}
+                                    className="text-gray-300 text-xs hover:text-red-400 transition-colors"
+                                >
+                                    계정 탈퇴
+                                </button>
+                            </div>
                         </div>
                     </>
                 )}
@@ -443,6 +477,59 @@ export default function MyPage() {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* 계정 탈퇴 확인 모달 */}
+            {showDeleteModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                        {/* 헤더 */}
+                        <div className="bg-red-50 px-6 pt-8 pb-6 text-center">
+                            <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <AlertTriangle size={28} className="text-red-500" />
+                            </div>
+                            <h3 className="text-xl font-black text-gray-900">정말 탈퇴하시겠어요?</h3>
+                            <p className="text-sm text-gray-500 mt-2 leading-relaxed">
+                                탈퇴 시 모든 데이터가 <strong className="text-red-600">영구 삭제</strong>되며
+                                <br />복구할 수 없습니다.
+                            </p>
+                        </div>
+                        {/* 삭제되는 데이터 목록 */}
+                        <div className="px-6 py-5">
+                            <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">삭제되는 데이터</p>
+                            <ul className="space-y-2">
+                                {['아이 프로필 및 독서 기록', '독서 목표 및 분석 리포트', '계정 정보 및 로그인 이력'].map((item) => (
+                                    <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
+                                        <X size={14} className="text-red-400 shrink-0" />
+                                        {item}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                        {/* 버튼 */}
+                        <div className="px-6 pb-6 flex flex-col gap-2">
+                            <button
+                                onClick={handleDeleteAccount}
+                                disabled={isDeletingAccount}
+                                className="w-full py-3.5 bg-red-500 hover:bg-red-600 text-white font-black rounded-2xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {isDeletingAccount ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        삭제 중...
+                                    </>
+                                ) : '네, 탈퇴합니다'}
+                            </button>
+                            <button
+                                onClick={() => setShowDeleteModal(false)}
+                                disabled={isDeletingAccount}
+                                className="w-full py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-2xl transition-colors"
+                            >
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
