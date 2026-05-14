@@ -1,11 +1,49 @@
-
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+// ──────────────────────────────────────────────
+// Zod v4 스키마: 채팅 메시지 유효성 검증
+// ──────────────────────────────────────────────
+const MessageSchema = z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().min(1, '메시지 내용은 비어있을 수 없습니다.'),
+});
+
+const ChatRequestSchema = z.object({
+    messages: z
+        .array(MessageSchema)
+        .min(1, '메시지가 최소 1개 이상 필요합니다.'),
+});
 
 export async function POST(req: Request) {
     try {
-        const { messages } = await req.json();
-        const apiKey = process.env.OPENAI_API_KEY;
+        // 1. JSON 파싱
+        let rawBody: unknown;
+        try {
+            rawBody = await req.json();
+        } catch {
+            return NextResponse.json(
+                { error: '요청 바디가 올바른 JSON 형식이 아닙니다.' },
+                { status: 400 }
+            );
+        }
 
+        // 2. Zod 스키마 검증 (safeParse)
+        const parsed = ChatRequestSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            // Zod v4: issues 프로퍼티 사용
+            const errorMessages = parsed.error.issues.map(
+                (issue) => `[${issue.path.join('.')}] ${issue.message}`
+            );
+            return NextResponse.json(
+                { error: '입력값이 유효하지 않습니다.', details: errorMessages },
+                { status: 422 }
+            );
+        }
+
+        const { messages } = parsed.data;
+
+        const apiKey = process.env.OPENAI_API_KEY;
         if (!apiKey) {
             return NextResponse.json({ error: 'OpenAI API Key not configured.' }, { status: 500 });
         }
@@ -59,8 +97,9 @@ export async function POST(req: Request) {
         const result = data.choices[0].message;
         return NextResponse.json({ result });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch response';
         console.error('Chat API Error:', error);
-        return NextResponse.json({ error: error.message || 'Failed to fetch response' }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

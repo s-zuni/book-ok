@@ -1,9 +1,40 @@
-
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
+
+// ──────────────────────────────────────────────
+// Zod v4 스키마: 요청 바디 유효성 검증
+// ──────────────────────────────────────────────
+const OpenAIRequestSchema = z.object({
+    prompt: z.string().min(1, 'prompt는 비어있을 수 없습니다.'),
+});
 
 export async function POST(req: Request) {
     try {
-        const { prompt } = await req.json();
+        // 1. JSON 파싱
+        let rawBody: unknown;
+        try {
+            rawBody = await req.json();
+        } catch {
+            return NextResponse.json(
+                { error: '요청 바디가 올바른 JSON 형식이 아닙니다.' },
+                { status: 400 }
+            );
+        }
+
+        // 2. Zod 스키마 검증 (safeParse)
+        const parsed = OpenAIRequestSchema.safeParse(rawBody);
+        if (!parsed.success) {
+            // Zod v4: issues 프로퍼티 사용
+            const errorMessages = parsed.error.issues.map(
+                (issue) => `[${issue.path.join('.')}] ${issue.message}`
+            );
+            return NextResponse.json(
+                { error: '입력값이 유효하지 않습니다.', details: errorMessages },
+                { status: 422 }
+            );
+        }
+
+        const { prompt } = parsed.data;
         const apiKey = process.env.OPENAI_API_KEY;
 
         if (!apiKey) {
@@ -35,8 +66,9 @@ export async function POST(req: Request) {
         const result = data.choices[0].message.content;
         return NextResponse.json({ result });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to fetch response';
         console.error('OpenAI API Error:', error);
-        return NextResponse.json({ error: error.message || 'Failed to fetch response' }, { status: 500 });
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
