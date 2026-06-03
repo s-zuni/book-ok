@@ -5,7 +5,7 @@ import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
 import { Child, MainMenu, ReadBook } from "@shared/types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
@@ -16,7 +16,32 @@ import SkeletonLoader from "@shared/ui/SkeletonLoader";
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
-    const { user, userProfile, signOut, loading: authLoading, refreshChildren, children } = useAuth();
+    const { user, userProfile, signOut, loading: authLoading, refreshChildren, children, refreshProfile } = useAuth();
+
+    const [isEditingNickname, setIsEditingNickname] = useState(false);
+    const [editedNickname, setEditedNickname] = useState("");
+    const [isSavingNickname, setIsSavingNickname] = useState(false);
+
+    const handleEditNicknameClick = () => {
+        setEditedNickname(userProfile?.nickname || user?.email?.split('@')[0] || "");
+        setIsEditingNickname(true);
+    };
+
+    const handleSaveNickname = async () => {
+        if (!editedNickname.trim() || !user) return;
+        setIsSavingNickname(true);
+        try {
+            const { error } = await supabase.from('profiles').update({ nickname: editedNickname.trim() }).eq('id', user.id);
+            if (error) throw error;
+            await refreshProfile();
+            setIsEditingNickname(false);
+            toast.success("닉네임이 변경되었습니다.");
+        } catch (error: any) {
+            toast.error("닉네임 변경 실패: " + error.message);
+        } finally {
+            setIsSavingNickname(false);
+        }
+    };
     // const [children, setChildren] = useState<Child[]>([]); // Removed: Using context children
     const router = useRouter();
 
@@ -207,12 +232,39 @@ export default function MyPage() {
                     <>
                         {/* Profile Section */}
                         <div className="flex items-center gap-5 mb-10">
-                            <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden">
+                            <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 overflow-hidden shrink-0">
                                 <User size={40} />
                             </div>
-                            <div>
-                                <h2 className="text-2xl font-black text-gray-900">{userProfile?.nickname || user?.email?.split('@')[0]}</h2>
-                                <p className="text-gray-400 text-sm mt-1">{user?.email}</p>
+                            <div className="flex-1 min-w-0">
+                                {isEditingNickname ? (
+                                    <div className="flex items-center gap-2">
+                                        <input 
+                                            type="text" 
+                                            value={editedNickname}
+                                            onChange={(e) => setEditedNickname(e.target.value)}
+                                            className="w-full max-w-[200px] p-2 border border-gray-200 rounded-xl text-lg font-black focus:outline-none focus:ring-2 focus:ring-green-500"
+                                            autoFocus
+                                            disabled={isSavingNickname}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') handleSaveNickname();
+                                            }}
+                                        />
+                                        <button onClick={handleSaveNickname} disabled={isSavingNickname} className="p-2 bg-green-500 text-white rounded-xl hover:bg-green-600 disabled:opacity-50">
+                                            {isSavingNickname ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check size={20} />}
+                                        </button>
+                                        <button onClick={() => setIsEditingNickname(false)} disabled={isSavingNickname} className="p-2 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 disabled:opacity-50">
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-2xl font-black text-gray-900 truncate max-w-[200px]">{userProfile?.nickname || user?.email?.split('@')[0]}</h2>
+                                        <button onClick={handleEditNicknameClick} className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors">
+                                            <Edit2 size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                                <p className="text-gray-400 text-sm mt-1 truncate">{user?.email}</p>
                             </div>
                         </div>
 

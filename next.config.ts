@@ -4,6 +4,7 @@ const SUPABASE_URL =
   process.env.NEXT_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://holaqlorkluptvrcfwtu.supabase.co";
 
 const nextConfig: NextConfig = {
+  output: 'export',
   // Use webpack bundler — avoids Turbopack RangeError: Invalid count value: -1 bug
   turbopack: undefined,
   images: {

@@ -1,24 +1,36 @@
-import { createClient } from "@shared/lib/supabase/server";
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server'
+import { createClient } from '@shared/lib/supabase/server'
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  // 리다이렉트할 경로 (기본값: 홈)
-  const next = searchParams.get("next") ?? "/";
+  const { searchParams, origin } = new URL(request.url)
+  const code = searchParams.get('code')
+  // if "next" is in param, use it as the redirect URL
+  let next = searchParams.get('next') ?? '/'
+
+  if (!next.startsWith('/')) {
+    // if "next" is not a relative URL, use the default
+    next = '/'
+  }
 
   if (code) {
-    const supabase = await createClient();
-    // 서버 사이드에서 코드를 세션으로 교환 (자동으로 쿠키 설정)
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    
+    const supabase = await createClient()
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
-        return NextResponse.redirect(`${origin}${next}`);
+      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
+      const isLocalEnv = process.env.NODE_ENV === 'development'
+      if (isLocalEnv) {
+        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
+        return NextResponse.redirect(`${origin}${next}`)
+      } else if (forwardedHost) {
+        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+      } else {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
     }
     
     console.error("Auth callback error:", error);
   }
 
   // 오류 발생 시 또는 코드가 없을 때 홈으로 리다이렉트
-  return NextResponse.redirect(`${origin}/`);
+  return NextResponse.redirect(`${origin}/`)
 }
