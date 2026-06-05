@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { XMLParser } from 'fast-xml-parser';
 
+export const dynamic = 'force-static';
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const drCode = searchParams.get('drCode') || '11'; // Default: Literature (11)

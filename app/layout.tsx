@@ -42,10 +42,7 @@ export const metadata: Metadata = {
 import { AuthProvider } from "@features/auth/AuthContext";
 import { ChatbotProvider } from "@widgets/chatbot/ChatbotContext";
 import { LoginModalProvider } from "@features/auth/LoginModalContext";
-import MobileBottomNav from "@shared/ui/MobileBottomNav";
 import SplashScreen from "@shared/ui/SplashScreen";
-import AIChatbot from "@widgets/chatbot/AIChatbot";
-import Footer from "@shared/ui/Footer";
 
 export default function RootLayout({
   children,
@@ -82,11 +79,6 @@ export default function RootLayout({
               <Toaster position="top-center" richColors closeButton />
               <SplashScreen />
               {children}
-              <Footer />
-              <AIChatbot />
-              <div className="lg:hidden">
-                <MobileBottomNav />
-              </div>
             </ChatbotProvider>
           </LoginModalProvider>
         </AuthProvider>

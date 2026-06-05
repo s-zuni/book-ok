@@ -2,6 +2,8 @@
 import { type NextRequest } from 'next/server';
 import { XMLParser } from 'fast-xml-parser';
 
+export const dynamic = 'force-static';
+
 // Helper function to add timeout to fetch requests
 async function fetchWithTimeout(url: string, timeoutMs: number = 10000) {
   const controller = new AbortController();

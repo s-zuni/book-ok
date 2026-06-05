@@ -93,6 +93,8 @@ export interface Profile {
     role: 'parent' | 'children' | 'user';
     is_admin: boolean;
     phone?: string;
+    email?: string;
+    is_active?: boolean;
     created_at: string;
 }
 
@@ -106,3 +108,22 @@ export interface Popup {
     expires_at?: string;
     created_at: string;
 }
+
+export interface Report {
+    id: string;
+    user_id: string;
+    type: 'report' | 'inquiry';
+    title: string;
+    content: string;
+    target_type?: 'post' | 'comment' | 'book' | 'other';
+    target_id?: string;
+    status: 'pending' | 'resolved' | 'rejected';
+    reply_content?: string;
+    created_at: string;
+    updated_at: string;
+    profiles?: {
+        nickname: string;
+        email: string;
+    };
+}
+
