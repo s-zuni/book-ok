@@ -622,7 +622,7 @@ export default function AdminPage() {
                                                             <td className="px-6 py-4">
                                                                 <div className="text-sm font-medium text-gray-700">{u.phone || '-'}</div>
                                                                 <div className="text-[10px] text-gray-400 font-bold mt-0.5 uppercase tracking-wider">
-                                                                    {new Date(u.created_at).toLocaleDateString()}
+                                                                    {u.created_at ? new Date(u.created_at).toLocaleDateString() : '-'}
                                                                 </div>
                                                             </td>
                                                             <td className="px-6 py-4">

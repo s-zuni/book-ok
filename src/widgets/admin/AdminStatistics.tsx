@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@shared/lib/supabase";
@@ -51,7 +51,7 @@ export default function AdminStatistics() {
             
             // 초기화 (최근 7일 혹은 데이터 범위)
             profiles.forEach(p => {
-                const date = new Date(p.created_at).toLocaleDateString();
+                const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
                 if (!statsMap.has(date)) statsMap.set(date, { newUsers: 0, activeUsers: new Set() });
                 statsMap.get(date)!.newUsers++;
             });
