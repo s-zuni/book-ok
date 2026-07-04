@@ -13,9 +13,7 @@ export default function AdminLoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
-    const { user, userProfile, isInitialized } = useAuth();
-
-    // If already an admin, redirect to admin home
+    const { user, userProfile, isInitialized, signOut } = useAuth();
     useEffect(() => {
         if (isInitialized && user && userProfile?.is_admin) {
             router.push("/admin");
@@ -55,7 +53,11 @@ export default function AdminLoginPage() {
                     router.push("/admin");
                 } else {
                     toast.error("관리자 권한이 없습니다.");
-                    await supabase.auth.signOut();
+                    try {
+                        await signOut();
+                    } catch (e) {
+                        console.warn("Signout error ignored:", e);
+                    }
                     setIsLoading(false);
                 }
             }

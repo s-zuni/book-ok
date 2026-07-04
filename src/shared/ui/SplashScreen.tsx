@@ -3,21 +3,17 @@
 import { useEffect, useState } from "react";
 import { BookMarked } from "lucide-react";
 
-// Helper function to check if splash was already shown (runs synchronously)
-const getSplashInitialState = (): boolean => {
-    if (typeof window === 'undefined') return false; // SSR: don't show
-    if (window.innerWidth >= 1024) return false; // Desktop: don't show
-    if (sessionStorage.getItem('splash_shown')) return false; // Already shown: don't show
-    return true; // First mobile visit: show
-};
-
 export default function SplashScreen() {
-    const [isVisible, setIsVisible] = useState(getSplashInitialState);
+    // SSR and initial client hydration must match, so default to true.
+    const [isVisible, setIsVisible] = useState(true);
     const [opacity, setOpacity] = useState(1);
 
     useEffect(() => {
-        // If not visible, nothing to do
-        if (!isVisible) return;
+        // Immediately hide if on desktop or already shown
+        if (window.innerWidth >= 1024 || sessionStorage.getItem('splash_shown')) {
+            setIsVisible(false);
+            return;
+        }
 
         // Mark as shown
         sessionStorage.setItem('splash_shown', 'true');

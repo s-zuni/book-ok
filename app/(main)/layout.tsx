@@ -10,8 +10,12 @@ export default function MainLayout({
   return (
     <>
       {children}
-      <Footer />
-      <AIChatbot />
+      <div className="hidden lg:block">
+        <Footer />
+      </div>
+      <div className="hidden lg:block">
+        <AIChatbot />
+      </div>
       <div className="lg:hidden">
         <MobileBottomNav />
       </div>
