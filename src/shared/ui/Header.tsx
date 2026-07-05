@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import MobileSubMenu from "./MobileSubMenu";
 import { useState } from "react";
 import { useLoginModal } from "@features/auth/LoginModalContext";
+import Image from "next/image";
 
 import { useNativeBridge } from "@shared/lib/native-bridge";
 
@@ -65,8 +66,14 @@ export default function Header({
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <div className="bg-[#2E5A44] p-1.5 lg:p-2 rounded-xl text-white shadow-lg shadow-[#2E5A44]/10">
-                        <BookMarked size={24} className="lg:w-7 lg:h-7" />
+                    <div className="relative w-8 h-8 lg:w-10 lg:h-10">
+                        <Image
+                            src="/images/logo.png"
+                            alt="Book,ok Logo"
+                            fill
+                            className="object-contain mix-blend-multiply"
+                            sizes="(max-width: 1024px) 32px, 40px"
+                        />
                     </div>
                     <span className="text-lg lg:text-2xl font-black italic">Book,ok</span>
                 </div>

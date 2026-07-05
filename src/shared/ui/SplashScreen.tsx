@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookMarked } from "lucide-react";
+import Image from "next/image";
 
 export default function SplashScreen() {
     // SSR and initial client hydration must match, so default to true.
@@ -42,8 +42,15 @@ export default function SplashScreen() {
             style={{ opacity, zIndex: 9999 }}
         >
             {/* Centered Logo */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-green-600 animate-in zoom-in-95 duration-700">
-                <BookMarked size={60} strokeWidth={1.5} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24">
+                <Image
+                    src="/images/logo.png"
+                    alt="Book,ok Logo"
+                    fill
+                    className="object-contain mix-blend-multiply"
+                    sizes="96px"
+                    priority
+                />
             </div>
 
             {/* Bottom Text */}
