@@ -42,13 +42,13 @@ export default function SplashScreen() {
             style={{ opacity, zIndex: 9999 }}
         >
             {/* Centered Logo */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24 border border-gray-200 bg-white rounded-2xl p-4 flex items-center justify-center shadow-md">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24 bg-[#05A53F] rounded-3xl p-4.5 flex items-center justify-center shadow-lg">
                 <div className="relative w-full h-full">
                     <Image
                         src="/images/logo.png"
                         alt="Book,ok Logo"
                         fill
-                        className="object-contain mix-blend-multiply"
+                        className="object-contain grayscale contrast-200 invert mix-blend-screen"
                         sizes="96px"
                         priority
                     />
@@ -57,7 +57,7 @@ export default function SplashScreen() {
 
             {/* Bottom Text */}
             <div className="absolute bottom-20 left-0 right-0 text-center animate-in slide-in-from-bottom-5 duration-700 delay-100">
-                <h1 className="text-lg font-black italic text-green-600 tracking-tight">
+                <h1 className="text-xl font-extrabold text-[#101828] tracking-tight">
                     Book,ok
                 </h1>
             </div>

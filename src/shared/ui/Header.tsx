@@ -66,18 +66,18 @@ export default function Header({
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <div className="relative w-8 h-8 lg:w-10 lg:h-10 border border-gray-200 bg-white rounded-lg p-1.5 flex items-center justify-center shadow-sm">
+                    <div className="relative w-8 h-8 lg:w-10 lg:h-10 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                         <div className="relative w-full h-full">
                             <Image
                                 src="/images/logo.png"
                                 alt="Book,ok Logo"
                                 fill
-                                className="object-contain mix-blend-multiply"
+                                className="object-contain grayscale contrast-200 invert mix-blend-screen"
                                 sizes="(max-width: 1024px) 32px, 40px"
                             />
                         </div>
                     </div>
-                    <span className="text-lg lg:text-2xl font-black italic">Book,ok</span>
+                    <span className="text-[19px] lg:text-[23px] font-extrabold text-[#101828] tracking-tight">Book,ok</span>
                 </div>
 
                 {/* Desktop Search Bar */}

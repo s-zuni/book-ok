@@ -98,31 +98,36 @@ export default function MobileBottomNav() {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-            <nav className="bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] px-4 pt-3 pb-6">
+            <nav className="bg-white border-t border-gray-100/80 shadow-[0_-8px_30px_rgba(0,0,0,0.03)] px-4 pt-2.5 pb-6">
                 <div className="flex justify-between items-center max-w-sm mx-auto">
                     {navItems.map((item) => (
                         item.isSpecial ? (
                             <button
                                 key={item.label}
                                 onClick={item.action}
-                                className="relative flex flex-col items-center justify-center -mt-9 group"
+                                className="relative flex flex-col items-center justify-center -mt-10 group"
                             >
-                                <div className="bg-[#16A34A] p-3.5 rounded-full shadow-[0_8px_24px_rgba(22,163,74,0.35)] border-4 border-white ring-2 ring-[#16A34A] transform group-active:scale-95 transition-transform duration-200">
+                                <div className="bg-[#01C54F] p-3.5 rounded-full shadow-[0_8px_24px_rgba(1,197,79,0.3)] border-4 border-white ring-2 ring-[#01C54F] transform group-active:scale-95 transition-transform duration-200">
                                     <item.icon />
                                 </div>
-                                <span className="text-[10px] font-black text-[#16A34A] mt-1.5 tracking-tighter uppercase">{item.label}</span>
+                                <span className="text-[10px] font-black text-[#01C54F] mt-1.5 tracking-tighter uppercase">{item.label}</span>
                             </button>
                         ) : (
                             <button
                                 key={item.label}
                                 onClick={() => item.action ? item.action() : router.push(item.path!)}
-                                className={`flex flex-col items-center justify-center flex-1 py-1 gap-0.5 group transition-all duration-300 ${item.isActive ? "text-[#16A34A]" : "text-gray-400 hover:text-gray-600"
-                                    }`}
+                                className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 group transition-all duration-300 ${
+                                    item.isActive ? "text-[#1A1A1A]" : "text-[#999999]"
+                                }`}
                             >
-                                <div className={`p-1 rounded-2xl transition-all duration-300 ${item.isActive ? 'bg-green-50 text-[#16A34A]' : 'bg-transparent overflow-hidden'}`}>
+                                <div className="p-1 transition-all duration-300">
                                     <item.icon active={!!item.isActive} />
                                 </div>
-                                <span className={`text-[10px] font-bold transition-all duration-300 ${item.isActive ? 'opacity-100' : 'opacity-65'}`}>{item.label}</span>
+                                <span className={`text-[10px] tracking-tight transition-all duration-300 ${
+                                    item.isActive ? 'font-black opacity-100' : 'font-semibold opacity-85'
+                                }`}>
+                                    {item.label}
+                                </span>
                             </button>
                         )
                     ))}

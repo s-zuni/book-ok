@@ -321,18 +321,18 @@ export default function HomeContent() {
                         {/* Mobile Header */}
                         <header className="bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                                <div className="relative w-8 h-8 border border-gray-200 bg-white rounded-lg p-1.5 flex items-center justify-center shadow-sm">
+                                <div className="relative w-8 h-8 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                                     <div className="relative w-full h-full">
                                         <Image
                                             src="/images/logo.png"
                                             alt="Book,ok Logo"
                                             fill
-                                            className="object-contain mix-blend-multiply"
+                                            className="object-contain grayscale contrast-200 invert mix-blend-screen"
                                             sizes="28px"
                                         />
                                     </div>
                                 </div>
-                                <span className="text-base font-black tracking-tight text-gray-900">Book,ok</span>
+                                <span className="text-[17px] font-extrabold tracking-tight text-[#101828]">Book,ok</span>
                             </div>
 
                             <div className="flex items-center gap-3">
