@@ -66,14 +66,16 @@ export default function Header({
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <div className="relative w-8 h-8 lg:w-10 lg:h-10">
-                        <Image
-                            src="/images/logo.png"
-                            alt="Book,ok Logo"
-                            fill
-                            className="object-contain mix-blend-multiply"
-                            sizes="(max-width: 1024px) 32px, 40px"
-                        />
+                    <div className="relative w-8 h-8 lg:w-10 lg:h-10 border border-gray-200 bg-white rounded-lg p-1.5 flex items-center justify-center shadow-sm">
+                        <div className="relative w-full h-full">
+                            <Image
+                                src="/images/logo.png"
+                                alt="Book,ok Logo"
+                                fill
+                                className="object-contain mix-blend-multiply"
+                                sizes="(max-width: 1024px) 32px, 40px"
+                            />
+                        </div>
                     </div>
                     <span className="text-lg lg:text-2xl font-black italic">Book,ok</span>
                 </div>
@@ -100,6 +102,25 @@ export default function Header({
                     >
                         {isSearchOpen ? <X size={24} /> : <Search size={24} />}
                     </button>
+
+                    {/* Mobile Auth Button */}
+                    <div className="lg:hidden flex items-center">
+                        {user ? (
+                            <button
+                                onClick={() => router.push('/mypage')}
+                                className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 transition-colors"
+                            >
+                                프로필
+                            </button>
+                        ) : (
+                            <button
+                                onClick={openLoginModal}
+                                className="bg-black text-white rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-gray-800 transition-colors"
+                            >
+                                로그인
+                            </button>
+                        )}
+                    </div>
 
                     {/* Desktop Auth Buttons */}
                     <div className="hidden lg:flex items-center gap-3 min-w-[80px] justify-end">

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Child, MainMenu } from "@shared/types";
 import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
+import { useLoginModal } from "@features/auth/LoginModalContext";
 import { useRouter } from "next/navigation";
 import HeroSection from "@widgets/hero/HeroSection";
 import RecommendationSection from "@features/books/RecommendationSection";
@@ -59,6 +60,7 @@ export default function HomeContent() {
 
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const { user, children, userProfile } = useAuth();
+    const { openLoginModal } = useLoginModal();
     const router = useRouter();
 
     // Mobile specific states for Aladin books
@@ -319,14 +321,16 @@ export default function HomeContent() {
                         {/* Mobile Header */}
                         <header className="bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                                <div className="relative w-7 h-7">
-                                    <Image
-                                        src="/images/logo.png"
-                                        alt="Book,ok Logo"
-                                        fill
-                                        className="object-contain mix-blend-multiply"
-                                        sizes="28px"
-                                    />
+                                <div className="relative w-8 h-8 border border-gray-200 bg-white rounded-lg p-1.5 flex items-center justify-center shadow-sm">
+                                    <div className="relative w-full h-full">
+                                        <Image
+                                            src="/images/logo.png"
+                                            alt="Book,ok Logo"
+                                            fill
+                                            className="object-contain mix-blend-multiply"
+                                            sizes="28px"
+                                        />
+                                    </div>
                                 </div>
                                 <span className="text-base font-black tracking-tight text-gray-900">Book,ok</span>
                             </div>
@@ -338,9 +342,21 @@ export default function HomeContent() {
                                 <button className="text-gray-700 p-1">
                                     <Bell size={20} />
                                 </button>
-                                <button className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight">
-                                    부모
-                                </button>
+                                {user ? (
+                                    <button 
+                                        onClick={() => router.push('/mypage')}
+                                        className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 transition-colors"
+                                    >
+                                        프로필
+                                    </button>
+                                ) : (
+                                    <button 
+                                        onClick={openLoginModal}
+                                        className="bg-black text-white rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-gray-800 transition-colors"
+                                    >
+                                        로그인
+                                    </button>
+                                )}
                             </div>
                         </header>
 

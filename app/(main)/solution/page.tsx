@@ -597,18 +597,40 @@ export default function SolutionPage() {
                                 </div>
                             </div>
 
-                            {/* Recommendations Area with Floating Tooltip */}
+                            {/* AI 독서코치 고정 알림 배너 (Figma 269:10400 기준 고정형) */}
+                            <div className="bg-white border border-gray-100 rounded-[28px] p-4 flex items-center gap-3.5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+                                <div className="bg-[#16A34A]/10 text-[#16A34A] w-10 h-10 rounded-full flex items-center justify-center shrink-0">
+                                    <Sparkles size={18} className="fill-current" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="text-[10px] font-black text-[#16A34A] tracking-wider leading-none uppercase">AI 독서코치</div>
+                                    <div className="text-[13px] font-bold text-gray-800 mt-1 block tracking-tight">
+                                        "자연 · 과학" 분야를 시도해보면 어떨까요?
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recommendations Area */}
                             <div className="relative pt-2">
                                 <div className="flex justify-between items-center mb-3 px-1">
                                     <h3 className="font-extrabold text-base tracking-tight"><span className="text-[#16A34A] font-black">북콕</span>이 추천하는 책</h3>
-                                    <span className="text-xs font-bold text-gray-400">더보기 &gt;</span>
+                                    <span 
+                                        onClick={() => router.push('/')}
+                                        className="text-xs font-bold text-gray-400 cursor-pointer hover:text-[#16A34A] transition-colors active:scale-95 transition-transform"
+                                    >
+                                        더보기 &gt;
+                                    </span>
                                 </div>
 
                                 {/* Books List (Horizontal scroll) */}
                                 <div className="flex overflow-x-auto gap-4 py-2 px-1 scrollbar-hide -mx-4 px-4">
                                     {analysisBooks.length > 0 ? (
                                         analysisBooks.map((book, idx) => (
-                                            <div key={idx} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0">
+                                            <div 
+                                                key={idx} 
+                                                onClick={() => router.push(`/book/${book.id || book.bookid || '9788997984848'}`)}
+                                                className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
+                                            >
                                                 <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
                                                     <Image src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" />
                                                 </div>
@@ -630,17 +652,6 @@ export default function SolutionPage() {
                                             </div>
                                         ))
                                     )}
-                                </div>
-
-                                {/* Floating AI 독서코치 말풍선 */}
-                                <div className="absolute top-1/2 left-4 right-4 z-20 bg-[#1A1A1A]/95 text-white rounded-[24px] px-5 py-4 shadow-xl flex items-center gap-3.5 animate-bounce">
-                                    <div className="bg-[#16A34A] w-10 h-10 rounded-full flex items-center justify-center text-white shrink-0 shadow-lg shadow-green-900/20">
-                                        <Sparkles size={18} />
-                                    </div>
-                                    <div>
-                                        <div className="text-[10px] font-black text-green-400 tracking-wider">AI 독서코치</div>
-                                        <div className="text-[13px] font-bold tracking-tight mt-0.5">"자연·과학" 분야를 시도해보면 어떨까요?</div>
-                                    </div>
                                 </div>
                             </div>
                         </div>

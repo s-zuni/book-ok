@@ -42,15 +42,17 @@ export default function SplashScreen() {
             style={{ opacity, zIndex: 9999 }}
         >
             {/* Centered Logo */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24">
-                <Image
-                    src="/images/logo.png"
-                    alt="Book,ok Logo"
-                    fill
-                    className="object-contain mix-blend-multiply"
-                    sizes="96px"
-                    priority
-                />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24 border border-gray-200 bg-white rounded-2xl p-4 flex items-center justify-center shadow-md">
+                <div className="relative w-full h-full">
+                    <Image
+                        src="/images/logo.png"
+                        alt="Book,ok Logo"
+                        fill
+                        className="object-contain mix-blend-multiply"
+                        sizes="96px"
+                        priority
+                    />
+                </div>
             </div>
 
             {/* Bottom Text */}

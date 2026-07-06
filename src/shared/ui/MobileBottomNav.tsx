@@ -97,17 +97,17 @@ export default function MobileBottomNav() {
     ];
 
     return (
-        <div className="fixed bottom-6 left-4 right-4 z-50 lg:hidden">
-            <nav className="bg-white/90 backdrop-blur-xl border border-gray-100 shadow-[0_12px_40px_rgba(0,0,0,0.08)] rounded-[32px] px-2 py-2">
+        <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+            <nav className="bg-white border-t border-gray-100 shadow-[0_-4px_16px_rgba(0,0,0,0.04)] px-4 pt-3 pb-6">
                 <div className="flex justify-between items-center max-w-sm mx-auto">
                     {navItems.map((item) => (
                         item.isSpecial ? (
                             <button
                                 key={item.label}
                                 onClick={item.action}
-                                className="relative flex flex-col items-center justify-center -mt-8 group"
+                                className="relative flex flex-col items-center justify-center -mt-9 group"
                             >
-                                <div className="bg-[#16A34A] p-3.5 rounded-full shadow-[0_8px_24px_rgba(22,163,74,0.35)] border-4 border-white transform group-active:scale-95 transition-transform duration-200">
+                                <div className="bg-[#16A34A] p-3.5 rounded-full shadow-[0_8px_24px_rgba(22,163,74,0.35)] border-4 border-white ring-2 ring-[#16A34A] transform group-active:scale-95 transition-transform duration-200">
                                     <item.icon />
                                 </div>
                                 <span className="text-[10px] font-black text-[#16A34A] mt-1.5 tracking-tighter uppercase">{item.label}</span>
