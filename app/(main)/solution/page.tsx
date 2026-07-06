@@ -73,6 +73,74 @@ export default function SolutionPage() {
         loadAnalysisBooks();
     }, []);
 
+    // Real-time statistics states for child
+    const [thisMonthCount, setThisMonthCount] = useState(0);
+    const [prevMonthDiffText, setPrevMonthDiffText] = useState("지난달과 동일");
+    const [totalReadCount, setTotalReadCount] = useState(0);
+    const [readingKingLevelText, setReadingKingLevelText] = useState("독서 초보 Lv.1");
+    const [preferredGenres, setPreferredGenres] = useState<any[]>([]);
+    const [monthlyVolumes, setMonthlyVolumes] = useState<{ label: string; count: number; y: number; height: number }[]>([]);
+    const [maxVolumeVal, setMaxVolumeVal] = useState(1);
+    
+    // AI Coach recommendation states
+    const [aiCoachCategory, setAiCoachCategory] = useState("자연 · 과학");
+    const [aiCoachMent, setAiCoachMent] = useState("다양한 자연 현상과 과학에 흥미를 가질 만한 책을 함께 읽어보세요!");
+    const [selectedCoachCategory, setSelectedCoachCategory] = useState<string | null>(null);
+
+    const { user, children, userProfile } = useAuth();
+    const router = useRouter();
+
+    const childName = activeChild ? activeChild.name : (userProfile?.nickname ? `${userProfile.nickname} 부모님` : "부모님");
+
+    const categoryGenreMap: Record<string, string> = {
+        "자연 · 과학": "1137",
+        "과학/자연": "1137",
+        "창작 · 문학": "1108",
+        "그림책": "1108",
+        "역사 · 사회": "1109",
+        "역사/인물": "1109",
+        "예술 · 체육": "1177",
+        "예술/음악": "1177",
+        "철학 · 인성": "1132",
+        "수학 · 논리": "1175",
+    };
+
+    // Helper to map raw category string to standard user genres
+    const mapCategoryToGenre = (categoryStr: string) => {
+        if (!categoryStr) return '기타';
+        if (categoryStr.includes('과학') || categoryStr.includes('자연') || categoryStr.includes('실험')) return '과학/자연';
+        if (categoryStr.includes('문학') || categoryStr.includes('동화') || categoryStr.includes('소설') || categoryStr.includes('그림책')) return '그림책';
+        if (categoryStr.includes('역사') || categoryStr.includes('사회') || categoryStr.includes('인물') || categoryStr.includes('위인')) return '역사/인물';
+        if (categoryStr.includes('철학') || categoryStr.includes('인성') || categoryStr.includes('종교')) return '철학 · 인성';
+        if (categoryStr.includes('예술') || categoryStr.includes('체육') || categoryStr.includes('음악') || categoryStr.includes('미술')) return '예술/음악';
+        if (categoryStr.includes('수학') || categoryStr.includes('논리') || categoryStr.includes('숫자')) return '수학 · 논리';
+        return '기타';
+    };
+
+    // Load custom recommended books on demand
+    const loadAnalysisBooks = async (categoryId: string = "1108", query: string = "추천도서") => {
+        try {
+            const res = await fetch(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`);
+            if (res.ok) {
+                const data = await res.json();
+                const items = data.item?.slice(0, 5) || [];
+                const parsed = items.map((item: any) => ({
+                    id: item.itemId,
+                    bookid: item.itemId,
+                    title: item.title.split(" - ")[0],
+                    author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
+                    publisher: item.publisher,
+                    rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
+                    reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
+                    coverUrl: item.cover
+                }));
+                setAnalysisBooks(parsed);
+            }
+        } catch (e) {
+            console.error("Failed to load curated books", e);
+        }
+    };
+
     const handleMobileSolutionSubmit = async () => {
         if (!mobileInput.trim() || mobileLoading) return;
         
@@ -82,55 +150,135 @@ export default function SolutionPage() {
         setMobileLoading(true);
 
         try {
-            let bookTitles = ["잘자, 밥", "별이가 졸려요", "잘자, 굴삭기 벤!"];
+            const readBooksTitles = userReadBooks.map(b => b.title).slice(0, 10).join(', ');
+            const preferredGenreLabel = preferredGenres.length > 0 ? preferredGenres[0].label : "미정";
+            const age = activeChild?.age || 0;
+
+            const prompt = `
+            당신은 15년 경력의 아동 독서 교육 전문가이자 발달 심리학자입니다.
+            현재 자녀(${childName}, 나이: 만 ${age}세)의 독서 성향을 바탕으로 부모님의 독서 관련 고민에 답해주세요.
             
-            // If the query is custom (not related to sleep), search Aladin for matching books
-            const isSleepTopic = userText.includes("잠") || userText.includes("수면") || userText.includes("자다") || userText.includes("무서워");
+            [자녀의 실제 독서 프로필]
+            - 이름: ${childName}
+            - 나이: 만 ${age}세
+            - 선호 독서 주제: ${preferredGenreLabel}
+            - 최근에 읽은 책들: [${readBooksTitles || "독서 기록이 없음"}]
             
-            if (!isSleepTopic) {
-                const searchRes = await fetch(`/api/recommendations?query=${encodeURIComponent(userText.substring(0, 15))}&apiType=ItemSearch`);
-                if (searchRes.ok) {
-                    const searchData = await searchRes.json();
-                    const items = searchData.item?.slice(0, 3) || [];
-                    if (items.length > 0) {
-                        const parsedBooks = items.map((item: any) => ({
-                            title: item.title.split(" - ")[0],
-                            author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                            publisher: item.publisher,
-                            rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
-                            reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
-                            coverUrl: item.cover
-                        }));
-                        
-                        setMobileSolutionHistory(prev => [...prev, {
-                            role: 'assistant',
-                            content: `◆ '${userText.substring(0, 8)}...' 고민에 도움이 되는 추천 그림책 3권을 선정했습니다`,
-                            books: parsedBooks
-                        }]);
-                        setMobileLoading(false);
-                        return;
-                    }
-                }
+            [부모님의 고민]
+            "${userText}"
+            
+            [솔루션 작성 가이드라인]
+            1. **15년 아동 독서 전문가**로서의 어조를 사용하고, 아동 발달학 및 독서치료 요소를 가볍게 녹여 신뢰감을 주세요.
+            2. 고민을 해결할 수 있는 **구체적인 실천 전략 3가지**를 제안하되, 글머리 기호(-)로 작성하세요.
+            3. 답변에는 실제 아이의 이름인 **'${childName}'**을 언급하여 부모님의 고민에 직접 응답한다는 인상을 주세요.
+            4. 자녀의 최근 독서 성향(선호 장르나 최근 읽은 책)을 언급하며 솔루션과 연계해 조언해주세요.
+            5. 핵심 행동 팁이나 키워드는 **굵게** 표시하세요.
+            6. 마지막에 추천할 만한 도서 테마 1가지를 언급해주세요.
+            `;
+
+            const response = await fetch('/api/openai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'API Error');
+
+            const resultText = data.result || "죄송해요, 솔루션을 생성할 수 없습니다.";
+
+            // Extract recommendation keywords to search matching books
+            const matchKeywords = resultText.match(/\*\*([^*]+)\*\*/g) || [];
+            let keywordToSearch = preferredGenreLabel !== "미정" ? preferredGenreLabel : "그림책";
+            if (matchKeywords.length > 0) {
+                keywordToSearch = matchKeywords[0].replace(/\*\*/g, '').substring(0, 10);
             }
 
-            // Sleep topic flow - fetch sleep books from Aladin API
-            const loadedBooks: any[] = [];
-            for (const t of bookTitles) {
-                const b = await fetchAladinBook(t);
-                if (b) loadedBooks.push(b);
+            // Fetch matching recommendation books from Aladin
+            let parsedBooks: any[] = [];
+            const searchRes = await fetch(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`);
+            if (searchRes.ok) {
+                const searchData = await searchRes.json();
+                const items = searchData.item?.slice(0, 3) || [];
+                parsedBooks = items.map((item: any) => ({
+                    title: item.title.split(" - ")[0],
+                    author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
+                    publisher: item.publisher,
+                    rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
+                    reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
+                    coverUrl: item.cover
+                }));
             }
 
             setMobileSolutionHistory(prev => [...prev, {
                 role: 'assistant',
-                content: "◆ 혼자서도 잘자요! 씩씩한 꿈나라를 다룬 그림책 3권을 추천드릴게요",
-                books: loadedBooks
+                content: resultText,
+                books: parsedBooks
             }]);
 
         } catch (error) {
             console.error(error);
-            setMobileSolutionHistory(prev => [...prev, { role: 'assistant', content: "죄송해요, 솔루션을 생성하는 중에 오류가 생겼습니다." }]);
+            setMobileSolutionHistory(prev => [...prev, { role: 'assistant', content: "죄송해요, 솔루션을 생성하는 중에 오류가 발생했습니다." }]);
         } finally {
             setMobileLoading(false);
+        }
+    };
+
+    // Fetch AI Coach recommendation category based on actual books
+    const fetchAICoachRecommendation = async (books: Book[]) => {
+        if (!books || books.length === 0) {
+            // Default based on age if no books
+            const age = activeChild?.age || 0;
+            if (age < 5) {
+                setAiCoachCategory("그림책");
+                setAiCoachMent("다채로운 색감과 따뜻한 이야기가 담긴 그림책 위주로 읽혀주세요!");
+            } else if (age < 9) {
+                setAiCoachCategory("과학/자연");
+                setAiCoachMent("세상에 대한 호기심을 유발하는 자연 관찰 및 과학책을 추천해 드려요!");
+            } else {
+                setAiCoachCategory("역사/인물");
+                setAiCoachMent("다양한 인물의 삶과 지혜가 녹아있는 역사 인물 도서를 늘려주세요!");
+            }
+            return;
+        }
+
+        try {
+            const bookInfoText = books.slice(0, 5).map(b => `- ${b.title} (${b.category || '미분류'})`).join('\n');
+            const prompt = `
+            자녀(${childName})가 최근에 읽은 다음 책 목록을 분석하여, 이 아이에게 딱 맞게 독서 편식을 방지하거나 흥미를 넓혀줄 수 있는 추천 '단 하나의 핵심 카테고리 분야'와 부모에게 격려를 보내는 코칭 메시지를 아래 JSON 포맷으로 작성해주세요.
+            
+            [최근 읽은 책 목록]
+            ${bookInfoText}
+
+            [선택할 수 있는 추천 카테고리 후보]
+            - '그림책', '과학/자연', '역사/인물', '철학 · 인성', '예술/음악', '수학 · 논리' 중 정확히 한 개만 선택해야 합니다.
+
+            응답은 반드시 마크다운 코드 블록 없이 순수 JSON만 반환해야 합니다:
+            {
+              "recommendedCategory": "선택한 카테고리 명칭",
+              "coachingMent": "부모님께 드리는 다정하고 구체적인 코칭 한 문장 (100자 이내)"
+            }
+            `;
+
+            const res = await fetch('/api/openai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const cleanJson = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
+                const recommendation = JSON.parse(cleanJson);
+                if (recommendation.recommendedCategory) {
+                    setAiCoachCategory(recommendation.recommendedCategory);
+                }
+                if (recommendation.coachingMent) {
+                    setAiCoachMent(recommendation.coachingMent);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch AI coach suggestions", e);
         }
     };
 
@@ -138,9 +286,6 @@ export default function SolutionPage() {
     const [aiSolutionPrompt, setAiSolutionPrompt] = useState('');
     const [aiSolutionResult, setAiSolutionResult] = useState('');
     const [aiSolutionLoading, setAiSolutionLoading] = useState(false);
-
-    const { user, children } = useAuth();
-    const router = useRouter();
 
     useEffect(() => {
         // Sync activeChild with global children list
@@ -151,19 +296,31 @@ export default function SolutionPage() {
 
     // Fetch read books when tab changes or active child changes
     useEffect(() => {
-        if (activeSubMenu === '우리 아이 독서 성향 AI 분석' && user && activeChild) {
+        if (user) {
             fetchUserReadBooks();
         }
-    }, [activeSubMenu, user, activeChild]);
+    }, [activeSubMenu, user, activeChild, mobileTab]);
 
     const fetchUserReadBooks = async () => {
-        if (!user || !activeChild) return;
+        if (!user) return;
+
+        // If no registered child, we cannot query by child_id
+        if (!activeChild) {
+            setUserReadBooks([]);
+            // Initialize default stats
+            setThisMonthCount(0);
+            setTotalReadCount(0);
+            setPreferredGenres([
+                { label: "그림책", pct: "100%", pctNum: 100, dot: "bg-[#7C4DFF]", color: "#7C4DFF" }
+            ]);
+            return;
+        }
 
         const { data: readBooksData } = await supabase
             .from('read_books')
-            .select('book_id, observation_data, books(*)') // Fetch observation_data
+            .select('book_id, read_date, observation_data, books(*)') // Fetch read_date too
             .eq('child_id', activeChild.id)
-            .order('read_date', { ascending: false }); // Ensure newest first
+            .order('read_date', { ascending: false });
 
         if (readBooksData) {
             // Map books and attach their specific observation
@@ -175,8 +332,151 @@ export default function SolutionPage() {
             // Deduplicate (Keep most recent if duplicate)
             const uniqueBooks = Array.from(new Map(booksWithObs.map((b: any) => [b.id, b])).values());
             setUserReadBooks(uniqueBooks as Book[]);
+
+            // 1. Calculate Monthly read count
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth();
+
+            const thisMonthBooks = readBooksData.filter((r: any) => {
+                if (!r.read_date) return false;
+                const d = new Date(r.read_date);
+                return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+            });
+
+            const lastMonthBooks = readBooksData.filter((r: any) => {
+                if (!r.read_date) return false;
+                const d = new Date(r.read_date);
+                let targetYear = currentYear;
+                let targetMonth = currentMonth - 1;
+                if (targetMonth < 0) {
+                    targetMonth = 11;
+                    targetYear -= 1;
+                }
+                return d.getFullYear() === targetYear && d.getMonth() === targetMonth;
+            });
+
+            const thisCount = thisMonthBooks.length;
+            const lastCount = lastMonthBooks.length;
+            const diff = thisCount - lastCount;
+
+            setThisMonthCount(thisCount);
+            setTotalReadCount(readBooksData.length);
+
+            if (diff > 0) {
+                setPrevMonthDiffText(`▲ 지난달보다 +${diff}권`);
+            } else if (diff < 0) {
+                setPrevMonthDiffText(`▼ 지난달보다 ${diff}권`);
+            } else {
+                setPrevMonthDiffText("지난달과 동일");
+            }
+
+            // 2. Reading King Level
+            const totalCount = readBooksData.length;
+            if (totalCount <= 5) setReadingKingLevelText("독서 초보 Lv.1");
+            else if (totalCount <= 15) setReadingKingLevelText("독서 새싹 Lv.2");
+            else if (totalCount <= 30) setReadingKingLevelText("독서가 Lv.3");
+            else if (totalCount <= 50) setReadingKingLevelText("독서왕 Lv.4");
+            else setReadingKingLevelText("대독서가 Lv.5");
+
+            // 3. Preferred Genres calculation
+            const genreCounts: Record<string, number> = {};
+            readBooksData.forEach((r: any) => {
+                if (r.books) {
+                    const genre = mapCategoryToGenre(r.books.category);
+                    genreCounts[genre] = (genreCounts[genre] || 0) + 1;
+                }
+            });
+
+            const totalBooksCount = Object.values(genreCounts).reduce((a, b) => a + b, 0);
+            
+            const genreDots: Record<string, { dot: string; color: string }> = {
+                '그림책': { dot: 'bg-[#7C4DFF]', color: '#7C4DFF' },
+                '과학/자연': { dot: 'bg-[#00E5FF]', color: '#00E5FF' },
+                '역사/인물': { dot: 'bg-[#651FFF]', color: '#651FFF' },
+                '철학 · 인성': { dot: 'bg-[#00E676]', color: '#00E676' },
+                '예술/음악': { dot: 'bg-[#FF9100]', color: '#FF9100' },
+                '수학 · 논리': { dot: 'bg-[#E040FB]', color: '#E040FB' },
+                '기타': { dot: 'bg-[#9E9E9E]', color: '#9E9E9E' }
+            };
+
+            const sortedGenres = Object.entries(genreCounts)
+                .map(([label, value]) => {
+                    const pctVal = totalBooksCount > 0 ? (value / totalBooksCount) * 100 : 0;
+                    return {
+                        label,
+                        value,
+                        pct: `${Math.round(pctVal)}%`,
+                        pctNum: pctVal,
+                        dot: genreDots[label]?.dot || 'bg-[#9E9E9E]',
+                        color: genreDots[label]?.color || '#9E9E9E'
+                    };
+                })
+                .sort((a, b) => b.value - a.value);
+
+            setPreferredGenres(sortedGenres.length > 0 ? sortedGenres.slice(0, 4) : [
+                { label: "그림책", pct: "100%", pctNum: 100, dot: "bg-[#7C4DFF]", color: "#7C4DFF" }
+            ]);
+
+            // 4. Monthly reading volume
+            const getRecent6Months = () => {
+                const list = [];
+                const dNow = new Date();
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date(dNow.getFullYear(), dNow.getMonth() - i, 1);
+                    list.push({
+                        year: d.getFullYear(),
+                        month: d.getMonth(),
+                        label: `${d.getMonth() + 1}월`,
+                        count: 0
+                    });
+                }
+                return list;
+            };
+
+            const monthsData = getRecent6Months();
+            readBooksData.forEach((r: any) => {
+                if (!r.read_date) return;
+                const d = new Date(r.read_date);
+                const y = d.getFullYear();
+                const m = d.getMonth();
+                const match = monthsData.find(item => item.year === y && item.month === m);
+                if (match) {
+                    match.count += 1;
+                }
+            });
+
+            const maxCount = Math.max(...monthsData.map(m => m.count), 1);
+            setMaxVolumeVal(maxCount);
+
+            const calculatedVolumes = monthsData.map((m) => {
+                const height = (m.count / maxCount) * 70;
+                return {
+                    label: m.label,
+                    count: m.count,
+                    height,
+                    y: 80 - height
+                };
+            });
+            setMonthlyVolumes(calculatedVolumes);
+
+            // 5. Query LLM for Coach recommendation
+            fetchAICoachRecommendation(uniqueBooks as Book[]);
+
+            // 6. Load initial books based on child's top preferred genre
+            const topGenre = sortedGenres.length > 0 ? sortedGenres[0].label : "그림책";
+            const topCatId = categoryGenreMap[topGenre] || "1108";
+            loadAnalysisBooks(topCatId, topGenre);
         }
     };
+
+    // When coach category or selected coach switches, reload curated list
+    useEffect(() => {
+        if (selectedCoachCategory) {
+            const catId = categoryGenreMap[selectedCoachCategory] || "1108";
+            loadAnalysisBooks(catId, selectedCoachCategory);
+        }
+    }, [selectedCoachCategory]);
 
     const [chartData, setChartData] = useState<{ subject: string; A: number; fullMark: number; }[]>([]);
     const [aiKeywords, setAiKeywords] = useState<string[]>([]);
@@ -222,7 +522,6 @@ export default function SolutionPage() {
                 }
 
                 // Simplified Description & TOC handling to fit prompt limits
-                // In production, we would use sophisticated summarization here
                 if (book.description && book.description.length > 20) {
                     info += `\n   > 줄거리: ${book.description.substring(0, 100)}...`;
                 }
@@ -258,13 +557,11 @@ export default function SolutionPage() {
             let observationText = "";
             if (observations && Object.keys(observations).length > 0) {
                 observationText = `\n[부모님 관찰 기록 (중요)]\n`;
-                // Map common keys to Korean labels if needed, or just send raw values with context
                 if (observations.fluency) observationText += `- 읽기 유창성 관찰: "${observations.fluency}"\n`;
                 if (observations.independence) observationText += `- 독립 독서 여부: "${observations.independence}"\n`;
                 if (observations.decoding) observationText += `- 글자 해독 능력: "${observations.decoding}"\n`;
                 if (observations.interest) observationText += `- 흥미 반응: "${observations.interest}"\n`;
                 if (observations.critical) observationText += `- 비판적 질문: "${observations.critical}"\n`;
-                // Fallback for others
                 for (const [key, val] of Object.entries(observations)) {
                     if (!['fluency', 'independence', 'decoding', 'interest', 'critical'].includes(key)) {
                         observationText += `- 기타 관찰(${key}): "${val}"\n`;
@@ -276,7 +573,7 @@ export default function SolutionPage() {
         당신은 아동 발달 심리 및 독서 교육 최고 전문가입니다.
         현재 분석 대상 아동은 **만 ${age}세**이며, 독서 발달 단계상 **'${phaseInfo}'**에 해당합니다.
         이 시기의 핵심 발달 과업은 **'${focusPoint}'**입니다.
-
+ 
         **중요: 분석을 위한 데이터가 ${userReadBooks.length}권 제공되었습니다.**
         ${userReadBooks.length < 3 ? `
         !!! 데이터 부족 경고 !!!
@@ -336,12 +633,10 @@ export default function SolutionPage() {
 
             let resultData;
             try {
-                // Remove any markdown code blocks if present
                 const cleanJson = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
                 resultData = JSON.parse(cleanJson);
             } catch (e) {
                 console.error("JSON Parse Error:", e);
-                // Fallback for plain text response
                 setReadingAnalysisResult(data.result);
                 return;
             }
@@ -364,15 +659,28 @@ export default function SolutionPage() {
         setAiSolutionResult('');
 
         try {
+            const age = activeChild?.age || 0;
+            const readBooksTitles = userReadBooks.map(b => b.title).slice(0, 10).join(', ');
+            const preferredGenreLabel = preferredGenres.length > 0 ? preferredGenres[0].label : "미정";
+
             const prompt = `
-          당신은 아동 독서 및 교육 전문가입니다. 부모님의 다음 고민에 대해 전문적이고 실질적인 솔루션을 제공해주세요.
+          당신은 15년 경력의 아동 독서 및 교육 전문가이자 아동 발달학 권위자입니다. 
+          부모님의 다음 고민에 대해 아동학 이론 및 독서 지도 기법을 활용하여 전문적이고 실질적인 솔루션을 제공해주세요.
+
+          [자녀의 실제 독서 정보]
+          - 이름: ${childName}
+          - 연령: 만 ${age}세
+          - 선호 주제: ${preferredGenreLabel}
+          - 최근 독서 기록: [${readBooksTitles || "없음"}]
+
           고민: "${aiSolutionPrompt}"
           
           **답변 작성 가이드:**
-          1. **공감하기**: 부모님의 고민에 공감하는 따뜻한 말로 시작하세요.
-          2. **핵심 솔루션 (개괄식)**: 해결 방안을 3가지 내외로 제시하되, **글머리 기호(-)**를 사용하여 정리하세요.
-          3. **강조**: 핵심 키워드나 실천 방법은 **굵게(**)** 표시하여 눈에 띄게 하세요.
-          4. **마무리**: 긍정적인 격려의 말로 마무리하세요.
+          1. **공감하기**: 부모님의 고민에 공감하고 아이의 독서 행동 심리를 발달 단계 수준(만 ${age}세)과 매칭하여 따뜻한 말로 분석하세요.
+          2. **핵심 솔루션**: 구체적인 실천 가이드를 3가지 내외로 제시하되, **글머리 기호(-)**를 사용하여 정리하세요.
+          3. **자녀 이름 활용**: 가이드 도중 **'${childName}'**의 이름을 자주 언급하여 맞춤형 처방을 제공하고 있음을 보여주세요.
+          4. **강조**: 핵심 키워드나 부모가 당장 시도해볼 실천 수칙은 **굵게(**)** 표시하세요.
+          5. **마무리**: 긍정적인 격려의 말로 마무리하세요.
         `;
 
             const response = await fetch('/api/openai', {
@@ -424,46 +732,48 @@ export default function SolutionPage() {
                 />
             </div>
 
-            {/* Desktop Content Layout */}
-            <div className="hidden lg:flex max-w-7xl mx-auto px-6 py-12 flex-row gap-12 bg-[#FDFDFD]">
-                <Sidebar
-                    activeChild={activeChild}
-                    activeMenu="solution"
-                    activeSubMenu={activeSubMenu}
-                    setActiveSubMenu={setActiveSubMenu}
-                    setActiveChild={setActiveChild}
-                />
-                <main className="flex-1 min-h-[600px]">
-                    {activeSubMenu === '우리 아이 독서 성향 AI 분석' && (
-                        <ReadingAnalysis
-                            activeChild={activeChild}
-                            userReadBooks={userReadBooks}
-                            getReadingAnalysis={getReadingAnalysis}
-                            loading={readingAnalysisLoading}
-                            result={readingAnalysisResult}
-                            chartData={chartData}
-                            keywords={aiKeywords}
-                        />
-                    )}
-
-                    {activeSubMenu === 'AI 독서 솔루션' && (
-                        <AISolution
-                            prompt={aiSolutionPrompt}
-                            setPrompt={setAiSolutionPrompt}
-                            getSolution={getAISolution}
-                            loading={aiSolutionLoading}
-                            result={aiSolutionResult}
-                        />
-                    )}
-                </main>
-            </div>
-
             {/* ============================================================== */}
             {/* Mobile / Hybrid App View (lg:hidden) */}
             {/* ============================================================== */}
             <div className="lg:hidden flex flex-col min-h-screen bg-[#F8F9FA]">
+                {/* Mobile Top Header (Shared from Home screen layout) */}
+                <header className="bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0">
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                        <div className="relative w-8 h-8 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
+                            <div className="relative w-full h-[18px]">
+                                <Image
+                                    src="/images/logo.png"
+                                    alt="Book,ok Logo"
+                                    fill
+                                    className="object-contain grayscale contrast-200 invert mix-blend-screen"
+                                    sizes="28px"
+                                />
+                            </div>
+                        </div>
+                        <span className="text-[17px] font-extrabold tracking-tight text-[#101828]">Book,ok</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        {user ? (
+                            <button 
+                                onClick={() => router.push('/mypage')}
+                                className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 transition-colors"
+                            >
+                                프로필
+                            </button>
+                        ) : (
+                            <button 
+                                onClick={() => router.push('/auth')}
+                                className="bg-black text-white rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-gray-800 transition-colors"
+                            >
+                                로그인
+                            </button>
+                        )}
+                    </div>
+                </header>
+
                 {/* Mobile Tab Control */}
-                <div className="bg-white border-b border-gray-100 flex sticky top-0 z-40 shrink-0">
+                <div className="bg-white border-b border-gray-100 flex sticky top-[53px] z-40 shrink-0">
                     <button
                         onClick={() => setMobileTab('analysis')}
                         className={`flex-1 py-4 text-center font-extrabold text-[15px] border-b-2 transition-all ${
@@ -497,21 +807,21 @@ export default function SolutionPage() {
                                 <div className="bg-[#E8F5E9]/30 border border-green-100 rounded-[28px] p-5 flex flex-col justify-between h-[128px]">
                                     <span className="text-[12px] font-bold text-gray-500">이번 달 읽은 책</span>
                                     <div className="flex items-baseline gap-1 my-1">
-                                        <span className="text-3xl font-black text-gray-900">11</span>
+                                        <span className="text-3xl font-black text-gray-900">{thisMonthCount}</span>
                                         <span className="text-sm font-black text-gray-700">권</span>
                                     </div>
-                                    <span className="text-[11px] font-extrabold text-[#16A34A]">▲ 지난달보다 +3권</span>
+                                    <span className="text-[11px] font-extrabold text-[#16A34A]">{prevMonthDiffText}</span>
                                 </div>
 
                                 {/* Total Read Books */}
                                 <div className="bg-white border border-gray-100 rounded-[28px] p-5 flex flex-col justify-between h-[128px] shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
                                     <span className="text-[12px] font-bold text-gray-500">누적 독서량</span>
                                     <div className="flex items-baseline gap-1 my-1">
-                                        <span className="text-3xl font-black text-gray-900">42</span>
+                                        <span className="text-3xl font-black text-gray-900">{totalReadCount}</span>
                                         <span className="text-sm font-black text-gray-700">권</span>
                                     </div>
                                     <div className="self-start bg-[#FACC15]/20 text-[#D97706] text-[10px] font-black px-2.5 py-0.5 rounded-full">
-                                        독서왕 Lv.3
+                                        {readingKingLevelText}
                                     </div>
                                 </div>
                             </div>
@@ -522,33 +832,54 @@ export default function SolutionPage() {
                                 <div className="flex items-center justify-between gap-4">
                                     {/* Categories list */}
                                     <div className="space-y-3.5 flex-1">
-                                        {[
-                                            { label: "상상 · 판타지", pct: "40%", dot: "bg-[#7C4DFF]" },
-                                            { label: "감정 · 관계", pct: "30%", dot: "bg-[#651FFF]" },
-                                            { label: "자연 · 과학", pct: "15%", dot: "bg-[#00E5FF]" },
-                                            { label: "탈것 · 모험", pct: "15%", dot: "bg-[#00E676]" }
-                                        ].map((cat, idx) => (
-                                            <div key={idx} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`w-2.5 h-2.5 rounded-full ${cat.dot}`} />
-                                                    <span className="text-xs font-bold text-gray-400">{cat.label}</span>
+                                        {preferredGenres.length > 0 ? (
+                                            preferredGenres.map((cat, idx) => (
+                                                <div key={idx} className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`w-2.5 h-2.5 rounded-full ${cat.dot}`} />
+                                                        <span className="text-xs font-bold text-gray-400">{cat.label}</span>
+                                                    </div>
+                                                    <span className="text-xs font-black text-gray-900">{cat.pct}</span>
                                                 </div>
-                                                <span className="text-xs font-black text-gray-900">{cat.pct}</span>
-                                            </div>
-                                        ))}
+                                            ))
+                                        ) : (
+                                            <div className="text-xs font-bold text-gray-400 py-4 text-center">선호 장르 분석을 위해 책을 더 읽어보세요!</div>
+                                        )}
                                     </div>
                                     
                                     {/* Custom SVG Donut Chart */}
                                     <div className="relative w-[130px] h-[130px] flex items-center justify-center shrink-0">
                                         <svg width="130" height="130" viewBox="0 0 100 100" className="transform -rotate-90">
-                                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#7C4DFF" strokeWidth="12" strokeDasharray="100.5 251.2" strokeDashoffset="0" />
-                                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#651FFF" strokeWidth="12" strokeDasharray="75.4 251.2" strokeDashoffset="-100.5" />
-                                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#00E5FF" strokeWidth="12" strokeDasharray="37.7 251.2" strokeDashoffset="-175.9" />
-                                            <circle cx="50" cy="50" r="40" fill="transparent" stroke="#00E676" strokeWidth="12" strokeDasharray="37.7 251.2" strokeDashoffset="-213.6" />
+                                            {preferredGenres.length > 0 ? (
+                                                (() => {
+                                                    let accumulatedPct = 0;
+                                                    return preferredGenres.map((cat, idx) => {
+                                                        const pctNum = cat.pctNum || 0;
+                                                        const strokeDasharray = `${((pctNum / 100) * 251.2).toFixed(1)} 251.2`;
+                                                        const strokeDashoffset = (- (accumulatedPct / 100) * 251.2).toFixed(1);
+                                                        accumulatedPct += pctNum;
+                                                        return (
+                                                            <circle 
+                                                                key={idx}
+                                                                cx="50" 
+                                                                cy="50" 
+                                                                r="40" 
+                                                                fill="transparent" 
+                                                                stroke={cat.color} 
+                                                                strokeWidth="12" 
+                                                                strokeDasharray={strokeDasharray} 
+                                                                strokeDashoffset={strokeDashoffset} 
+                                                            />
+                                                        );
+                                                    });
+                                                })()
+                                            ) : (
+                                                <circle cx="50" cy="50" r="40" fill="transparent" stroke="#E5E7EB" strokeWidth="12" strokeDasharray="251.2 251.2" strokeDashoffset="0" />
+                                            )}
                                             <circle cx="50" cy="50" r="28" fill="white" />
                                         </svg>
                                         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                                            <span className="text-[12px] font-black text-[#16A34A] leading-tight">6월</span>
+                                            <span className="text-[12px] font-black text-[#16A34A] leading-tight">{new Date().getMonth() + 1}월</span>
                                             <span className="text-[9px] font-bold text-gray-400 tracking-tighter leading-none">독서 리포트</span>
                                         </div>
                                     </div>
@@ -561,65 +892,118 @@ export default function SolutionPage() {
                                 
                                 {/* Custom SVG Bar/Line Chart */}
                                 <div className="w-full relative h-[90px] mb-3">
-                                    <svg width="100%" height="80" viewBox="0 0 288 80" className="overflow-visible w-full h-full">
-                                        <line x1="0" y1="79" x2="288" y2="79" stroke="#F3F4F6" strokeWidth="1" strokeDasharray="3 3" />
-                                        <line x1="0" y1="40" x2="288" y2="40" stroke="#F3F4F6" strokeWidth="1" strokeDasharray="3 3" />
-                                        
-                                        {/* Bars */}
-                                        <rect x="20" y="45" width="16" height="35" rx="4" fill="#374151" />
-                                        <rect x="68" y="55" width="16" height="25" rx="4" fill="#374151" />
-                                        <rect x="116" y="35" width="16" height="45" rx="4" fill="#374151" />
-                                        <rect x="164" y="25" width="16" height="55" rx="4" fill="#374151" />
-                                        <rect x="212" y="38" width="16" height="42" rx="4" fill="#374151" />
-                                        <rect x="260" y="10" width="16" height="70" rx="4" fill="#16A34A" />
-                                        
-                                        {/* Polyline */}
-                                        <polyline fill="none" stroke="#86EFAC" strokeWidth="2.5" points="28,45 76,55 124,35 172,25 220,38 268,10" />
-                                        
-                                        {/* Line dots */}
-                                        <circle cx="28" cy="45" r="3.5" fill="white" stroke="#86EFAC" strokeWidth="2.5" />
-                                        <circle cx="76" cy="55" r="3.5" fill="white" stroke="#86EFAC" strokeWidth="2.5" />
-                                        <circle cx="124" cy="35" r="3.5" fill="white" stroke="#86EFAC" strokeWidth="2.5" />
-                                        <circle cx="172" cy="25" r="3.5" fill="white" stroke="#86EFAC" strokeWidth="2.5" />
-                                        <circle cx="220" cy="38" r="3.5" fill="white" stroke="#86EFAC" strokeWidth="2.5" />
-                                        <circle cx="268" cy="10" r="3.5" fill="white" stroke="#16A34A" strokeWidth="2.5" />
-                                    </svg>
+                                    {monthlyVolumes.length > 0 ? (
+                                        <svg width="100%" height="80" viewBox="0 0 288 80" className="overflow-visible w-full h-full">
+                                            <line x1="0" y1="79" x2="288" y2="79" stroke="#F3F4F6" strokeWidth="1" strokeDasharray="3 3" />
+                                            <line x1="0" y1="40" x2="288" y2="40" stroke="#F3F4F6" strokeWidth="1" strokeDasharray="3 3" />
+                                            
+                                            {/* Bars */}
+                                            {monthlyVolumes.map((item, idx) => {
+                                                const barWidth = 16;
+                                                const barGap = 32;
+                                                const xStart = 20;
+                                                const x = xStart + (idx * (barWidth + barGap));
+                                                return (
+                                                    <rect 
+                                                        key={idx} 
+                                                        x={x} 
+                                                        y={item.y} 
+                                                        width={barWidth} 
+                                                        height={item.height} 
+                                                        rx="4" 
+                                                        fill={idx === 5 ? "#16A34A" : "#374151"} 
+                                                    />
+                                                );
+                                            })}
+                                            
+                                            {/* Polyline */}
+                                            {(() => {
+                                                const barWidth = 16;
+                                                const barGap = 32;
+                                                const xStart = 20;
+                                                const pointsStr = monthlyVolumes.map((item, idx) => {
+                                                    const cx = xStart + (idx * (barWidth + barGap)) + (barWidth / 2);
+                                                    return `${cx},${item.y}`;
+                                                }).join(' ');
+                                                return <polyline fill="none" stroke="#86EFAC" strokeWidth="2.5" points={pointsStr} />;
+                                            })()}
+                                            
+                                            {/* Line dots */}
+                                            {monthlyVolumes.map((item, idx) => {
+                                                const barWidth = 16;
+                                                const barGap = 32;
+                                                const xStart = 20;
+                                                const cx = xStart + (idx * (barWidth + barGap)) + (barWidth / 2);
+                                                return (
+                                                    <circle 
+                                                        key={idx}
+                                                        cx={cx} 
+                                                        cy={item.y} 
+                                                        r="3.5" 
+                                                        fill="white" 
+                                                        stroke={idx === 5 ? "#16A34A" : "#86EFAC"} 
+                                                        strokeWidth="2.5" 
+                                                    />
+                                                );
+                                            })}
+                                        </svg>
+                                    ) : (
+                                        <div className="h-full flex items-center justify-center text-xs font-bold text-gray-400">최근 독서 추이 데이터가 생성 중입니다.</div>
+                                    )}
                                 </div>
                                 
                                 {/* Months labels */}
                                 <div className="flex justify-between items-center px-2 text-[10px] font-bold text-gray-400">
-                                    <span>12월</span>
-                                    <span>1월</span>
-                                    <span>2월</span>
-                                    <span>3월</span>
-                                    <span>4월</span>
-                                    <span className="text-[#16A34A] font-black">5월</span>
+                                    {monthlyVolumes.map((m, idx) => (
+                                        <span key={idx} className={idx === 5 ? "text-[#16A34A] font-black" : ""}>
+                                            {m.label}
+                                        </span>
+                                    ))}
                                 </div>
                             </div>
 
                             {/* AI 독서코치 고정 알림 배너 (Figma 269:10400 기준 고정형) */}
-                            <div className="bg-white border border-gray-100 rounded-[28px] p-4 flex items-center gap-3.5 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+                            <div 
+                                onClick={() => setSelectedCoachCategory(aiCoachCategory)}
+                                className="bg-white border border-gray-100 rounded-[28px] p-4 flex items-center gap-3.5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer hover:bg-gray-50 active:scale-[0.99] transition-all"
+                            >
                                 <div className="bg-[#16A34A]/10 text-[#16A34A] w-10 h-10 rounded-full flex items-center justify-center shrink-0">
                                     <Sparkles size={18} className="fill-current" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="text-[10px] font-black text-[#16A34A] tracking-wider leading-none uppercase">AI 독서코치</div>
                                     <div className="text-[13px] font-bold text-gray-800 mt-1 block tracking-tight">
-                                        "자연 · 과학" 분야를 시도해보면 어떨까요?
+                                        "{aiCoachCategory}" 분야를 시도해보면 어떨까요? (클릭 시 추천도서 탐색)
                                     </div>
+                                    <div className="text-[11px] text-gray-400 mt-0.5">{aiCoachMent}</div>
                                 </div>
                             </div>
 
                             {/* Recommendations Area */}
                             <div className="relative pt-2">
                                 <div className="flex justify-between items-center mb-3 px-1">
-                                    <h3 className="font-extrabold text-base tracking-tight"><span className="text-[#16A34A] font-black">북콕</span>이 추천하는 책</h3>
-                                    <span 
-                                        onClick={() => router.push('/')}
-                                        className="text-xs font-bold text-gray-400 cursor-pointer hover:text-[#16A34A] transition-colors active:scale-95 transition-transform"
-                                    >
-                                        더보기 &gt;
-                                    </span>
+                                    <h3 className="font-extrabold text-base tracking-tight">
+                                        {selectedCoachCategory ? (
+                                            <span>AI 독서코치의 <span className="text-[#16A34A] font-black">{selectedCoachCategory}</span> 추천책</span>
+                                        ) : (
+                                            <span><span className="text-[#16A34A] font-black">북콕</span>이 추천하는 책</span>
+                                        )}
+                                    </h3>
+                                    {selectedCoachCategory ? (
+                                        <span 
+                                            onClick={() => setSelectedCoachCategory(null)}
+                                            className="text-xs font-black text-[#16A34A] cursor-pointer hover:text-green-700 transition-colors"
+                                        >
+                                            기본 추천으로 〉
+                                        </span>
+                                    ) : (
+                                        <span 
+                                            onClick={() => router.push('/')}
+                                            className="text-xs font-bold text-gray-400 cursor-pointer hover:text-[#16A34A] transition-colors"
+                                        >
+                                            더보기 &gt;
+                                        </span>
+                                    )}
                                 </div>
 
                                 {/* Books List (Horizontal scroll) */}
@@ -663,13 +1047,13 @@ export default function SolutionPage() {
                                 <div className="bg-white border border-gray-100 rounded-[28px] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-3">
                                     <div className="flex items-center gap-1">
                                         <span className="text-[#16A34A] font-black text-lg">◆</span>
-                                        <h3 className="font-extrabold text-[15px] tracking-tight">지명이의 <span className="text-[#16A34A]">독서 고민</span>을 자세히 들려주세요!</h3>
+                                        <h3 className="font-extrabold text-[15px] tracking-tight">{childName}의 <span className="text-[#16A34A]">독서 고민</span>을 자세히 들려주세요!</h3>
                                     </div>
                                     <p className="text-xs text-gray-400 font-medium leading-relaxed">
                                         ex) 저희 아이가 책 읽는 것을 너무 싫어해요. 어떻게 하면 책과 친해질 수 있을까요?
                                     </p>
                                     <p className="text-xs text-gray-500 font-extrabold leading-relaxed">
-                                        50자 이상 자세히 적어주시면 더 정확한 솔루션을 드릴 수 있습니다.
+                                        15년 경력 전문가가 {childName}의 성향을 바탕으로 조언해 드릴게요.
                                     </p>
                                 </div>
 
@@ -695,7 +1079,11 @@ export default function SolutionPage() {
                                             {msg.books && msg.books.length > 0 && (
                                                 <div className="flex overflow-x-auto gap-4 py-2 px-1 scrollbar-hide -mx-4 px-4">
                                                     {msg.books.map((book, bIdx) => (
-                                                        <div key={bIdx} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0">
+                                                        <div 
+                                                            key={bIdx} 
+                                                            onClick={() => router.push(`/book/${book.id || book.bookid || '9788997984848'}`)}
+                                                            className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-95 transition-transform"
+                                                        >
                                                             <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
                                                                 <Image src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" />
                                                             </div>
@@ -735,7 +1123,7 @@ export default function SolutionPage() {
                                         value={mobileInput}
                                         onChange={(e) => setMobileInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleMobileSolutionSubmit()}
-                                        placeholder="메시지를 입력하세요"
+                                        placeholder={`${childName}의 독서 고민을 들려주세요...`}
                                         className="flex-1 bg-white border border-gray-200 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 text-xs font-semibold text-gray-900 placeholder-gray-400"
                                     />
                                     <button
