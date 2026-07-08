@@ -5,7 +5,8 @@ import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
 import { Child, MainMenu, ReadBook } from "@shared/types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building } from "lucide-react";
+import { REGIONS, SUB_REGIONS } from "@shared/lib/regions";
 import { useRouter } from "next/navigation";
 import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
@@ -56,7 +57,106 @@ export default function MyPage() {
     const [readBookCount, setReadBookCount] = useState(0);
     const [readBooks, setReadBooks] = useState<ReadBook[]>([]);
     const [showReadBooksModal, setShowReadBooksModal] = useState(false);
-;
+
+    // Library registration state
+    const [isAddingLibrary, setIsAddingLibrary] = useState(false);
+    const [selectedRegion, setSelectedRegion] = useState("");
+    const [selectedSubRegion, setSelectedSubRegion] = useState("");
+    const [foundLibraries, setFoundLibraries] = useState<Array<{ libCode: string; libName: string; address: string }>>([]);
+    const [isSearchingLibraries, setIsSearchingLibraries] = useState(false);
+    const [isSavingLibrary, setIsSavingLibrary] = useState(false);
+
+    useEffect(() => {
+        const fetchLibraries = async () => {
+            if (!selectedRegion || !selectedSubRegion) {
+                setFoundLibraries([]);
+                return;
+            }
+            setIsSearchingLibraries(true);
+            try {
+                const res = await fetch(`/api/library/search?region=${selectedRegion}&dtl_region=${selectedSubRegion}`);
+                if (!res.ok) throw new Error("도서관 검색 실패");
+                const data = await res.json();
+                setFoundLibraries(data.libraries || []);
+            } catch (err: any) {
+                console.error(err);
+                toast.error("도서관 목록을 불러오지 못했습니다.");
+            } finally {
+                setIsSearchingLibraries(false);
+            }
+        };
+        fetchLibraries();
+    }, [selectedRegion, selectedSubRegion]);
+
+    const handleAddLibrary = async (lib: { libCode: string; libName: string }) => {
+        console.log("handleAddLibrary clicked:", lib);
+        toast.info("도서관 등록 중...");
+
+        if (!user) {
+            console.error("handleAddLibrary failed: user is null");
+            toast.error("로그인이 필요합니다.");
+            return;
+        }
+
+        const rawLibs = userProfile?.favorite_libraries;
+        const currentLibs = Array.isArray(rawLibs) ? rawLibs : [];
+        console.log("currentLibs:", currentLibs);
+
+        if (currentLibs.length >= 3) {
+            toast.error("자주가는 도서관은 최대 3곳까지만 등록할 수 있습니다.");
+            return;
+        }
+        if (currentLibs.some(l => String(l.libCode) === String(lib.libCode))) {
+            toast.error("이미 등록된 도서관입니다.");
+            return;
+        }
+
+        setIsSavingLibrary(true);
+        const updatedLibs = [...currentLibs, { libCode: String(lib.libCode), libName: lib.libName }];
+        console.log("Saving updated libs:", updatedLibs);
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ favorite_libraries: updatedLibs })
+                .eq('id', user.id);
+                
+            if (error) throw error;
+            
+            await refreshProfile();
+            toast.success(`${lib.libName}이(가) 등록되었습니다.`);
+            setIsAddingLibrary(false);
+            setSelectedRegion("");
+            setSelectedSubRegion("");
+            setFoundLibraries([]);
+        } catch (err: any) {
+            console.error("Supabase update error:", err);
+            toast.error("도서관 등록 실패: " + err.message);
+        } finally {
+            setIsSavingLibrary(false);
+        }
+    };
+
+    const handleDeleteLibrary = async (libCode: string) => {
+        if (!user) return;
+        const rawLibs = userProfile?.favorite_libraries;
+        const currentLibs = Array.isArray(rawLibs) ? rawLibs : [];
+        const updatedLibs = currentLibs.filter(l => String(l.libCode) !== String(libCode));
+        
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ favorite_libraries: updatedLibs })
+                .eq('id', user.id);
+                
+            if (error) throw error;
+            await refreshProfile();
+            toast.success("도서관이 삭제되었습니다.");
+        } catch (err: any) {
+            console.error("Supabase delete error:", err);
+            toast.error("도서관 삭제 실패: " + err.message);
+        }
+    };
 
     useEffect(() => {
         if (!authLoading && children.length > 0 && !activeChild) {
@@ -330,6 +430,151 @@ export default function MyPage() {
                                                     '등록 완료'
                                                 )}
                                             </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 자주가는 도서관 Section */}
+                            <div className="bg-white rounded-4xl p-6 shadow-sm border border-gray-100 animate-in fade-in">
+                                <div className="flex items-center justify-between mb-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-green-100 text-green-600 rounded-xl">
+                                            <MapPin size={20} />
+                                        </div>
+                                        <h3 className="text-lg font-bold">자주가는 도서관</h3>
+                                    </div>
+                                    <span className="text-xs text-gray-400 font-bold">
+                                        {userProfile?.favorite_libraries?.length || 0} / 3
+                                    </span>
+                                </div>
+
+                                {/* List of Favorite Libraries */}
+                                <div className="space-y-3 mb-4">
+                                    {(userProfile?.favorite_libraries || []).map(lib => (
+                                        <div
+                                            key={lib.libCode}
+                                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-gray-100 transition-all"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0">
+                                                    <Building size={18} />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-bold text-sm text-gray-900 truncate">{lib.libName}</div>
+                                                    <div className="text-[10px] text-gray-400">코드: {lib.libCode}</div>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={() => handleDeleteLibrary(lib.libCode)}
+                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ))}
+
+                                    {(!userProfile?.favorite_libraries || userProfile.favorite_libraries.length === 0) && !isAddingLibrary && (
+                                        <p className="text-sm text-gray-400 text-center py-6 leading-relaxed">
+                                            자주가는 도서관을 등록하고<br />도서 소장 및 대출 가능 여부를 확인해 보세요.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Add Library Button / Form */}
+                                {!isAddingLibrary ? (
+                                    (userProfile?.favorite_libraries?.length || 0) < 3 && (
+                                        <button
+                                            onClick={() => setIsAddingLibrary(true)}
+                                            className="w-full py-3.5 text-center text-sm font-bold text-gray-400 hover:text-green-600 border border-dashed border-gray-200 rounded-xl hover:border-green-300 transition-all cursor-pointer"
+                                        >
+                                            + 자주가는 도서관 추가하기
+                                        </button>
+                                    )
+                                ) : (
+                                    <div className="bg-gray-50 p-5 rounded-2xl animate-in fade-in duration-300">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="font-bold text-sm text-gray-900">도서관 검색 및 추가</h4>
+                                            <button onClick={() => {
+                                                setIsAddingLibrary(false);
+                                                setSelectedRegion("");
+                                                setSelectedSubRegion("");
+                                                setFoundLibraries([]);
+                                            }} className="p-1 hover:bg-gray-200 rounded-lg text-gray-400">
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                        <div className="space-y-3">
+                                            {/* 시도 선택 */}
+                                            <select
+                                                value={selectedRegion}
+                                                onChange={e => {
+                                                    setSelectedRegion(e.target.value);
+                                                    setSelectedSubRegion("");
+                                                    setFoundLibraries([]);
+                                                }}
+                                                className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none bg-white focus:ring-2 focus:ring-green-500"
+                                            >
+                                                <option value="">시/도 선택</option>
+                                                {REGIONS.map(r => (
+                                                    <option key={r.code} value={r.code}>{r.name}</option>
+                                                ))}
+                                            </select>
+
+                                            {/* 구군 선택 */}
+                                            <select
+                                                value={selectedSubRegion}
+                                                onChange={e => setSelectedSubRegion(e.target.value)}
+                                                disabled={!selectedRegion}
+                                                className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none bg-white focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+                                            >
+                                                <option value="">시/군/구 선택</option>
+                                                {selectedRegion && SUB_REGIONS[selectedRegion]?.map(sr => (
+                                                    <option key={sr.code} value={sr.code}>{sr.name}</option>
+                                                ))}
+                                            </select>
+
+                                            {/* 검색 결과 도서관 목록 */}
+                                            {selectedSubRegion && (
+                                                <div className="mt-4 border-t border-gray-200/50 pt-3">
+                                                    <p className="text-xs font-bold text-gray-400 mb-2">검색 결과</p>
+                                                    {isSearchingLibraries ? (
+                                                        <div className="flex justify-center py-6">
+                                            <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                                                        </div>
+                                                    ) : foundLibraries.length > 0 ? (
+                                                        <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                                                            {foundLibraries.map(lib => {
+                                                                const isAlreadyAdded = Array.isArray(userProfile?.favorite_libraries) && userProfile.favorite_libraries.some(l => String(l.libCode) === String(lib.libCode));
+                                                                return (
+                                                                    <div
+                                                                        key={lib.libCode}
+                                                                        className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 hover:border-green-200 transition-all text-xs"
+                                                                    >
+                                                                        <div className="flex-1 min-w-0 pr-2">
+                                                                            <div className="font-bold text-gray-900 truncate">{lib.libName}</div>
+                                                                            <div className="text-[10px] text-gray-400 truncate mt-0.5">{lib.address}</div>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => handleAddLibrary(lib)}
+                                                                            disabled={isAlreadyAdded || isSavingLibrary}
+                                                                            className={`px-3 py-1.5 rounded-lg font-bold text-[10px] shrink-0 transition-all ${
+                                                                                isAlreadyAdded 
+                                                                                    ? 'bg-gray-100 text-gray-400 cursor-default' 
+                                                                                    : 'bg-green-600 text-white hover:bg-green-700 active:scale-95 cursor-pointer shadow-sm shadow-green-100'
+                                                                            }`}
+                                                                        >
+                                                                            {isAlreadyAdded ? '등록됨' : '추가'}
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-gray-400 text-center py-6">해당 지역에 검색된 도서관이 없습니다.</p>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@shared/lib/supabase";
 import { Book, Review, Child } from "@shared/types";
-import { Star, ChevronLeft, Bookmark, BookOpen, Check } from "lucide-react";
+import { Star, ChevronLeft, Bookmark, BookOpen, Check, Building, MapPin } from "lucide-react";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
 import { useAuth } from "@features/auth/AuthContext";
@@ -23,7 +23,11 @@ export default function BookDetailContent() {
     const [isApiBook, setIsApiBook] = useState(false);
 
     // Auth & Sidebar state
-    const { user, children } = useAuth();
+    const { user, children, userProfile } = useAuth();
+    
+    // Library holding status state
+    const [libraryStatus, setLibraryStatus] = useState<Array<{ libCode: string; libName: string; hasBook: string; loanAvailable: string }>>([]);
+    const [libraryStatusLoading, setLibraryStatusLoading] = useState(false);
     const { openLoginModal } = useLoginModal();
     const [userChildren, setUserChildren] = useState<Child[]>([]);
     const [activeChild, setActiveChild] = useState<Child | null>(null);
@@ -53,7 +57,7 @@ export default function BookDetailContent() {
             setLoading(true);
 
             // 1. Try Supabase first
-            const { data: sbBook } = await supabase.from('books').select('*').eq('id', bookId).single();
+            const { data: sbBook } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
             if (sbBook) {
                 setBook(sbBook);
                 setIsApiBook(false);
@@ -122,6 +126,47 @@ export default function BookDetailContent() {
 
         checkInteractions();
     }, [user, book]);
+
+    // Fetch holding status for favorite libraries
+    useEffect(() => {
+        const checkLibraryHoldings = async () => {
+            const rawLibs = userProfile?.favorite_libraries;
+            const favoriteLibs = Array.isArray(rawLibs) ? rawLibs : [];
+            if (!book || favoriteLibs.length === 0) {
+                setLibraryStatus([]);
+                return;
+            }
+
+            setLibraryStatusLoading(true);
+            try {
+                const libCodes = favoriteLibs.map(l => l.libCode).join(',');
+                const isbn = book.id || book.bookid || bookId;
+                
+                const res = await fetch(`/api/library/book-status?isbn=${isbn}&libCodes=${libCodes}`);
+                if (!res.ok) throw new Error("도서관 소장 여부 조회 실패");
+                const data = await res.json();
+                
+                // Map the results back to include the library names
+                const statusResults = (data.results || []).map((result: any) => {
+                    const libInfo = favoriteLibs.find(l => String(l.libCode) === String(result.libCode));
+                    return {
+                        libCode: result.libCode,
+                        libName: libInfo?.libName || "알 수 없는 도서관",
+                        hasBook: result.hasBook,
+                        loanAvailable: result.loanAvailable
+                    };
+                });
+                
+                setLibraryStatus(statusResults);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLibraryStatusLoading(false);
+            }
+        };
+
+        checkLibraryHoldings();
+    }, [userProfile, book, bookId]);
 
     const fetchReviews = async () => {
         const { data } = await supabase.from('reviews')
@@ -295,6 +340,95 @@ export default function BookDetailContent() {
                             </>
                         ) : (
                             <div className="p-10 text-center text-gray-400 font-bold w-full">도서 정보를 찾을 수 없습니다.</div>
+                        )}
+                    </div>
+
+                    {/* 우리 동네 도서관 소장 현황 */}
+                    <div className="bg-white rounded-[2.5rem] p-6 lg:p-10 shadow-sm border border-gray-100 mb-10 animate-in fade-in duration-500">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2.5 bg-green-50 text-green-600 rounded-xl">
+                                <MapPin size={20} />
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">우리 동네 도서관 소장 현황</h3>
+                        </div>
+
+                        {!user ? (
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gray-50 rounded-3xl border border-transparent">
+                                <div>
+                                    <p className="font-bold text-sm text-gray-800">로그인하고 소장 정보를 확인해 보세요!</p>
+                                    <p className="text-xs text-gray-400 mt-1 leading-relaxed">자주가는 도서관을 등록하면 검색한 책의 대출 가능 여부를 실시간으로 알 수 있습니다.</p>
+                                </div>
+                                <button
+                                    onClick={openLoginModal}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-full transition-all shrink-0 cursor-pointer"
+                                >
+                                    로그인하기
+                                </button>
+                            </div>
+                        ) : !userProfile?.favorite_libraries || userProfile.favorite_libraries.length === 0 ? (
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-gray-50 rounded-3xl border border-transparent">
+                                <div>
+                                    <p className="font-bold text-sm text-gray-800">등록된 자주가는 도서관이 없습니다.</p>
+                                    <p className="text-xs text-gray-400 mt-1 leading-relaxed">마이페이지에서 자주가는 도서관을 등록하면 소장 현황을 보여드릴게요!</p>
+                                </div>
+                                <button
+                                    onClick={() => router.push('/mypage')}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold text-xs rounded-full transition-all shrink-0 cursor-pointer"
+                                >
+                                    도서관 등록하러 가기
+                                </button>
+                            </div>
+                        ) : libraryStatusLoading ? (
+                            <div className="flex flex-col gap-3">
+                                {[1, 2, 3].slice(0, userProfile.favorite_libraries.length).map((_, i) => (
+                                    <div key={i} className="h-16 bg-gray-50 rounded-2xl animate-pulse" />
+                                ))}
+                            </div>
+                        ) : libraryStatus.length > 0 ? (
+                            <div className="space-y-3">
+                                {libraryStatus.map(status => {
+                                    const isNotHeld = status.hasBook === 'N';
+                                    const isLoanable = status.hasBook === 'Y' && status.loanAvailable === 'Y';
+                                    const isCheckedOut = status.hasBook === 'Y' && status.loanAvailable === 'N';
+
+                                    return (
+                                        <div
+                                            key={status.libCode}
+                                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-gray-100 transition-all"
+                                        >
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-10 h-10 rounded-full bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0">
+                                                    <Building size={18} />
+                                                </div>
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-bold text-sm text-gray-900 truncate">{status.libName}</div>
+                                                    <div className="text-[10px] text-gray-400 mt-0.5">코드: {status.libCode}</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="shrink-0 ml-3">
+                                                {isNotHeld && (
+                                                    <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-lg border border-red-100">
+                                                        미소장
+                                                    </span>
+                                                )}
+                                                {isLoanable && (
+                                                    <span className="px-3 py-1.5 bg-green-500 text-white text-xs font-black rounded-lg shadow-sm shadow-green-100">
+                                                        대출 가능
+                                                    </span>
+                                                )}
+                                                {isCheckedOut && (
+                                                    <span className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-black rounded-lg border border-orange-200">
+                                                        대출중
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-400 text-center py-4">소장 정보를 불러오지 못했습니다.</p>
                         )}
                     </div>
 

@@ -96,6 +96,7 @@ export interface Profile {
     email?: string;
     is_active?: boolean;
     created_at: string;
+    favorite_libraries?: Array<{ libCode: string; libName: string }>;
 }
 
 export interface Popup {

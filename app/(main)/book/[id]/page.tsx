@@ -4,11 +4,11 @@ import { supabase } from '@shared/lib/supabase'; // NOTE: This client might be c
 // Actually, for Aladin API, we can just fetch directly or reuse logic.
 
 type Props = {
-    params: { id: string }
+    params: Promise<{ id: string }>
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-    const id = params.id;
+    const { id } = await params;
 
     // 1. Try to fetch from DB
     let bookTitle = "도서 상세 정보";
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     try {
         // Try Supabase first (Public data)
-        const { data: sbBook } = await supabase.from('books').select('*').eq('id', id).single();
+        const { data: sbBook } = await supabase.from('books').select('*').eq('id', id).maybeSingle();
 
         if (sbBook) {
             bookTitle = sbBook.title;
