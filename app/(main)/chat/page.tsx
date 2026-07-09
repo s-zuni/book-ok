@@ -25,8 +25,26 @@ interface Message {
 
 export default function ChatPage() {
     const router = useRouter();
-    const { user, loading: authLoading } = useAuth();
+    const { user, userProfile, children, loading: authLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
+
+    // Personalize welcome greeting with user name and child name dynamically
+    useEffect(() => {
+        if (user) {
+            const userName = userProfile?.nickname || user.email?.split('@')[0] || "학부모";
+            const childName = children?.[0]?.name || "아이";
+            setMessages(prev => {
+                const newMsgs = [...prev];
+                if (newMsgs[0]) {
+                    newMsgs[0] = {
+                        ...newMsgs[0],
+                        content: `안녕하세요 ${userName}님!\n${childName}이에게 추천할 책을 찾고 계세요?`
+                    };
+                }
+                return newMsgs;
+            });
+        }
+    }, [user, userProfile, children]);
 
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -152,8 +170,26 @@ export default function ChatPage() {
 
             const data = await response.json();
             const botMessage = data.result;
+            let content = botMessage.content;
+            
+            let loadedBooks: Book[] = [];
+            const match = content.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
+            if (match) {
+                const titles = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
+                content = content.replace(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/, '').trim();
+                
+                // Fetch each book's Aladin details
+                for (const title of titles) {
+                    const book = await fetchAladinBook(title);
+                    if (book) loadedBooks.push(book);
+                }
+            }
 
-            setMessages(prev => [...prev, { role: botMessage.role, content: botMessage.content }]);
+            setMessages(prev => [...prev, { 
+                role: botMessage.role, 
+                content: content,
+                books: loadedBooks.length > 0 ? loadedBooks : undefined
+            }]);
         } catch (error) {
             console.error(error);
             setMessages(prev => [...prev, { role: "assistant", content: "죄송해요, 잠시 통신 에러가 발생했습니다. 다시 말씀해 주시겠어요?" }]);

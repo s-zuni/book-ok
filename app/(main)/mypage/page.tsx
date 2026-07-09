@@ -164,6 +164,12 @@ export default function MyPage() {
         }
     }, [authLoading, children, activeChild]);
 
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.push('/auth');
+        }
+    }, [authLoading, user, router]);
+
     // Removed local fetchChildren logic to avoid race conditions with AuthContext
 
     useEffect(() => {
@@ -474,7 +480,7 @@ export default function MyPage() {
                                         </div>
                                     ))}
 
-                                    {(!userProfile?.favorite_libraries || userProfile.favorite_libraries.length === 0) && !isAddingLibrary && (
+                                    {(!userProfile?.favorite_libraries || userProfile?.favorite_libraries?.length === 0) && !isAddingLibrary && (
                                         <p className="text-sm text-gray-400 text-center py-6 leading-relaxed">
                                             자주가는 도서관을 등록하고<br />도서 소장 및 대출 가능 여부를 확인해 보세요.
                                         </p>
@@ -545,7 +551,7 @@ export default function MyPage() {
                                                     ) : foundLibraries.length > 0 ? (
                                                         <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                                                             {foundLibraries.map(lib => {
-                                                                const isAlreadyAdded = Array.isArray(userProfile?.favorite_libraries) && userProfile.favorite_libraries.some(l => String(l.libCode) === String(lib.libCode));
+                                                                const isAlreadyAdded = Array.isArray(userProfile?.favorite_libraries) && userProfile?.favorite_libraries?.some(l => String(l.libCode) === String(lib.libCode));
                                                                 return (
                                                                     <div
                                                                         key={lib.libCode}

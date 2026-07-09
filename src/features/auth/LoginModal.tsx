@@ -36,6 +36,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     }, [isOpen]);
 
     const handleOAuthLogin = async (provider: 'google' | 'kakao' | 'apple') => {
+        if (provider === 'kakao') {
+            toast.error("카카오 로그인은 준비 중 입니다.");
+            return;
+        }
         try {
             vibrate();
             const callbackUrl = `${window.location.origin}/auth/callback`;
@@ -140,18 +144,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             </button>
 
                             <button
-                                onClick={() => handleOAuthLogin('kakao')}
-                                className="flex items-center w-full bg-[#FEE500] rounded-xl p-3 hover:bg-[#FEE500]/90 transition-colors shadow-sm relative group"
-                            >
-                                <div className="absolute left-4">
-                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 3C6.477 3 2 6.477 2 10.766c0 2.768 1.83 5.185 4.606 6.475-.152.545-.548 1.944-.606 2.17-.076.297.106.331.258.232.182-.118 2.227-1.467 3.33-2.196.776.104 1.58.153 2.412.153 5.523 0 10-3.477 10-7.766C22 6.477 17.523 3 12 3z" />
-                                    </svg>
-                                </div>
-                                <span className="flex-1 text-black/85 font-bold text-[15px]">카카오 계정으로 계속하기</span>
-                            </button>
-
-                            <button
                                 onClick={() => handleOAuthLogin('apple')}
                                 className="flex items-center w-full bg-black rounded-xl p-3 hover:bg-black/90 transition-colors shadow-sm relative group"
                             >
@@ -161,16 +153,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                                     </svg>
                                 </div>
                                 <span className="flex-1 text-white font-bold text-[15px]">Apple로 계속하기</span>
-                            </button>
-                        </div>
-
-                        <div className="mt-10 pt-6 border-t border-gray-100 text-center">
-                            <button
-                                onClick={() => setIsEmailMode(true)}
-                                className="text-xs font-bold text-gray-400 hover:text-[#1e2939] transition-colors flex items-center justify-center gap-1.5 mx-auto group"
-                            >
-                                <Shield size={14} className="text-gray-300 group-hover:text-green-600 transition-colors" />
-                                <span>관리자 로그인 (이메일)</span>
                             </button>
                         </div>
                     </>
