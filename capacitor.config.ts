@@ -7,7 +7,7 @@ const config: CapacitorConfig = {
   server: {
     // ⚠️ 실제 배포된 웹사이트 주소로 수정하세요
     url: 'https://bookok.app',
-    cleartext: true
+    cleartext: false
   }
 };
 

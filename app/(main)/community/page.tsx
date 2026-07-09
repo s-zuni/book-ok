@@ -212,7 +212,7 @@ export default function CommunityPage() {
             {/* ============================================================== */}
             <div className="lg:hidden flex flex-col min-h-screen bg-[#F8F9FA] pb-24">
                 {/* Mobile Header */}
-                <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between sticky top-0 z-40 shrink-0">
+                <header className="bg-white border-b border-gray-100 px-4 pb-3 flex items-center justify-between sticky top-0 z-40 shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => router.back()}

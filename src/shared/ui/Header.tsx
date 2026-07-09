@@ -59,7 +59,7 @@ export default function Header({
     };
 
     return (
-        <header className={`bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)] sticky top-0 z-60 ${isApp ? 'border-b border-gray-100' : ''}`}>
+        <header className={`bg-white/95 backdrop-blur-md shadow-[0_1px_0_rgba(0,0,0,0.06)] sticky top-0 z-60 ${isApp ? 'border-b border-gray-100' : ''} pt-[env(safe-area-inset-top,0px)]`}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 lg:h-20 flex items-center justify-between gap-4">
                 {/* Logo */}
                 <div

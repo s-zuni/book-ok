@@ -737,7 +737,7 @@ export default function SolutionPage() {
             {/* ============================================================== */}
             <div className="lg:hidden flex flex-col min-h-screen bg-[#F8F9FA]">
                 {/* Mobile Top Header (Shared from Home screen layout) */}
-                <header className="bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0">
+                <header className="bg-white border-b border-gray-100 px-4 pb-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0 pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                         <div className="relative w-8 h-8 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                             <div className="relative w-full h-[18px]">
@@ -773,7 +773,7 @@ export default function SolutionPage() {
                 </header>
 
                 {/* Mobile Tab Control */}
-                <div className="bg-white border-b border-gray-100 flex sticky top-[53px] z-40 shrink-0">
+                <div className="bg-white border-b border-gray-100 flex sticky top-[calc(53px+env(safe-area-inset-top,0px))] z-40 shrink-0">
                     <button
                         onClick={() => setMobileTab('analysis')}
                         className={`flex-1 py-4 text-center font-extrabold text-[15px] border-b-2 transition-all ${

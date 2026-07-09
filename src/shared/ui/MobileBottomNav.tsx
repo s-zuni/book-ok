@@ -98,7 +98,7 @@ export default function MobileBottomNav() {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-            <nav className="bg-white border-t border-gray-100/80 shadow-[0_-8px_30px_rgba(0,0,0,0.03)] px-4 pt-2.5 pb-6">
+            <nav className="bg-white border-t border-gray-100/80 shadow-[0_-8px_30px_rgba(0,0,0,0.03)] px-4 pt-2.5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
                 <div className="flex justify-between items-center max-w-sm mx-auto">
                     {navItems.map((item) => (
                         item.isSpecial ? (

@@ -277,7 +277,7 @@ export default function HomeContent() {
                     // Detail List View for Mobile
                     <div className="flex flex-col min-h-screen bg-[#FDFDFD]">
                         {/* Header */}
-                        <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3 sticky top-0 z-40 shrink-0">
+                        <header className="bg-white border-b border-gray-100 px-4 pb-3 flex items-center gap-3 sticky top-0 z-40 shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
                             <button
                                 onClick={() => setActiveSubMenu('')}
                                 className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
@@ -319,7 +319,7 @@ export default function HomeContent() {
                     // Dashboard Home for Mobile
                     <>
                         {/* Mobile Header */}
-                        <header className="bg-white border-b border-gray-100 px-4 py-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0">
+                        <header className="bg-white border-b border-gray-100 px-4 pb-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0 pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                                 <div className="relative w-8 h-8 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                                     <div className="relative w-full h-full">

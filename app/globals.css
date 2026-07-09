@@ -3,6 +3,7 @@
 :root {
   --background: #ffffff;
   --foreground: #1a1a1a;
+  --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
   /* Pretendard 기반 폰트 스택 */
@@ -13,6 +14,8 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-pretendard);
+  --spacing-safe-top: var(--safe-area-top);
+  --spacing-safe-bottom: var(--safe-area-bottom);
 }
 
 /* Dark mode intentionally disabled — all components use light theme only */
@@ -53,6 +56,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .mb-safe {
   margin-bottom: var(--safe-area-bottom);
+}
+
+.pt-safe {
+  padding-top: var(--safe-area-top);
+}
+
+.mt-safe {
+  margin-top: var(--safe-area-top);
 }
 
 /* Scrollbar hide utility */

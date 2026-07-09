@@ -165,7 +165,7 @@ export default function ChatPage() {
     return (
         <div className="flex flex-col h-dvh bg-[#F8F9FA] overflow-hidden text-gray-900 font-sans">
             {/* Header */}
-            <header className="bg-white border-b border-gray-100 px-4 py-3 flex items-center justify-between shrink-0">
+            <header className="bg-white border-b border-gray-100 px-4 pb-3 flex items-center justify-between shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
