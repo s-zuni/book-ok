@@ -144,7 +144,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         const userId = currentSession?.user?.id;
         
         if (fetchInProgress.current === userId && userId) {
-            setLoading(false);
+            console.log("AuthContext: syncUserData already in progress for user:", userId);
             return;
         }
         fetchInProgress.current = userId || null;

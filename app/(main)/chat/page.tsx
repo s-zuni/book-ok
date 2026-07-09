@@ -32,24 +32,51 @@ export default function ChatPage() {
     useEffect(() => {
         if (user) {
             const userName = userProfile?.nickname || user.email?.split('@')[0] || "학부모";
-            const childName = children?.[0]?.name || "아이";
+            const firstChild = children?.[0];
+            
+            let greeting = "";
+            if (firstChild) {
+                const getJosa = (name: string) => {
+                    if (!name) return "";
+                    const lastChar = name.charCodeAt(name.length - 1);
+                    if (lastChar < 0xAC00 || lastChar > 0xD7A3) return "";
+                    const hasLast = (lastChar - 0xAC00) % 28 !== 0;
+                    return hasLast ? "이" : "";
+                };
+                const childNameWithJosa = `${firstChild.name}${getJosa(firstChild.name)}`;
+                greeting = `안녕하세요 ${userName}님!\n${childNameWithJosa}에게 추천할 책을 찾고 계세요?`;
+            } else {
+                greeting = `안녕하세요 ${userName}님!\n우리 아이에게 추천할 책을 찾고 계세요? 자녀 프로필을 등록하시면 더욱 개인화된 도서 추천을 받아보실 수 있어요.`;
+            }
+
             setMessages(prev => {
                 const newMsgs = [...prev];
                 if (newMsgs[0]) {
                     newMsgs[0] = {
                         ...newMsgs[0],
-                        content: `안녕하세요 ${userName}님!\n${childName}이에게 추천할 책을 찾고 계세요?`
+                        content: greeting
+                    };
+                }
+                return newMsgs;
+            });
+        } else if (!authLoading && !user) {
+            setMessages(prev => {
+                const newMsgs = [...prev];
+                if (newMsgs[0]) {
+                    newMsgs[0] = {
+                        ...newMsgs[0],
+                        content: "안녕하세요! 북콕 AI 사서입니다.\n로그인하시면 우리 아이의 연령과 성향에 딱 맞는 도서 추천과 맞춤 큐레이션을 경험하실 수 있어요. 로그인하시겠어요?"
                     };
                 }
                 return newMsgs;
             });
         }
-    }, [user, userProfile, children]);
+    }, [user, userProfile, children, authLoading]);
 
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "assistant",
-            content: "안녕하세요 유수미님!\n지명이에게 추천할 책을 찾고 계세요?"
+            content: "안녕하세요! 북콕 AI 사서입니다.\n로그인하시면 우리 아이의 연령과 성향에 딱 맞는 도서 추천과 맞춤 큐레이션을 경험하실 수 있어요. 로그인하시겠어요?"
         },
         {
             role: "user",

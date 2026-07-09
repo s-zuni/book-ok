@@ -362,16 +362,29 @@ export default function HomeContent() {
 
                         {/* Welcome Message */}
                         <div className="p-5 bg-white">
-                            <p className="text-xs font-bold text-gray-400 mb-1">안녕하세요 {userProfile?.nickname || user?.user_metadata?.name || "유수미"}님!</p>
+                            <p className="text-xs font-bold text-gray-400 mb-1">
+                                {user ? `안녕하세요 ${userProfile?.nickname || user?.user_metadata?.name || "학부모"}님!` : "안녕하세요! 반가워요."}
+                            </p>
                             {activeChild ? (
                                 <h2 className="text-xl font-black leading-tight text-gray-900 tracking-tight">
                                     {activeChild.name}를 위한 오늘의 책,<br />
                                     <span className="text-gray-900">함께 골라볼까요?</span>
                                 </h2>
                             ) : (
-                                <div className="bg-[#E8F5E9] p-4 rounded-[20px] border border-[#16A34A]/10 mt-1">
+                                <div 
+                                    className="bg-[#E8F5E9] p-4 rounded-[20px] border border-[#16A34A]/10 mt-1 cursor-pointer hover:bg-[#E8F5E9]/80 transition-colors"
+                                    onClick={() => {
+                                        if (user) {
+                                            router.push('/mypage');
+                                        } else {
+                                            openLoginModal();
+                                        }
+                                    }}
+                                >
                                     <h2 className="text-xs font-black leading-tight text-[#16A34A] tracking-tight">
-                                        ✨ {userProfile?.nickname || user?.user_metadata?.name || "유수미"} 부모님, 자녀 등록 후 독서 관리를 시작해보세요!
+                                        {user 
+                                            ? `✨ ${userProfile?.nickname || user?.user_metadata?.name || "학부모"} 부모님, 자녀 등록 후 독서 관리를 시작해보세요!` 
+                                            : "✨ 로그인하고 자녀를 등록하여 맞춤 독서 관리를 시작해 보세요!"}
                                     </h2>
                                 </div>
                             )}
@@ -613,7 +626,11 @@ export default function HomeContent() {
 
                         {/* Rankings Leaderboard */}
                         {(() => {
-                            const activeUserLabel = activeChild ? `${activeChild.name} (나)` : `${userProfile?.nickname || user?.user_metadata?.name || "유수미"} 부모님 (나)`;
+                            const activeUserLabel = activeChild 
+                                ? `${activeChild.name} (나)` 
+                                : user 
+                                    ? `${userProfile?.nickname || user?.user_metadata?.name || "학부모"} 부모님 (나)` 
+                                    : "게스트 (나)";
                             const rankings = [
                                 { name: "독서왕 민준이 👑", days: 12 },
                                 { name: "책벌레 은서 🌱", days: 9 },
