@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
@@ -210,7 +211,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 
                 <p className="text-center text-[10px] text-gray-400 font-medium mt-6 leading-relaxed">
                     진행하시면 북콕(Book,ok)의<br />
-                    <span className="underline underline-offset-2">이용약관</span> 및 <span className="underline underline-offset-2">개인정보처리방침</span>에 동의하게 됩니다.
+                    <Link href="/terms" onClick={onClose} className="underline underline-offset-2 hover:text-gray-600 transition-colors">이용약관</Link> 및 <Link href="/privacy" onClick={onClose} className="underline underline-offset-2 hover:text-gray-600 transition-colors">개인정보처리방침</Link>에 동의하게 됩니다.
                 </p>
             </div>
         </div>

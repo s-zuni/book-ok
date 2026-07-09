@@ -8,6 +8,7 @@ import { Child, MainMenu, ReadBook } from "@shared/types";
 import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building } from "lucide-react";
 import { REGIONS, SUB_REGIONS } from "@shared/lib/regions";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
 import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
@@ -652,6 +653,11 @@ export default function MyPage() {
                                 >
                                     계정 탈퇴
                                 </button>
+                            </div>
+                            <div className="flex justify-center items-center space-x-4 mt-4 mb-2">
+                                <Link href="/terms" className="text-gray-400 text-[11px] hover:text-gray-600 underline underline-offset-2 transition-colors">이용약관</Link>
+                                <span className="text-gray-300 text-[10px]">|</span>
+                                <Link href="/privacy" className="text-gray-400 text-[11px] hover:text-gray-600 underline underline-offset-2 transition-colors">개인정보처리방침</Link>
                             </div>
                         </div>
                     </>
