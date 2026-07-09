@@ -10,9 +10,9 @@ export default function SplashScreen() {
 
     useEffect(() => {
         // Immediately hide if on desktop or already shown
-        if (window.innerWidth >= 1024 || sessionStorage.getItem('splash_shown')) {
-            setIsVisible(false);
-            return;
+        if (typeof window !== 'undefined' && (window.innerWidth >= 1024 || sessionStorage.getItem('splash_shown'))) {
+            const timer = setTimeout(() => setIsVisible(false), 0);
+            return () => clearTimeout(timer);
         }
 
         // Mark as shown

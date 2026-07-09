@@ -15,8 +15,9 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
 
     useEffect(() => {
         if (isOpen) {
-            setVisible(true);
+            const timer = setTimeout(() => setVisible(true), 0);
             document.body.style.overflow = 'hidden';
+            return () => clearTimeout(timer);
         } else {
             const timer = setTimeout(() => setVisible(false), 300); // Wait for animation
             document.body.style.overflow = 'unset';

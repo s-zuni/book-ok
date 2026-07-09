@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { MessageCircle, X, Send, Bot, User, Minimize2, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Send, Bot, Sparkles } from "lucide-react";
 import { useChatbot } from "@widgets/chatbot/ChatbotContext";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
@@ -130,8 +130,8 @@ export default function AIChatbot() {
                         {messages.length === 0 && (
                             <div className="text-center text-gray-400 mt-10 space-y-2">
                                 <Sparkles size={40} className="mx-auto text-green-300" />
-                                <p className="text-sm">"6세 아이가 좋아할 공룡 책 추천해줘"</p>
-                                <p className="text-sm">"초등학생 필독서가 뭐야?"</p>
+                                <p className="text-sm">&quot;6세 아이가 좋아할 공룡 책 추천해줘&quot;</p>
+                                <p className="text-sm">&quot;초등학생 필독서가 뭐야?&quot;</p>
                             </div>
                         )}
 
