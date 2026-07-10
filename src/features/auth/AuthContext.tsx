@@ -300,6 +300,45 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         // Initial session check
         const init = async () => {
             try {
+                // Check if this is a new browser tab/session (sessionActive is null)
+                // and the user opted NOT to keep logged in (keepLoggedIn is 'false')
+                if (typeof window !== 'undefined') {
+                    const sessionActive = sessionStorage.getItem('bookok_session_active');
+                    const keepLoggedIn = localStorage.getItem('bookok_keep_logged_in');
+                    
+                    if (!sessionActive && keepLoggedIn === 'false') {
+                        console.log("AuthContext: Session ended (keepLoggedIn is false). Force sign out.");
+                        
+                        // Clean all auth storage keys immediately
+                        const keysToRemove = ['bookok-auth-token', 'supabase.auth.token'];
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase'))) {
+                                keysToRemove.push(key);
+                            }
+                        }
+                        keysToRemove.forEach(k => localStorage.removeItem(k));
+                        
+                        // Clean cookies
+                        document.cookie.split(';').forEach(cookie => {
+                            const name = cookie.split('=')[0].trim();
+                            if (name.includes('auth-token') || name.includes('supabase')) {
+                                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                            }
+                        });
+
+                        // Call signOut server API silently in the background
+                        supabase.auth.signOut().catch(e => console.warn(e));
+
+                        setLoading(false);
+                        setIsInitialized(true);
+                        sessionStorage.setItem('bookok_session_active', 'true');
+                        return;
+                    }
+                    
+                    sessionStorage.setItem('bookok_session_active', 'true');
+                }
+
                 // Use getUser() for more reliable check on initialization
                 const { data: { user: initialUser } } = await supabase.auth.getUser();
                 if (initialUser) {

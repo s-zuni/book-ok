@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+export const runtime = 'edge';
+
 // ──────────────────────────────────────────────
 // Zod v4 스키마: 채팅 메시지 유효성 검증
 // ──────────────────────────────────────────────

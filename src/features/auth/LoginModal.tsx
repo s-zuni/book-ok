@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
@@ -18,6 +19,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [keepLoggedIn, setKeepLoggedIn] = useState(true);
     const { vibrate } = useNativeBridge();
 
     useEffect(() => {
@@ -43,6 +45,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
         }
         try {
             vibrate();
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('bookok_keep_logged_in', keepLoggedIn ? 'true' : 'false');
+                sessionStorage.setItem('bookok_session_active', 'true');
+            }
             const callbackUrl = `${window.location.origin}/auth/callback`;
             const currentPath = window.location.pathname + window.location.search;
             
@@ -78,6 +84,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     : error.message);
                 setIsLoading(false);
             } else if (data.session) {
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('bookok_keep_logged_in', keepLoggedIn ? 'true' : 'false');
+                    sessionStorage.setItem('bookok_session_active', 'true');
+                }
                 toast.success("로그인되었습니다.");
                 onClose();
                 // Optionally reload or let AuthContext handle state
@@ -113,9 +123,18 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 )}
 
                 {/* Header Section */}
-                <div className="flex flex-col items-center text-center mt-4 mb-8">
-                    <div className="bg-[#1e2939] p-3 rounded-2xl text-white shadow-lg mb-4">
-                        <BookMarked size={28} />
+                <div className="flex flex-col items-center text-center mt-4 mb-5">
+                    {/* Brand Logo Container replacing Lucide Icon */}
+                    <div className="relative w-14 h-14 bg-white border border-gray-100 rounded-2xl p-2.5 flex items-center justify-center shadow-md mb-4">
+                        <div className="relative w-full h-full">
+                            <Image
+                                src="/images/logo_transparent_v2.png"
+                                alt="Book,ok Logo"
+                                fill
+                                className="object-contain"
+                                sizes="56px"
+                            />
+                        </div>
                     </div>
                     <h2 className="text-2xl font-black text-[#1e2939] mb-2 tracking-tight">
                         {isEmailMode ? "이메일 로그인" : "로그인/회원가입"}
@@ -123,6 +142,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <p className="text-[#1e2939]/70 text-sm font-medium leading-relaxed break-keep">
                         북콕(Book,ok)에서 아이들의<br />지속가능한 독서를 형성해보세요.
                     </p>
+                </div>
+
+                {/* Keep Logged In Checkbox Option */}
+                <div className="flex items-center justify-center gap-2 mb-6">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors">
+                        <input
+                            type="checkbox"
+                            checked={keepLoggedIn}
+                            onChange={(e) => setKeepLoggedIn(e.target.checked)}
+                            className="w-4.5 h-4.5 rounded border-gray-300 text-[#16A34A] focus:ring-[#16A34A]/25 cursor-pointer accent-[#16A34A]"
+                        />
+                        로그인 상태 유지하기
+                    </label>
                 </div>
 
                 {!isEmailMode ? (

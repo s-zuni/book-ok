@@ -350,7 +350,7 @@ export default function HomeContent() {
                                 <div className="relative w-8 h-8 bg-white border border-gray-100 rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                                     <div className="relative w-full h-full">
                                         <Image
-                                            src="/images/logo_transparent.png"
+                                            src="/images/logo_transparent_v2.png"
                                             alt="Book,ok Logo"
                                             fill
                                             className="object-contain"
