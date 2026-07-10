@@ -347,7 +347,7 @@ export default function HomeContent() {
                         {/* Mobile Header */}
                         <header className="bg-white border-b border-gray-100 px-4 pb-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0 pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
                             <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                                <div className="relative w-8 h-8 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
+                                <div className="relative w-8 h-8 bg-white border border-gray-100 rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                                     <div className="relative w-full h-full">
                                         <Image
                                             src="/images/logo_transparent.png"

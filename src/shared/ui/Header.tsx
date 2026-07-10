@@ -66,7 +66,7 @@ export default function Header({
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => router.push('/')}
                 >
-                    <div className="relative w-8 h-8 lg:w-10 lg:h-10 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
+                    <div className="relative w-8 h-8 lg:w-10 lg:h-10 bg-white border border-gray-100 rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                         <div className="relative w-full h-full">
                             <Image
                                 src="/images/logo_transparent.png"
