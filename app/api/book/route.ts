@@ -28,13 +28,25 @@ export async function GET(request: NextRequest) {
     const url = `https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?ttbkey=${ALADIN_KEY}&ItemId=${isbn}&ItemIdType=ISBN13&output=js&Version=20131101&Cover=Big&OptResult=ebookList,usedList,reviewList`;
 
     try {
-        const res = await fetch(url);
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 BookOk/1.0'
+            }
+        });
         const data = await res.json();
 
         if (data.errorCode) {
             // Try ISBN if ISBN13 failed?
             const url2 = `https://www.aladin.co.kr/ttb/api/ItemLookUp.aspx?ttbkey=${ALADIN_KEY}&ItemId=${isbn}&ItemIdType=ISBN&output=js&Version=20131101&Cover=Big`;
-            const res2 = await fetch(url2);
+            const res2 = await fetch(url2, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 BookOk/1.0'
+                }
+            });
             const data2 = await res2.json();
 
             if (data2.errorCode) {
