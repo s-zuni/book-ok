@@ -9,6 +9,7 @@ import { marked } from "marked";
 import Image from "next/image";
 
 interface Book {
+    id: string;
     title: string;
     author: string;
     publisher: string;
@@ -65,7 +66,7 @@ export default function ChatPage() {
                 if (newMsgs[0]) {
                     newMsgs[0] = {
                         ...newMsgs[0],
-                        content: "안녕하세요! 북콕 AI 사서입니다.\n로그인하시면 우리 아이의 연령과 성향에 딱 맞는 도서 추천과 맞춤 큐레이션을 경험하실 수 있어요. 로그인하시겠어요?"
+                        content: "안녕하세요! 북콕 AI 사서입니다.\n로그인하시면 우리 아이의 연령 and 성향에 딱 맞는 도서 추천과 맞춤 큐레이션을 경험하실 수 있어요. 로그인하시겠어요?"
                     };
                 }
                 return newMsgs;
@@ -107,6 +108,7 @@ export default function ChatPage() {
             const item = data.item?.[0];
             if (!item) return null;
             return {
+                id: item.isbn13 || item.isbn || item.itemId,
                 title: item.title.split(" - ")[0], // Remove subtitle fluff
                 author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                 publisher: item.publisher,
@@ -287,7 +289,12 @@ export default function ChatPage() {
                                         {msg.books.map((book, bIdx) => (
                                             <div
                                                 key={bIdx}
-                                                className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] w-[160px] shrink-0 hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] transition-shadow duration-300"
+                                                onClick={() => {
+                                                    if (book.id) {
+                                                        router.push(`/book/${book.id}`);
+                                                    }
+                                                }}
+                                                className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] w-[160px] shrink-0 hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer hover:border-[#16A34A]/30 hover:-translate-y-1 transform"
                                             >
                                                 <div className="relative w-full h-[190px] rounded-[16px] overflow-hidden mb-3.5 border border-gray-100">
                                                     <Image
