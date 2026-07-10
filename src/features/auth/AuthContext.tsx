@@ -201,8 +201,25 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             const keysToRemove = [
                 'bookok-auth-token',
                 'supabase.auth.token',
-                'sb-holaqlorkluptvrcfwtu-auth-token', // Specific project ref key just in case
             ];
+            
+            try {
+                // Collect any dynamic Supabase client keys matching sb-*-auth-token or related keywords
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+            } catch (storageErr) {
+                console.warn("Storage scanning warning:", storageErr);
+            }
             
             keysToRemove.forEach(key => {
                 localStorage.removeItem(key);
@@ -212,7 +229,6 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             // Cookies: SSR using @supabase/ssr often relies on cookies.
             // We clear them explicitly to prevent the middleware or server components 
             // from restoring the session.
-            const cookiePrefix = 'sb-holaqlorkluptvrcfwtu-auth-token';
             document.cookie.split(';').forEach(cookie => {
                 const name = cookie.split('=')[0].trim();
                 if (name.includes('auth-token') || name.includes('supabase')) {
