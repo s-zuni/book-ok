@@ -69,10 +69,10 @@ export default function Header({
                     <div className="relative w-8 h-8 lg:w-10 lg:h-10 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                         <div className="relative w-full h-full">
                             <Image
-                                src="/images/logo.png"
+                                src="/images/logo_transparent.png"
                                 alt="Book,ok Logo"
                                 fill
-                                className="object-contain grayscale contrast-200 invert mix-blend-screen"
+                                className="object-contain"
                                 sizes="(max-width: 1024px) 32px, 40px"
                             />
                         </div>

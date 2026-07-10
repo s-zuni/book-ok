@@ -80,6 +80,32 @@ export default function HomeContent() {
     const [challengeBookTitle, setChallengeBookTitle] = useState("");
     const [challengeReview, setChallengeReview] = useState("");
 
+    const [hasReadBooks, setHasReadBooks] = useState<boolean>(false);
+
+    useEffect(() => {
+        const checkReadBooks = async () => {
+            if (!user || !activeChild) {
+                setHasReadBooks(false);
+                return;
+            }
+            try {
+                const { count, error } = await supabase
+                    .from('read_books')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('child_id', activeChild.id);
+                if (!error && count !== null) {
+                    setHasReadBooks(count > 0);
+                } else {
+                    setHasReadBooks(false);
+                }
+            } catch (err) {
+                console.error("Error checking read books count:", err);
+                setHasReadBooks(false);
+            }
+        };
+        checkReadBooks();
+    }, [user, activeChild]);
+
     useEffect(() => {
         if (!activeChild && children.length > 0) {
             setActiveChild(children[0]);
@@ -324,10 +350,10 @@ export default function HomeContent() {
                                 <div className="relative w-8 h-8 bg-[#05A53F] rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                                     <div className="relative w-full h-full">
                                         <Image
-                                            src="/images/logo.png"
+                                            src="/images/logo_transparent.png"
                                             alt="Book,ok Logo"
                                             fill
-                                            className="object-contain grayscale contrast-200 invert mix-blend-screen"
+                                            className="object-contain"
                                             sizes="28px"
                                         />
                                     </div>
@@ -393,16 +419,38 @@ export default function HomeContent() {
                         {/* Challenge Banner Carousel */}
                         <div className="px-4 py-2">
                             <button
-                                onClick={() => setIsChallengeModalOpen(true)}
+                                onClick={() => {
+                                    if (!user) {
+                                        openLoginModal();
+                                    } else if (children.length === 0) {
+                                        router.push('/mypage');
+                                    } else {
+                                        setIsChallengeModalOpen(true);
+                                    }
+                                }}
                                 className="w-full text-left bg-gradient-to-br from-blue-50/50 via-teal-50/40 to-green-50/30 border border-green-100/60 rounded-[32px] p-5 relative overflow-hidden flex justify-between items-center h-[120px] active:scale-[0.99] transition-transform"
                             >
                                 <div className="space-y-1 z-10 flex-1 pr-4">
                                     <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">이번 주 독서 챌린지</div>
-                                    <h3 className="text-base font-black text-gray-900">{consecutiveDays}일 연속 책 읽기 🔥</h3>
+                                    <h3 className="text-base font-black text-gray-900">
+                                        {!user 
+                                            ? "독서 챌린지 도전하기 🔥" 
+                                            : children.length === 0 
+                                                ? "독서 챌린지 준비 완료! 🎁" 
+                                                : !hasReadBooks 
+                                                    ? "첫 책 읽기 도전! 📖" 
+                                                    : `${consecutiveDays}일 연속 책 읽기 🔥`}
+                                    </h3>
                                     <p className="text-[11px] font-bold text-gray-400">
-                                        {consecutiveDays >= 7 
-                                            ? "🎉 챌린지 성공! '독서왕' 뱃지 획득 완료!" 
-                                            : `${7 - consecutiveDays}일만 더 하면 '독서왕' 뱃지 획득!`}
+                                        {!user 
+                                            ? "로그인하고 아이와 함께 매일 책 읽기 챌린지를 시작해보세요!" 
+                                            : children.length === 0 
+                                                ? "아이 프로필을 등록하면 연령별 맞춤 챌린지 혜택을 드려요." 
+                                                : !hasReadBooks 
+                                                    ? "오늘 읽은 책을 서재에 등록하고 챌린지 불꽃을 피워보세요!" 
+                                                    : (consecutiveDays >= 7 
+                                                        ? "🎉 챌린지 성공! '독서왕' 뱃지 획득 완료!" 
+                                                        : `${7 - consecutiveDays}일만 더 하면 '독서왕' 뱃지 획득!`)}
                                     </p>
                                 </div>
                                 
@@ -418,9 +466,7 @@ export default function HomeContent() {
                             </button>
                             {/* Carousel Indicators */}
                             <div className="flex justify-center items-center gap-1.5 mt-2.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-200" />
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
-                                <span className="w-1.5 h-1.5 rounded-full bg-gray-200" />
                             </div>
                         </div>
 
@@ -752,6 +798,7 @@ export default function HomeContent() {
                                 const nextDays = consecutiveDays + 1;
                                 setConsecutiveDays(nextDays);
                                 setHasReadToday(true);
+                                setHasReadBooks(true);
                                 toast.success("오늘의 독서 챌린지 기록이 완료되었습니다!");
 
                                 if (nextDays >= 7 && !obtainedBadges.includes("독서왕")) {

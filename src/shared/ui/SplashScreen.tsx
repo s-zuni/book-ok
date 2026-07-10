@@ -45,10 +45,10 @@ export default function SplashScreen() {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24 bg-[#05A53F] rounded-3xl p-4.5 flex items-center justify-center shadow-lg">
                 <div className="relative w-full h-full">
                     <Image
-                        src="/images/logo.png"
+                        src="/images/logo_transparent.png"
                         alt="Book,ok Logo"
                         fill
-                        className="object-contain grayscale contrast-200 invert mix-blend-screen"
+                        className="object-contain"
                         sizes="96px"
                         priority
                     />
