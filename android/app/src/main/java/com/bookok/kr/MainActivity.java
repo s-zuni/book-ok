@@ -1,4 +1,4 @@
-package com.bookok.app;
+package com.bookok.kr;
 
 import com.getcapacitor.BridgeActivity;
 
