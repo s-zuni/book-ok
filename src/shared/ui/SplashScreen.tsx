@@ -41,25 +41,17 @@ export default function SplashScreen() {
             className="fixed inset-0 bg-white transition-opacity duration-500 ease-in-out lg:hidden"
             style={{ opacity, zIndex: 9999 }}
         >
-            {/* Centered Logo */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in zoom-in-95 duration-700 w-24 h-24 bg-white border border-gray-100 rounded-3xl p-4.5 flex items-center justify-center shadow-lg">
-                <div className="relative w-full h-full">
+            {/* Full Screen Centered Splash Screen Image with custom bounce/fade animation */}
+            <div className="absolute inset-0 flex items-center justify-center p-4 animate-splash-logo">
+                <div className="relative w-full h-full max-w-md">
                     <Image
-                        src="/images/logo_transparent_v2.png"
-                        alt="Book,ok Logo"
+                        src="/images/splash.png"
+                        alt="Book,ok Splash"
                         fill
                         className="object-contain"
-                        sizes="96px"
                         priority
                     />
                 </div>
-            </div>
-
-            {/* Bottom Text */}
-            <div className="absolute bottom-20 left-0 right-0 text-center animate-in slide-in-from-bottom-5 duration-700 delay-100">
-                <h1 className="text-xl font-extrabold text-[#101828] tracking-tight">
-                    Book,ok
-                </h1>
             </div>
         </div>
     );

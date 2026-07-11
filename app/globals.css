@@ -86,3 +86,22 @@ html {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* Custom Splash Screen Animations */
+@keyframes splashLogo {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.animate-splash-logo {
+  animation: splashLogo 1200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
