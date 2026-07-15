@@ -73,9 +73,9 @@ export default function HomeContent() {
 
     // Reading Challenge states
     const [isChallengeModalOpen, setIsChallengeModalOpen] = useState(false);
-    const [consecutiveDays, setConsecutiveDays] = useState(5);
+    const [consecutiveDays, setConsecutiveDays] = useState(0);
     const [hasReadToday, setHasReadToday] = useState(false);
-    const [obtainedBadges, setObtainedBadges] = useState<string[]>(["새싹 독서가"]);
+    const [obtainedBadges, setObtainedBadges] = useState<string[]>([]);
     const [showCongrats, setShowCongrats] = useState(false);
     const [challengeBookTitle, setChallengeBookTitle] = useState("");
     const [challengeReview, setChallengeReview] = useState("");
@@ -104,6 +104,114 @@ export default function HomeContent() {
             }
         };
         checkReadBooks();
+    }, [user, activeChild]);
+
+    useEffect(() => {
+        const fetchChallengeData = async () => {
+            if (!user || !activeChild) {
+                setConsecutiveDays(0);
+                setHasReadToday(false);
+                setChallengeBookTitle("");
+                setChallengeReview("");
+                setObtainedBadges([]);
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('read_books')
+                    .select('read_date, observation_data')
+                    .eq('child_id', activeChild.id)
+                    .order('read_date', { ascending: false });
+
+                if (error) throw error;
+
+                if (!data || data.length === 0) {
+                    setConsecutiveDays(0);
+                    setHasReadToday(false);
+                    setChallengeBookTitle("");
+                    setChallengeReview("");
+                    setObtainedBadges([]);
+                    return;
+                }
+
+                // Helper to get local date string YYYY-MM-DD
+                const getLocalDateString = (d: Date) => {
+                    const y = d.getFullYear();
+                    const m = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    return `${y}-${m}-${day}`;
+                };
+
+                const localDates = Array.from(new Set(
+                    data.map(r => getLocalDateString(new Date(r.read_date)))
+                )).sort((a, b) => b.localeCompare(a));
+
+                if (localDates.length === 0) {
+                    setConsecutiveDays(0);
+                    setHasReadToday(false);
+                    setChallengeBookTitle("");
+                    setChallengeReview("");
+                    setObtainedBadges([]);
+                    return;
+                }
+
+                const todayStr = getLocalDateString(new Date());
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const yesterdayStr = getLocalDateString(yesterday);
+
+                const newestDateStr = localDates[0];
+                const readToday = newestDateStr === todayStr;
+                const readYesterday = newestDateStr === yesterdayStr;
+
+                let streak = 0;
+                if (readToday || readYesterday) {
+                    let expectedDate = new Date();
+                    if (!readToday) {
+                        expectedDate.setDate(expectedDate.getDate() - 1);
+                    }
+
+                    for (const dateStr of localDates) {
+                        const currentExpectedStr = getLocalDateString(expectedDate);
+                        if (dateStr === currentExpectedStr) {
+                            streak++;
+                            expectedDate.setDate(expectedDate.getDate() - 1);
+                        } else if (dateStr < currentExpectedStr) {
+                            break;
+                        }
+                    }
+                }
+
+                setConsecutiveDays(streak);
+                setHasReadToday(readToday);
+
+                const badges = [];
+                if (streak >= 3) badges.push("새싹 독서가");
+                if (streak >= 7) badges.push("독서왕");
+                setObtainedBadges(badges);
+
+                if (readToday) {
+                    const todayRecord = data.find(r => getLocalDateString(new Date(r.read_date)) === todayStr);
+                    if (todayRecord && todayRecord.observation_data) {
+                        const obs = todayRecord.observation_data as any;
+                        setChallengeBookTitle(obs.book_title || "오늘 읽은 책");
+                        setChallengeReview(obs.review || "독서 기록이 완료되었습니다.");
+                    } else {
+                        setChallengeBookTitle("오늘 읽은 책");
+                        setChallengeReview("독서 기록이 완료되었습니다.");
+                    }
+                } else {
+                    setChallengeBookTitle("");
+                    setChallengeReview("");
+                }
+
+            } catch (err) {
+                console.error("Error fetching challenge data:", err);
+            }
+        };
+
+        fetchChallengeData();
     }, [user, activeChild]);
 
     useEffect(() => {
