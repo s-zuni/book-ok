@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@shared/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { Child, Profile } from "@shared/types";
@@ -20,6 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children: providerChildren }: { children: React.ReactNode }) {
+    const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
@@ -366,15 +368,17 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 setLoading(true);
                 await syncUserData(currentSession);
+                router.refresh();
             } else if (event === 'SIGNED_OUT') {
                 await syncUserData(null);
+                router.refresh();
             }
         });
 
         return () => {
             authListener.subscription.unsubscribe();
         };
-    }, [syncUserData]);
+    }, [syncUserData, router]);
 
 
     const refreshProfile = async () => {

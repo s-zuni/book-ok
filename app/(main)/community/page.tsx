@@ -35,8 +35,12 @@ export default function CommunityPage() {
                     const child = data[0];
                     const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
                     setActiveChild({ ...child, age });
+                } else {
+                    setActiveChild(null);
                 }
             });
+        } else {
+            setActiveChild(null);
         }
     }, [user]);
 

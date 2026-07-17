@@ -102,8 +102,14 @@ export default function BookDetailContent() {
                 if (data && data.length > 0) {
                     setUserChildren(data);
                     setActiveChild(data[0]);
+                } else {
+                    setUserChildren([]);
+                    setActiveChild(null);
                 }
             });
+        } else {
+            setUserChildren([]);
+            setActiveChild(null);
         }
     }, [bookId, user]);
 

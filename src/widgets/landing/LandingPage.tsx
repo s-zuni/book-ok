@@ -329,7 +329,7 @@ export default function LandingPage() {
             </div>
             <div className="pt-2">
               <p className="text-[11px] sm:text-xs text-gray-400 font-bold bg-gray-50 py-2.5 px-4 rounded-xl inline-block border border-gray-100">
-                💡 <span className="text-[#01C54F]">알림:</span> 문해력 성장을 돕는 상세 정밀 리포트는 정식 출시 이후 제공 예정입니다.
+                💡 <span className="text-[#01C54F]">알림:</span> 문해력 점검 및 상세 정밀 리포트 기능은 정식 출시 이후 제공(발행)될 예정입니다.
               </p>
             </div>
           </div>
@@ -480,8 +480,11 @@ export default function LandingPage() {
                 <div className="flex items-start gap-4">
                   <div className="w-7 h-7 rounded-lg bg-emerald-50 text-[#01C54F] font-bold text-xs shrink-0 flex items-center justify-center">1</div>
                   <div>
-                    <h5 className="text-sm sm:text-base font-black text-gray-900">우리 아이 문해력 수준 점검조사 및 개인 맞춤 리포트</h5>
-                    <p className="text-gray-400 text-[11px] sm:text-xs font-medium leading-relaxed mt-1 break-keep">아이의 어휘 발달 수준과 읽기 속도를 정교하게 비교·측정하여 보완 방향을 제시하는 오프라인 리포트를 제공합니다.</p>
+                    <h5 className="text-sm sm:text-base font-black text-gray-900 flex flex-wrap items-center gap-2">
+                      우리 아이 문해력 수준 점검조사 및 개인 맞춤 리포트
+                      <span className="text-[10px] bg-amber-500/10 text-amber-600 px-2.5 py-0.5 rounded-full font-bold">추후 발행 예정</span>
+                    </h5>
+                    <p className="text-gray-400 text-[11px] sm:text-xs font-medium leading-relaxed mt-1 break-keep">아이의 어휘 발달 수준과 읽기 속도를 정교하게 비교·측정하여 보완 방향을 제시하는 오프라인 리포트를 제공합니다. (멤버십 정식 출시 시 제공 예정)</p>
                   </div>
                 </div>
 

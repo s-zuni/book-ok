@@ -215,8 +215,12 @@ export default function HomeContent() {
     }, [user, activeChild]);
 
     useEffect(() => {
-        if (!activeChild && children.length > 0) {
-            setActiveChild(children[0]);
+        if (children.length > 0) {
+            if (!activeChild || !children.some(c => c.id === activeChild.id)) {
+                setActiveChild(children[0]);
+            }
+        } else {
+            setActiveChild(null);
         }
     }, [children, activeChild]);
 

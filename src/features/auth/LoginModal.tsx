@@ -90,8 +90,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 }
                 toast.success("로그인되었습니다.");
                 onClose();
-                // Optionally reload or let AuthContext handle state
-                window.location.reload();
+                
+                // Allow 150ms for Supabase token persistence to write to disk before reloading
+                setTimeout(() => {
+                    window.location.reload();
+                }, 150);
             }
         } catch (err: any) {
             toast.error("로그인 중 오류가 발생했습니다.");
