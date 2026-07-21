@@ -2,11 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { Capacitor } from "@capacitor/core";
+import { SplashScreen as NativeSplashScreen } from "@capacitor/splash-screen";
 
 export default function SplashScreen() {
     // SSR and initial client hydration must match, so default to true.
     const [isVisible, setIsVisible] = useState(true);
     const [opacity, setOpacity] = useState(1);
+
+    useEffect(() => {
+        // Hide native Android/iOS splash screen as soon as React mounts (preventing white screen)
+        if (Capacitor.isNativePlatform()) {
+            NativeSplashScreen.hide().catch(e => console.warn("Native splash hide error:", e));
+        }
+    }, []);
 
     useEffect(() => {
         // Immediately hide if on desktop or already shown

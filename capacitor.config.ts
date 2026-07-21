@@ -8,6 +8,14 @@ const config: CapacitorConfig = {
     // ⚠️ 실제 배포된 웹사이트 주소로 수정하세요
     url: 'https://bookok.kr',
     cleartext: false
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 30000,
+      launchAutoHide: false,
+      backgroundColor: "#ffffffff",
+      androidScaleType: "CENTER_CROP"
+    }
   }
 };
 
