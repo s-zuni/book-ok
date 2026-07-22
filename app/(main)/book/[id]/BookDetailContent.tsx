@@ -320,9 +320,9 @@ export default function BookDetailContent() {
                                     <img src={book.imgsrc} alt={book.title} className="w-40 md:w-48 h-56 md:h-64 object-cover rounded-xl shadow-md" />
                                 </div>
                                 <div className="flex-1">
-                                    <div className="flex items-start justify-between">
-                                        <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black mb-3">{book.category}</span>
-                                        <div className="flex gap-2">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                        <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black self-start">{book.category}</span>
+                                        <div className="flex gap-2 shrink-0">
                                             <button
                                                 onClick={handleScrap}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-bold text-sm ${isScrapped ? 'bg-yellow-50 border-yellow-200 text-yellow-600' : 'border-gray-100 text-gray-500 hover:bg-gray-50'}`}
@@ -339,7 +339,7 @@ export default function BookDetailContent() {
                                             </button>
                                         </div>
                                     </div>
-                                    <h1 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">{book.title}</h1>
+                                    <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-gray-900 mb-2">{book.title}</h1>
                                     <p className="text-gray-500 font-medium mb-6">{book.author} | {book.pubDate}</p>
                                     {book.description && <p className="text-gray-600 leading-relaxed mb-6 text-sm">{book.description}</p>}
                                 </div>
