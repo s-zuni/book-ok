@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       vars:
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.bookok.kr"
       node: latest
@@ -17,11 +17,9 @@ workflows:
       - name: Build Web App
         script: |
           npm run build
-      - name: Sync Capacitor iOS & CocoaPods
+      - name: Sync Capacitor iOS
         script: |
-          npx cap add ios || true
           npx cap sync ios
-          cd ios/App && pod install
       - name: Set up code signing
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
@@ -31,7 +29,7 @@ workflows:
       - name: Build iOS App
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
