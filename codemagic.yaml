@@ -20,14 +20,6 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-      - name: Clean Xcode Project Settings
-        script: |
-          # 1. 번들 ID를 com.bookok.kr로 완벽하게 강제 매핑
-          sed -i '' -E "s/PRODUCT_BUNDLE_IDENTIFIER[[:space:]]*=[[:space:]]*[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = \"$BUNDLE_ID\";/g" "$XCODE_PROJECT/project.pbxproj"
-          
-          # 2. 친구분 맥에서 딸려온 기존 Team ID 및 프로파일 지정 내역 싹 지우기 (충돌의 핵심 원인 제거)
-          sed -i '' -E "s/DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*[^;]*;//g" "$XCODE_PROJECT/project.pbxproj"
-          sed -i '' -E "s/PROVISIONING_PROFILE_SPECIFIER[[:space:]]*=[[:space:]]*[^;]*;//g" "$XCODE_PROJECT/project.pbxproj"
       - name: Set up code signing
         script: |
           keychain initialize
@@ -35,13 +27,17 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
-          xcode-project use-profiles --project "$XCODE_PROJECT"
       - name: Build iOS App
         script: |
+          # 1. 애플 서버에서 방금 받아온 프로파일의 고유 ID(UUID)를 강제로 찾아냄
+          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -n 1)
+          PROFILE_UUID=$(grep -aA1 UUID "$PROFILE_PATH" | grep -o "[-A-Z0-9]\{36\}")
+          
+          # 2. 기존 프로젝트 설정을 완전히 무시하고 빌드 명령어에 서명 정보(UUID) 직접 주입
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME" \
-            --archive-xcargs "PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID"
+            --archive-xcargs "PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID PROVISIONING_PROFILE_SPECIFIER=$PROFILE_UUID CODE_SIGN_STYLE=Manual"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
