@@ -24,7 +24,7 @@ workflows:
           npx cap sync ios
       - name: Set up code signing
         script: |
-          xcode-project use-profiles
+          xcode-project use-profiles --create
       - name: Build iOS App
         script: |
           xcode-project build-ipa \
