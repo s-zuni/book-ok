@@ -4,9 +4,6 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m1
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.bookok.kr
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
@@ -24,7 +21,10 @@ workflows:
           npx cap sync ios
       - name: Set up code signing
         script: |
-          xcode-project use-profiles --create
+          xcode-project use-profiles \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --key-id "$APP_STORE_CONNECT_KEY_ID" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
       - name: Build iOS App
         script: |
           xcode-project build-ipa \
