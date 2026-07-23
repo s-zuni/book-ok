@@ -20,9 +20,14 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-      - name: Update iOS Bundle Identifier
+      - name: Clean Xcode Project Settings
         script: |
-          sed -i '' -e 's/PRODUCT_BUNDLE_IDENTIFIER = .*/PRODUCT_BUNDLE_IDENTIFIER = "'"$BUNDLE_ID"'";/g' "$XCODE_PROJECT/project.pbxproj"
+          # 1. 번들 ID를 com.bookok.kr로 완벽하게 강제 매핑
+          sed -i '' -E "s/PRODUCT_BUNDLE_IDENTIFIER[[:space:]]*=[[:space:]]*[^;]*;/PRODUCT_BUNDLE_IDENTIFIER = \"$BUNDLE_ID\";/g" "$XCODE_PROJECT/project.pbxproj"
+          
+          # 2. 친구분 맥에서 딸려온 기존 Team ID 및 프로파일 지정 내역 싹 지우기 (충돌의 핵심 원인 제거)
+          sed -i '' -E "s/DEVELOPMENT_TEAM[[:space:]]*=[[:space:]]*[^;]*;//g" "$XCODE_PROJECT/project.pbxproj"
+          sed -i '' -E "s/PROVISIONING_PROFILE_SPECIFIER[[:space:]]*=[[:space:]]*[^;]*;//g" "$XCODE_PROJECT/project.pbxproj"
       - name: Set up code signing
         script: |
           keychain initialize
@@ -35,7 +40,8 @@ workflows:
         script: |
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME"
+            --scheme "$XCODE_SCHEME" \
+            --archive-xcargs "PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
