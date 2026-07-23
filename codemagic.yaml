@@ -20,6 +20,9 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+      - name: Update iOS Bundle Identifier
+        script: |
+          sed -i '' -e 's/PRODUCT_BUNDLE_IDENTIFIER = .*/PRODUCT_BUNDLE_IDENTIFIER = "'"$BUNDLE_ID"'";/g' "$XCODE_PROJECT/project.pbxproj"
       - name: Set up code signing
         script: |
           keychain initialize
