@@ -7,6 +7,7 @@ workflows:
       vars:
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.bookok.kr"
       node: latest
       xcode: latest
     scripts:
@@ -21,10 +22,10 @@ workflows:
           npx cap sync ios
       - name: Set up code signing
         script: |
-          xcode-project use-profiles \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --key-id "$APP_STORE_CONNECT_KEY_ID" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          xcode-project use-profiles
       - name: Build iOS App
         script: |
           xcode-project build-ipa \
