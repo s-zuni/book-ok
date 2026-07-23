@@ -17,9 +17,11 @@ workflows:
       - name: Build Web App
         script: |
           npm run build
-      - name: Sync Capacitor iOS
+      - name: Sync Capacitor iOS & CocoaPods
         script: |
+          npx cap add ios || true
           npx cap sync ios
+          cd ios/App && pod install
       - name: Set up code signing
         script: |
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
