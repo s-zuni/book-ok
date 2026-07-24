@@ -25,12 +25,31 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-          echo "=== Apple에서 서명 파일 가져오기 시도 ==="
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create --verbose 2>&1 || true
-          echo "=== 프로비저닝 프로파일 확인 ==="
-          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "프로파일 없음"
-          echo "=== 인증서 추가 ==="
-          keychain add-certificates
+
+          echo "=== 1. 개인 키 + CSR 생성 ==="
+          openssl genrsa -out /tmp/ios.key 2048
+          openssl req -new -key /tmp/ios.key -out /tmp/ios.csr -subj "/CN=Apple Distribution/O=BookOk/C=KR"
+          echo "✅ CSR 생성 완료"
+
+          echo "=== 2. Apple API로 인증서 생성 ==="
+          app-store-connect certificates create --type IOS_DISTRIBUTION --csr-content "$(cat /tmp/ios.csr)" --save
+          echo "✅ 인증서 생성 완료"
+
+          echo "=== 3. 생성된 .cer 파일 찾기 ==="
+          CERT_PATH=$(find ~ -name "*.cer" 2>/dev/null | head -n 1)
+          echo "인증서 경로: $CERT_PATH"
+
+          echo "=== 4. .p12 파일 조합 ==="
+          openssl x509 -in "$CERT_PATH" -inform DER -out /tmp/ios.pem
+          openssl pkcs12 -export -out /tmp/ios.p12 -inkey /tmp/ios.key -in /tmp/ios.pem -passout pass:
+          echo "✅ .p12 생성 완료"
+
+          echo "=== 5. 키체인에 인증서 추가 ==="
+          keychain add-certificates --certificate /tmp/ios.p12 --certificate-password ""
+
+          echo "=== 6. 프로비저닝 프로파일 가져오기 ==="
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+
       - name: Build iOS App
         script: |
           PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
