@@ -30,24 +30,31 @@ workflows:
           openssl genrsa -out /tmp/ios.key 2048
           echo "✅ 개인 키 생성 완료"
 
-          echo "=== 2. Apple API로 인증서 생성 및 .p12 저장 ==="
+          echo "=== 2. Apple API로 인증서 생성 및 임시 저장 ==="
           app-store-connect certificates create \
             --type IOS_DISTRIBUTION \
             --certificate-key "@file:/tmp/ios.key" \
             --save \
-            --p12-path /tmp/ios.p12 \
+            --p12-path /tmp/ios_temp.p12 \
             --p12-password "" \
             --verbose
 
-          echo "=== 3. 키체인에 인증서 추가 ==="
-          keychain add-certificates \
-            --certificate /tmp/ios.p12 \
-            --certificate-password ""
+          echo "=== 3. macOS용 Legacy .p12 형식으로 재인코딩 ==="
+          openssl pkcs12 -in /tmp/ios_temp.p12 -out /tmp/ios.p12 -export -legacy -passin pass:"" -passout pass:""
+          echo "✅ Legacy .p12 변환 완료"
 
-          echo "=== 4. 프로비저닝 프로파일 가져오기 ==="
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --type IOS_APP_STORE \
-            --create
+          echo "=== 4. Xcode 인증서 디렉토리로 파일 복사 ==="
+          mkdir -p ~/Library/Developer/Xcode/UserData/Certificates
+          mkdir -p ~/Library/MobileDevice/Certificates
+          cp /tmp/ios.p12 ~/Library/Developer/Xcode/UserData/Certificates/
+          cp /tmp/ios.p12 ~/Library/MobileDevice/Certificates/
+          echo "✅ 인증서 파일 배치 완료"
+
+          echo "=== 5. 키체인에 인증서 추가 ==="
+          keychain add-certificates --certificate /tmp/ios.p12 --certificate-password ""
+
+          echo "=== 6. 프로비저닝 프로파일 가져오기 ==="
+          app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
 
       - name: Build iOS App
         script: |
