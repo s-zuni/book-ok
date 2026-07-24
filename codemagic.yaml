@@ -32,14 +32,14 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
-          xcode-project use-profiles   # ← 이 줄 추가
+          xcode-project use-profiles   # ← 이 줄 추가! Xcode에 프로파일 자동 적용
 
       - name: Build iOS App
         script: |
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
-          # ↑ use-profiles 사용 시 xcargs로 수동 주입 불필요
+          # ↑ use-profiles 사용 후엔 수동 UUID 주입 불필요 → 단순화
 
     artifacts:
       - build/ios/ipa/*.ipa
