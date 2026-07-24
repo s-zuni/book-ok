@@ -64,12 +64,12 @@ workflows:
 
       - name: Build iOS App
         script: |
-          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          PROFILE=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -n 1)
+          PROFILE=$(find ~/Library -name "*.mobileprovision" 2>/dev/null | head -n 1)
           if [ -z "$PROFILE" ]; then
             echo "❌ 프로비저닝 프로파일을 찾을 수 없습니다"
             exit 1
           fi
+          echo "✅ 프로파일 경로: $PROFILE"
           UUID=$(security cms -D -i "$PROFILE" | plutil -extract UUID raw -)
           SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep "Apple Distribution" | awk -F'"' '{print $2}' | head -n 1)
           echo "UUID: $UUID"
