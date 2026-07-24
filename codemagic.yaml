@@ -31,13 +31,20 @@ workflows:
           openssl req -new -key /tmp/ios.key -out /tmp/ios.csr -subj "/CN=Apple Distribution/O=BookOk/C=KR"
           echo "✅ CSR 생성 완료"
 
-          echo "=== 2. Apple API로 인증서 생성 ==="
-          app-store-connect certificates create --type IOS_DISTRIBUTION --csr-content "$(cat /tmp/ios.csr)" --save
-          echo "✅ 인증서 생성 완료"
+          echo "=== 2. Apple API로 인증서 생성 (파일 경로 방식) ==="
+          mkdir -p /tmp/certs
+          app-store-connect certificates create IOS_DISTRIBUTION --csr /tmp/ios.csr --save --save-to /tmp/certs/
+          echo "✅ 인증서 API 호출 완료"
 
           echo "=== 3. 생성된 .cer 파일 찾기 ==="
-          CERT_PATH=$(find ~ -name "*.cer" 2>/dev/null | head -n 1)
+          ls -la /tmp/certs/ 2>/dev/null || echo "certs 폴더 없음"
+          CERT_PATH=$(find /tmp/certs -name "*.cer" 2>/dev/null | head -n 1)
           echo "인증서 경로: $CERT_PATH"
+
+          if [ -z "$CERT_PATH" ]; then
+            echo "❌ .cer 파일을 찾을 수 없습니다"
+            exit 1
+          fi
 
           echo "=== 4. .p12 파일 조합 ==="
           openssl x509 -in "$CERT_PATH" -inform DER -out /tmp/ios.pem
