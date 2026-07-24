@@ -6,6 +6,8 @@ workflows:
     integrations:
       app_store_connect: "seung jun"
     environment:
+      groups:
+        - bok                        # ← CM_CERTIFICATE, CM_CERTIFICATE_PASSWORD 불러오기
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -28,34 +30,27 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
+          keychain add-certificates              # ← CM_CERTIFICATE로 인증서 먼저 추가
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create
-          keychain add-certificates
+            --create                             # ← 프로비저닝 프로파일 가져오기
 
       - name: Build iOS App
         script: |
           PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-
-          # 프로파일 존재 여부 확인
           PROFILE=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -n 1)
           if [ -z "$PROFILE" ]; then
-            echo "❌ 프로비저닝 프로파일을 찾을 수 없습니다: $PROFILES_DIR"
+            echo "❌ 프로비저닝 프로파일을 찾을 수 없습니다"
             exit 1
           fi
-          echo "✅ 프로파일 경로: $PROFILE"
-
-          # security + plutil 로 UUID 추출 (grep보다 안정적)
+          echo "✅ 프로파일: $PROFILE"
           UUID=$(security cms -D -i "$PROFILE" | plutil -extract UUID raw -)
-          echo "✅ 프로파일 UUID: $UUID"
-
-          # 서명 인증서 이름 자동 탐색
+          echo "✅ UUID: $UUID"
           SIGNING_IDENTITY=$(security find-identity -v -p codesigning \
             | grep "Apple Distribution" \
             | awk -F'"' '{print $2}' \
             | head -n 1)
           echo "✅ 서명 인증서: $SIGNING_IDENTITY"
-
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME" \
