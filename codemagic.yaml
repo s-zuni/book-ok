@@ -6,8 +6,6 @@ workflows:
     integrations:
       app_store_connect: "seung jun"
     environment:
-      groups:
-        - bok
       vars:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
@@ -30,27 +28,10 @@ workflows:
       - name: Set up code signing
         script: |
           keychain initialize
-
-          if [ -z "$CM_CERTIFICATE" ]; then
-            echo "❌ CM_CERTIFICATE가 비어있습니다!"
-            exit 1
-          fi
-          echo "✅ CM_CERTIFICATE 길이: ${#CM_CERTIFICATE}"
-
-          echo "$CM_CERTIFICATE" | base64 --decode > /tmp/cert.p12
-          echo "✅ 디코딩된 파일 크기: $(wc -c < /tmp/cert.p12) bytes"
-
-          openssl pkcs12 -in /tmp/cert.p12 -passin pass:"$CM_CERTIFICATE_PASSWORD" -noout 2>&1 \
-            || openssl pkcs12 -in /tmp/cert.p12 -passin pass: -noout 2>&1 \
-            || echo "⚠️ 인증서 검증 실패"
-
-          keychain add-certificates \
-            --certificate /tmp/cert.p12 \
-            --certificate-password "$CM_CERTIFICATE_PASSWORD"
-
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create
+          keychain add-certificates
 
       - name: Build iOS App
         script: |
@@ -60,13 +41,12 @@ workflows:
             echo "❌ 프로비저닝 프로파일을 찾을 수 없습니다"
             exit 1
           fi
-          echo "✅ 프로파일: $PROFILE"
           UUID=$(security cms -D -i "$PROFILE" | plutil -extract UUID raw -)
-          echo "✅ UUID: $UUID"
           SIGNING_IDENTITY=$(security find-identity -v -p codesigning \
             | grep "Apple Distribution" \
             | awk -F'"' '{print $2}' \
             | head -n 1)
+          echo "✅ UUID: $UUID"
           echo "✅ 서명 인증서: $SIGNING_IDENTITY"
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
