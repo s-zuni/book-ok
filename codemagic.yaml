@@ -16,12 +16,15 @@ workflows:
       - name: Install dependencies
         script: |
           npm install
+
       - name: Build Web App
         script: |
           npm run build
+
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+
       - name: Set up code signing
         script: |
           keychain initialize
@@ -29,19 +32,18 @@ workflows:
             --type IOS_APP_STORE \
             --create
           keychain add-certificates
+          xcode-project use-profiles   # ← 이 줄 추가
+
       - name: Build iOS App
         script: |
-          # 1. 애플 서버에서 방금 받아온 프로파일의 고유 ID(UUID)를 강제로 찾아냄
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -n 1)
-          PROFILE_UUID=$(grep -aA1 UUID "$PROFILE_PATH" | grep -o "[-A-Z0-9]\{36\}")
-          
-          # 2. 기존 프로젝트 설정을 완전히 무시하고 빌드 명령어에 서명 정보(UUID) 직접 주입
           xcode-project build-ipa \
             --project "$XCODE_PROJECT" \
-            --scheme "$XCODE_SCHEME" \
-            --archive-xcargs "PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID PROVISIONING_PROFILE_SPECIFIER=$PROFILE_UUID CODE_SIGN_STYLE=Manual"
+            --scheme "$XCODE_SCHEME"
+          # ↑ use-profiles 사용 시 xcargs로 수동 주입 불필요
+
     artifacts:
       - build/ios/ipa/*.ipa
+
     publishing:
       app_store_connect:
         auth: integration
