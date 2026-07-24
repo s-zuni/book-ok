@@ -58,6 +58,7 @@ workflows:
           echo "=== 6. 프로비저닝 프로파일 가져오기 ==="
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key "@file:/tmp/ios.key" \
             --p12-password "1234" \
             --create
 
