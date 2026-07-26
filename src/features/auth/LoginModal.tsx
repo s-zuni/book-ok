@@ -7,6 +7,7 @@ import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucid
 import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
 import { useNativeBridge } from "@shared/lib/native-bridge";
+import { useAuth } from "@features/auth/AuthContext";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [keepLoggedIn, setKeepLoggedIn] = useState(true);
     const { vibrate } = useNativeBridge();
+    const { syncUser } = useAuth();
 
     useEffect(() => {
         if (isOpen) {
@@ -88,13 +90,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     localStorage.setItem('bookok_keep_logged_in', keepLoggedIn ? 'true' : 'false');
                     sessionStorage.setItem('bookok_session_active', 'true');
                 }
+                
+                // Sync user state immediately to trigger global re-rendering
+                await syncUser(data.session);
+                
                 toast.success("로그인되었습니다.");
                 onClose();
-                
-                // Allow 150ms for Supabase token persistence to write to disk before reloading
-                setTimeout(() => {
-                    window.location.reload();
-                }, 150);
             }
         } catch (err: any) {
             toast.error("로그인 중 오류가 발생했습니다.");

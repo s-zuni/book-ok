@@ -16,6 +16,7 @@ interface AuthContextType {
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
     refreshChildren: () => Promise<void>;
+    syncUser: (session: Session | null) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -389,6 +390,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         if (user) await fetchChildrenData(user.id);
     };
 
+    const syncUser = useCallback(async (currentSession: Session | null) => {
+        setLoading(true);
+        await syncUserData(currentSession);
+    }, [syncUserData]);
+
     return (
         <AuthContext.Provider value={{ 
             user, 
@@ -399,7 +405,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             isInitialized,
             signOut, 
             refreshProfile, 
-            refreshChildren 
+            refreshChildren,
+            syncUser
         }}>
             {providerChildren}
         </AuthContext.Provider>
