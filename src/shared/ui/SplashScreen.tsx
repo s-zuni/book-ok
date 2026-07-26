@@ -12,20 +12,55 @@ export default function SplashScreen() {
 
     useEffect(() => {
         // Hide native Android/iOS splash screen as soon as React mounts (preventing white screen)
-        if (Capacitor.isNativePlatform()) {
-            NativeSplashScreen.hide().catch(e => console.warn("Native splash hide error:", e));
-        }
+        const hideNativeSplash = async () => {
+            try {
+                if (Capacitor.isNativePlatform()) {
+                    await NativeSplashScreen.hide();
+                    console.log("Native splash dismissed successfully");
+                }
+            } catch (e) {
+                console.warn("Native splash hide error:", e);
+            }
+        };
+
+        hideNativeSplash();
+
+        // Failsafe: force hide native splash screen after 3 seconds in case bridge initialization failed or was delayed
+        const failsafeTimer = setTimeout(() => {
+            try {
+                if (Capacitor.isNativePlatform()) {
+                    NativeSplashScreen.hide().catch(() => {});
+                }
+            } catch (e) {}
+        }, 3000);
+
+        return () => clearTimeout(failsafeTimer);
     }, []);
 
     useEffect(() => {
+        let isSplashShown = false;
+        try {
+            if (typeof window !== 'undefined') {
+                isSplashShown = !!sessionStorage.getItem('splash_shown');
+            }
+        } catch (e) {
+            console.warn("Failed to access sessionStorage:", e);
+        }
+
         // Immediately hide if on desktop or already shown
-        if (typeof window !== 'undefined' && (window.innerWidth >= 1024 || sessionStorage.getItem('splash_shown'))) {
+        if (typeof window !== 'undefined' && (window.innerWidth >= 1024 || isSplashShown)) {
             const timer = setTimeout(() => setIsVisible(false), 0);
             return () => clearTimeout(timer);
         }
 
         // Mark as shown
-        sessionStorage.setItem('splash_shown', 'true');
+        try {
+            if (typeof window !== 'undefined') {
+                sessionStorage.setItem('splash_shown', 'true');
+            }
+        } catch (e) {
+            console.warn("Failed to set sessionStorage:", e);
+        }
 
         // Keep visible for 1.5 seconds, then fade out
         const fadeTimer = setTimeout(() => {
