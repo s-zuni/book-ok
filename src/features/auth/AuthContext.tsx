@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@shared/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { Child, Profile } from "@shared/types";
+import { App } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
 
 interface AuthContextType {
     user: User | null;
@@ -376,8 +379,46 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             }
         });
 
+        // Listen for deep link events on native platform
+        let deepLinkSub: any = null;
+        if (Capacitor.isNativePlatform()) {
+            const handleDeepLink = async (event: { url: string }) => {
+                console.log("App opened with URL:", event.url);
+                if (event.url.includes('auth-callback')) {
+                    // Close the In-App browser
+                    Browser.close().catch(() => {});
+
+                    const hash = event.url.split('#')[1];
+                    if (hash) {
+                        const params = new URLSearchParams(hash);
+                        const accessToken = params.get('access_token');
+                        const refreshToken = params.get('refresh_token');
+
+                        if (accessToken && refreshToken) {
+                            setLoading(true);
+                            const { data, error } = await supabase.auth.setSession({
+                                access_token: accessToken,
+                                refresh_token: refreshToken
+                            });
+                            if (!error && data.session) {
+                                await syncUserData(data.session);
+                            } else {
+                                console.error("Failed to set session from deep link:", error);
+                            }
+                            setLoading(false);
+                        }
+                    }
+                }
+            };
+
+            deepLinkSub = App.addListener('appUrlOpen', handleDeepLink);
+        }
+
         return () => {
             authListener.subscription.unsubscribe();
+            if (deepLinkSub) {
+                deepLinkSub.then((s: any) => s.remove());
+            }
         };
     }, [syncUserData, router]);
 

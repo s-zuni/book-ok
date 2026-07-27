@@ -27,10 +27,10 @@ export default function SplashScreen() {
             console.warn("Failed to access sessionStorage:", e);
         }
 
-        // Immediately hide if on desktop or already shown
-        if (typeof window !== 'undefined' && (window.innerWidth >= 1024 || isSplashShown)) {
-            const timer = setTimeout(() => setIsVisible(false), 0);
-            return () => clearTimeout(timer);
+        // Immediately hide if native platform, on desktop, or already shown
+        if (Capacitor.isNativePlatform() || (typeof window !== 'undefined' && (window.innerWidth >= 1024 || isSplashShown))) {
+            setIsVisible(false);
+            return;
         }
 
         // Mark as shown

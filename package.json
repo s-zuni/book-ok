@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "cross-env NEXT_DISABLE_TURBOPACK=1 next build",
+    "build:cap": "cross-env NEXT_DISABLE_TURBOPACK=1 BUILD_TARGET=capacitor next build",
     "start": "next start",
     "lint": "eslint"
   },

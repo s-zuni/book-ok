@@ -13,10 +13,12 @@ import { supabase } from "@shared/lib/supabase";
 import { Child, Book } from "@shared/types";
 import { Star, Send, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { useLoginModal } from "@features/auth/LoginModalContext";
 
 
 
 export default function SolutionPage() {
+    const { openLoginModal } = useLoginModal();
     const [activeMenu, setActiveMenu] = useState<any>('solution');
     const [activeSubMenu, setActiveSubMenu] = useState('우리 아이 독서 성향 AI 분석');
     const [activeChild, setActiveChild] = useState<Child | null>(null);
@@ -765,7 +767,7 @@ export default function SolutionPage() {
                             </button>
                         ) : (
                             <button 
-                                onClick={() => router.push('/auth')}
+                                onClick={openLoginModal}
                                 className="bg-black text-white rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-gray-800 transition-colors"
                             >
                                 로그인

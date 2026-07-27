@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import LoginModal from "@features/auth/LoginModal";
 
 interface LoginModalContextType {
@@ -16,6 +16,15 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
 
     const openLoginModal = () => setIsModalOpen(true);
     const closeLoginModal = () => setIsModalOpen(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.search.includes('login=true')) {
+            setIsModalOpen(true);
+            const url = new URL(window.location.href);
+            url.searchParams.delete('login');
+            window.history.replaceState({}, '', url.pathname + url.search);
+        }
+    }, []);
 
     return (
         <LoginModalContext.Provider value={{ isModalOpen, openLoginModal, closeLoginModal }}>

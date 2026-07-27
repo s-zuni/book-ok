@@ -18,7 +18,7 @@ workflows:
           npm install
       - name: Build Web App
         script: |
-          npm run build
+          npm run build:cap
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios

@@ -8,6 +8,8 @@ import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
 import { useNativeBridge } from "@shared/lib/native-bridge";
 import { useAuth } from "@features/auth/AuthContext";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -51,16 +53,25 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 localStorage.setItem('bookok_keep_logged_in', keepLoggedIn ? 'true' : 'false');
                 sessionStorage.setItem('bookok_session_active', 'true');
             }
-            const callbackUrl = `${window.location.origin}/auth/callback`;
+            
+            const isNative = Capacitor.isNativePlatform();
+            const callbackUrl = isNative
+                ? 'com.bookok.kr://auth-callback'
+                : `${window.location.origin}/auth/callback`;
             const currentPath = window.location.pathname + window.location.search;
             
-            const { error } = await supabase.auth.signInWithOAuth({
+            const { data, error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: `${callbackUrl}?next=${encodeURIComponent(currentPath)}`,
+                    redirectTo: isNative ? callbackUrl : `${callbackUrl}?next=${encodeURIComponent(currentPath)}`,
+                    skipBrowserRedirect: isNative,
                 },
             });
             if (error) throw error;
+
+            if (isNative && data?.url) {
+                await Browser.open({ url: data.url });
+            }
         } catch (error) {
             console.error(`${provider} login error:`, error);
         }

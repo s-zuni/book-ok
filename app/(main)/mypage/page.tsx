@@ -168,7 +168,7 @@ export default function MyPage() {
 
     useEffect(() => {
         if (!authLoading && !user) {
-            router.push('/auth');
+            router.push('/?login=true');
         }
     }, [authLoading, user, router]);
 
