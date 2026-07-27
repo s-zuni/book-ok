@@ -64,8 +64,8 @@ export default function PostDetailPage() {
 
         const { error } = await supabase.from('comments').insert({
             post_id: postId,
-            user_id: user.id,
-            author_name: userProfile?.nickname || '사용자',
+            author_id: user.id,
+            author_nickname: userProfile?.nickname || '사용자',
             content: newComment
         });
 
