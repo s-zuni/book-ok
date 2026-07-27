@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createClient } from "@shared/lib/supabase/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 
+export const dynamic = 'force-static';
+export const revalidate = 0;
+
 // ⚠️ service_role 키는 서버에서만 사용 — 절대 클라이언트에 노출 금지
 function getAdminClient() {
   const supabaseUrl =

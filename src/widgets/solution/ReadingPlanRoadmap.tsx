@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Book, Child } from "@shared/types";
 import { Calendar, Target, Lightbulb, ChevronDown, ChevronUp, Sparkles, CheckCircle2, BookOpen, Activity, Loader2 } from "lucide-react";
+import { apiUrl } from "@shared/lib/api";
 
 interface WeeklyPlan {
     week: number;
@@ -53,7 +54,7 @@ export default function ReadingPlanRoadmap({
         setError(null);
 
         try {
-            const response = await fetch('/api/reading-plan', {
+            const response = await fetch(apiUrl('/api/reading-plan'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

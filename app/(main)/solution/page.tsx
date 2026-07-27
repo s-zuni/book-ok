@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
+import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
+import { apiUrl } from "@shared/lib/api";
 import ReadingAnalysis from "@widgets/solution/ReadingAnalysis";
 import AISolution from "@widgets/solution/AISolution";
 import { useAuth } from "@features/auth/AuthContext";
@@ -35,7 +37,7 @@ export default function SolutionPage() {
     // Helper to fetch and format book details from Aladin API
     const fetchAladinBook = async (title: string): Promise<any> => {
         try {
-            const res = await fetch(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`);
+            const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`));
             if (!res.ok) return null;
             const data = await res.json();
             const item = data.item?.[0];
@@ -120,7 +122,7 @@ export default function SolutionPage() {
     // Load custom recommended books on demand
     const loadAnalysisBooks = async (categoryId: string = "1108", query: string = "추천도서") => {
         try {
-            const res = await fetch(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`);
+            const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`));
             if (res.ok) {
                 const data = await res.json();
                 const items = data.item?.slice(0, 5) || [];
@@ -176,7 +178,7 @@ export default function SolutionPage() {
             6. 마지막에 추천할 만한 도서 테마 1가지를 언급해주세요.
             `;
 
-            const response = await fetch('/api/openai', {
+            const response = await fetch(apiUrl('/api/openai'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
@@ -196,7 +198,7 @@ export default function SolutionPage() {
 
             // Fetch matching recommendation books from Aladin
             let parsedBooks: any[] = [];
-            const searchRes = await fetch(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`);
+            const searchRes = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`));
             if (searchRes.ok) {
                 const searchData = await searchRes.json();
                 const items = searchData.item?.slice(0, 3) || [];
@@ -260,7 +262,7 @@ export default function SolutionPage() {
             }
             `;
 
-            const res = await fetch('/api/openai', {
+            const res = await fetch(apiUrl('/api/openai'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
@@ -495,7 +497,7 @@ export default function SolutionPage() {
             const enrichedBooks = await Promise.all(recentBooks.map(async (book) => {
                 try {
                     // Assuming book.bookid is the ISBN13 or ItemId
-                    const res = await fetch(`/api/book-detail?itemId=${book.bookid}`);
+                    const res = await fetch(apiUrl(`/api/book-detail?itemId=${book.bookid}`));
                     if (!res.ok) return book;
                     const details = await res.json();
                     return { ...book, description: details.description, toc: details.toc };
@@ -619,7 +621,7 @@ export default function SolutionPage() {
         }
       `;
 
-            const response = await fetch('/api/openai', {
+            const response = await fetch(apiUrl('/api/openai'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
@@ -683,7 +685,7 @@ export default function SolutionPage() {
           5. **마무리**: 긍정적인 격려의 말로 마무리하세요.
         `;
 
-            const response = await fetch('/api/openai', {
+            const response = await fetch(apiUrl('/api/openai'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })

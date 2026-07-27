@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
+import { apiUrl } from "@shared/lib/api";
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -75,7 +76,7 @@ export default function MyPage() {
             }
             setIsSearchingLibraries(true);
             try {
-                const res = await fetch(`/api/library/search?region=${selectedRegion}&dtl_region=${selectedSubRegion}`);
+                const res = await fetch(apiUrl(`/api/library/search?region=${selectedRegion}&dtl_region=${selectedSubRegion}`));
                 if (!res.ok) throw new Error("도서관 검색 실패");
                 const data = await res.json();
                 setFoundLibraries(data.libraries || []);
@@ -221,7 +222,7 @@ export default function MyPage() {
         const toastId = toast.loading("계정 삭제 중...");
 
         try {
-            const res = await fetch('/api/auth/delete-account', { method: 'DELETE' });
+            const res = await fetch(apiUrl('/api/auth/delete-account'), { method: 'DELETE' });
             const data = await res.json();
 
             if (!res.ok) {

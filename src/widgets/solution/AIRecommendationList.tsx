@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Book } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import { Sparkles, TrendingUp, AlertCircle, BarChart3 } from "lucide-react";
+import { apiUrl } from "@shared/lib/api";
 
 interface AIRecommendationListProps {
     keywords: string[];
@@ -91,7 +92,7 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
                 // 2. 선호 장르 기반 추천 (기존 키워드 + 선호 장르)
                 const query = keywords.slice(0, 2).join(' ');
                 const preferredRes = await fetch(
-                    `/api/recommendations?query=${encodeURIComponent(query)}&categoryId=1108&sort=SalesPoint`
+                    apiUrl(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=1108&sort=SalesPoint`)
                 );
 
                 if (preferredRes.ok) {
@@ -121,7 +122,7 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
                         if (!config) continue;
 
                         const balancedRes = await fetch(
-                            `/api/recommendations?query=${encodeURIComponent(config.keywords[0])}&categoryId=${config.categoryId}&sort=SalesPoint&maxResults=4`
+                            apiUrl(`/api/recommendations?query=${encodeURIComponent(config.keywords[0])}&categoryId=${config.categoryId}&sort=SalesPoint&maxResults=4`)
                         );
 
                         if (balancedRes.ok) {

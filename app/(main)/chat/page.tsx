@@ -7,16 +7,9 @@ import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from "marked";
 import Image from "next/image";
-
-interface Book {
-    id: string;
-    title: string;
-    author: string;
-    publisher: string;
-    rating: number;
-    reviewsCount: number;
-    coverUrl: string;
-}
+import { supabase } from "@shared/lib/supabase";
+import { Book } from "@shared/types";
+import { apiUrl } from "@shared/lib/api";
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -102,19 +95,22 @@ export default function ChatPage() {
     // Helper to fetch and format book details from Aladin API
     const fetchAladinBook = async (title: string): Promise<Book | null> => {
         try {
-            const res = await fetch(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`);
+            const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`));
             if (!res.ok) return null;
             const data = await res.json();
             const item = data.item?.[0];
             if (!item) return null;
             return {
                 id: item.isbn13 || item.isbn || item.itemId,
+                bookid: item.isbn13 || item.isbn || item.itemId,
                 title: item.title.split(" - ")[0], // Remove subtitle fluff
                 author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                 publisher: item.publisher,
                 rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
                 reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
-                coverUrl: item.cover
+                coverUrl: item.cover,
+                imgsrc: item.cover || "",
+                category: item.categoryName || ""
             };
         } catch (e) {
             console.error("Failed to fetch Aladin book for title:", title, e);
@@ -189,7 +185,7 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch("/api/chat", {
+            const response = await fetch(apiUrl("/api/chat"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage] })
@@ -298,7 +294,7 @@ export default function ChatPage() {
                                             >
                                                 <div className="relative w-full h-[190px] rounded-[16px] overflow-hidden mb-3.5 border border-gray-100">
                                                     <Image
-                                                        src={book.coverUrl}
+                                                        src={book.coverUrl || book.imgsrc || '/og-default.png'}
                                                         alt={book.title}
                                                         fill
                                                         className="object-cover"

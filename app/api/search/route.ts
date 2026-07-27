@@ -1,4 +1,7 @@
 
+export const dynamic = 'force-static';
+export const revalidate = 0;
+
 import { type NextRequest } from 'next/server'
 
 export async function GET(request: NextRequest) {

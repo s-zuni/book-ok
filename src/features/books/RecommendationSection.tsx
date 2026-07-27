@@ -7,6 +7,8 @@ import { RECOMMENDATION_TABS } from "@shared/lib/constants";
 import EmptyState from "@shared/ui/EmptyState";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 
+import { apiUrl } from "@shared/lib/api";
+
 interface RecommendationSectionProps {
     title: string;
     subtitle?: string;
@@ -58,7 +60,7 @@ export default function RecommendationSection({ title, subtitle, query, category
                 // Existing logic for Aladin API
                 // Determine sort param
                 // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                const fetchUrl = `/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&apiType=${currentApiType}&queryType=${currentQueryType}&_t=${Date.now()}`;
+                const fetchUrl = apiUrl(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&apiType=${currentApiType}&queryType=${currentQueryType}&_t=${Date.now()}`);
                 console.log(`Fetching Aladin: ${fetchUrl}`);
                 const res = await fetch(fetchUrl);
                 if (!res.ok) throw new Error("Failed");

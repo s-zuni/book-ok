@@ -11,6 +11,7 @@ import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import ChildSelectionModal from "@features/children/ChildSelectionModal";
 import { toast } from "sonner";
+import { apiUrl } from "@shared/lib/api";
 
 export default function BookDetailContent() {
     const params = useParams();
@@ -67,7 +68,7 @@ export default function BookDetailContent() {
 
             // 2. If not in DB, try Aladin API
             try {
-                const res = await fetch(`/api/book?isbn=${bookId}`);
+                const res = await fetch(apiUrl(`/api/book?isbn=${bookId}`));
                 if (!res.ok) throw new Error('Failed to fetch from API');
 
                 const data = await res.json();
@@ -148,7 +149,7 @@ export default function BookDetailContent() {
                 const libCodes = favoriteLibs.map(l => l.libCode).join(',');
                 const isbn = book.id || book.bookid || bookId;
                 
-                const res = await fetch(`/api/library/book-status?isbn=${isbn}&libCodes=${libCodes}`);
+                const res = await fetch(apiUrl(`/api/library/book-status?isbn=${isbn}&libCodes=${libCodes}`));
                 if (!res.ok) throw new Error("도서관 소장 여부 조회 실패");
                 const data = await res.json();
                 

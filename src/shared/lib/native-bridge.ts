@@ -57,17 +57,8 @@ export const getNativePlatform = () => {
  */
 export const sendToNative = (type: NativeMessageType, data?: any) => {
   if (typeof window === 'undefined') return;
-
-  if (window.ReactNativeWebView) {
-    const message: NativeMessage = { type, data };
-    window.ReactNativeWebView.postMessage(JSON.stringify(message));
-    
-    // 개발 모드에서 로그 확인용
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[NativeBridge] Sent: ${type}`, data);
-    }
-  } else if (isNativeApp()) {
-    console.warn('[NativeBridge] ReactNativeWebView is not available even in Native App mode.');
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[NativeBridge] Event: ${type}`, data);
   }
 };
 

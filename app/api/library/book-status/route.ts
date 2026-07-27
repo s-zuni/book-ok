@@ -1,5 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+export const dynamic = 'force-static';
+export const revalidate = 0;
+
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const isbn = searchParams.get('isbn');

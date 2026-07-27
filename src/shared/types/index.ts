@@ -12,6 +12,10 @@ export interface Book {
     pubDate?: string;
     description?: string;
     toc?: string;
+    publisher?: string;
+    rating?: number;
+    reviewsCount?: number;
+    coverUrl?: string;
 }
 
 export interface Review {

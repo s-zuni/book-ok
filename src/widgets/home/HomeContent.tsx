@@ -13,6 +13,7 @@ import MainPopup from "@shared/ui/MainPopup";
 import Image from "next/image";
 import { toast } from "sonner";
 import { supabase } from "@shared/lib/supabase";
+import { apiUrl } from "@shared/lib/api";
 
 // Premium Icon Wrappers to match the new design system
 const CustomIcon = ({ children, colorClass }: { children: React.ReactNode, colorClass: string }) => (
@@ -230,7 +231,7 @@ export default function HomeContent() {
             setLibrarianLoading(true);
             try {
                 const sortType = librarianSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const res = await fetch(`/api/recommendations?query=${encodeURIComponent("사서추천")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`);
+                const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("사서추천")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
                 if (res.ok) {
                     const data = await res.json();
                     const items = data.item?.slice(0, 8) || [];
@@ -246,7 +247,7 @@ export default function HomeContent() {
                     setLibrarianBooks(formatted);
                 }
             } catch (e) {
-                console.error(e);
+                console.error("Librarian books error:", e);
             } finally {
                 setLibrarianLoading(false);
             }
@@ -256,11 +257,11 @@ export default function HomeContent() {
     }, [librarianSort]);
 
     useEffect(() => {
-        const fetchAwards = async () => {
+        const fetchAwardPicks = async () => {
             setAwardLoading(true);
             try {
                 const sortType = awardSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const res = await fetch(`/api/recommendations?query=${encodeURIComponent("수상작")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`);
+                const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("수상작")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
                 if (res.ok) {
                     const data = await res.json();
                     const items = data.item?.slice(0, 8) || [];
@@ -282,7 +283,7 @@ export default function HomeContent() {
             }
         };
 
-        fetchAwards();
+        fetchAwardPicks();
     }, [awardSort]);
 
     const dummySetView = () => { };

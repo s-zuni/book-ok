@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+export const dynamic = 'force-static';
+export const revalidate = 0;
+
 // ──────────────────────────────────────────────
 // Zod v4 스키마: 요청 바디 유효성 검증
 // ──────────────────────────────────────────────

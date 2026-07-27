@@ -1,4 +1,7 @@
-import { type NextRequest } from 'next/server';
+import { type NextRequest } from 'next/server'
+
+export const dynamic = 'force-static';
+export const revalidate = 0;;
 import { XMLParser } from 'fast-xml-parser';
 
 // Helper function to add timeout to fetch requests

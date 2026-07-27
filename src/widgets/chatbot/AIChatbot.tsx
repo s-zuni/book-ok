@@ -12,6 +12,8 @@ interface Message {
     content: string;
 }
 
+import { apiUrl } from "@shared/lib/api";
+
 export default function AIChatbot() {
     const { user } = useAuth();
     const { openLoginModal } = useLoginModal();
@@ -61,7 +63,7 @@ export default function AIChatbot() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('/api/chat', {
+            const response = await fetch(apiUrl('/api/chat'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ messages: [...messages, userMessage] })

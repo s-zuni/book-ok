@@ -2,15 +2,16 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Book } from "@shared/types";
+import { toast } from "sonner";
+import { Book, Child } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import BookList from "@features/books/BookList";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
-import { Child } from "@shared/types";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
+import { apiUrl } from "@shared/lib/api";
 
 export default function SearchPage() {
     return (
@@ -67,7 +68,7 @@ function SearchContent() {
         setLoading(true);
         setCurrentPage(page);
         try {
-            const res = await fetch(`/api/search?query=${encodeURIComponent(query)}&page=${page}`);
+            const res = await fetch(apiUrl(`/api/search?query=${encodeURIComponent(query)}&page=${page}`));
             const data = await res.json();
             if (data.item) {
                 setTotalResults(data.totalResults || 0);

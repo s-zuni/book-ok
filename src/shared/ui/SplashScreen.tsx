@@ -11,30 +11,10 @@ export default function SplashScreen() {
     const [opacity, setOpacity] = useState(1);
 
     useEffect(() => {
-        // Hide native Android/iOS splash screen as soon as React mounts (preventing white screen)
-        const hideNativeSplash = async () => {
-            try {
-                if (Capacitor.isNativePlatform()) {
-                    await NativeSplashScreen.hide();
-                    console.log("Native splash dismissed successfully");
-                }
-            } catch (e) {
-                console.warn("Native splash hide error:", e);
-            }
-        };
-
-        hideNativeSplash();
-
-        // Failsafe: force hide native splash screen after 3 seconds in case bridge initialization failed or was delayed
-        const failsafeTimer = setTimeout(() => {
-            try {
-                if (Capacitor.isNativePlatform()) {
-                    NativeSplashScreen.hide().catch(() => {});
-                }
-            } catch (e) {}
-        }, 3000);
-
-        return () => clearTimeout(failsafeTimer);
+        // Hide native splash screen as soon as React mounts
+        if (Capacitor.isNativePlatform()) {
+            NativeSplashScreen.hide().catch(() => {});
+        }
     }, []);
 
     useEffect(() => {
