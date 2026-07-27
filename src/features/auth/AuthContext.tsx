@@ -345,10 +345,9 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     sessionStorage.setItem('bookok_session_active', 'true');
                 }
 
-                // Use getUser() for more reliable check on initialization
-                const { data: { user: initialUser } } = await supabase.auth.getUser();
-                if (initialUser) {
-                    const { data: { session: initialSession } } = await supabase.auth.getSession();
+                // Use getSession() to check cached session instead of getUser() which makes a concurrent network call
+                const { data: { session: initialSession } } = await supabase.auth.getSession();
+                if (initialSession) {
                     await syncUserData(initialSession);
                 } else {
                     // No user found, finalize initialization

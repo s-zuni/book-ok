@@ -14,15 +14,18 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
     const [visible, setVisible] = useState(false);
 
     useEffect(() => {
+        let timer: NodeJS.Timeout;
         if (isOpen) {
-            const timer = setTimeout(() => setVisible(true), 0);
+            timer = setTimeout(() => setVisible(true), 0);
             document.body.style.overflow = 'hidden';
-            return () => clearTimeout(timer);
         } else {
-            const timer = setTimeout(() => setVisible(false), 300); // Wait for animation
+            timer = setTimeout(() => setVisible(false), 300); // Wait for animation
             document.body.style.overflow = 'unset';
-            return () => clearTimeout(timer);
         }
+        return () => {
+            clearTimeout(timer);
+            document.body.style.overflow = 'unset';
+        };
     }, [isOpen]);
 
     if (!visible && !isOpen) return null;
