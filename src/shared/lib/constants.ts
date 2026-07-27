@@ -7,7 +7,7 @@ export const MENU_CONFIG = {
 
 export const RECOMMENDATION_TABS: Record<string, { label: string; query: string; categoryId?: string; apiType?: string; queryType?: string }[]> = {
     '사서 추천': [
-        { label: '전체', query: '사서추천' },
+        { label: '전체', query: '', categoryId: '1108', apiType: 'ItemList', queryType: 'ItemEditorChoice' },
         { label: '국립중앙도서관', query: '국립중앙도서관' },
         { label: '학교도서관저널', query: '학교도서관저널' },
         { label: '서울시교육청', query: '서울시교육청' },

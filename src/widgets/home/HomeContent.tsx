@@ -230,12 +230,24 @@ export default function HomeContent() {
         const fetchLibrarianPicks = async () => {
             setLibrarianLoading(true);
             try {
-                const sortType = librarianSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("사서추천")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
+                const res = await fetch(apiUrl(`/api/recommendations?apiType=ItemList&queryType=ItemEditorChoice&categoryId=1108`));
                 if (res.ok) {
                     const data = await res.json();
-                    const items = data.item?.slice(0, 8) || [];
-                    const formatted = items.map((item: any) => ({
+                    const items = data.item || [];
+                    
+                    // Client-side sort to support popular vs latest
+                    const sortedItems = [...items].sort((a: any, b: any) => {
+                        if (librarianSort === 'popular') {
+                            return (b.salesPoint || 0) - (a.salesPoint || 0);
+                        } else {
+                            const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+                            const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+                            return dateB - dateA;
+                        }
+                    });
+
+                    const sliced = sortedItems.slice(0, 8);
+                    const formatted = sliced.map((item: any) => ({
                         id: item.isbn13 || item.itemId,
                         title: item.title.split(" - ")[0],
                         author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
@@ -261,7 +273,7 @@ export default function HomeContent() {
             setAwardLoading(true);
             try {
                 const sortType = awardSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("수상작")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
+                const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("문학상")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
                 if (res.ok) {
                     const data = await res.json();
                     const items = data.item?.slice(0, 8) || [];
