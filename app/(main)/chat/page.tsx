@@ -19,7 +19,7 @@ interface Message {
 
 export default function ChatPage() {
     const router = useRouter();
-    const { user, userProfile, children, loading: authLoading } = useAuth();
+    const { user, userProfile, children, loading: authLoading, isInitialized } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     // Personalize welcome greeting with user name and child name dynamically
@@ -53,7 +53,7 @@ export default function ChatPage() {
                 }
                 return newMsgs;
             });
-        } else if (!authLoading && !user) {
+        } else if (isInitialized && !user) {
             setMessages(prev => {
                 const newMsgs = [...prev];
                 if (newMsgs[0]) {
@@ -65,7 +65,7 @@ export default function ChatPage() {
                 return newMsgs;
             });
         }
-    }, [user, userProfile, children, authLoading]);
+    }, [user, userProfile, children, isInitialized]);
 
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -150,11 +150,11 @@ export default function ChatPage() {
 
     // Handle authentication redirect if accessed directly
     useEffect(() => {
-        if (!authLoading && !user) {
+        if (isInitialized && !user) {
             openLoginModal();
             router.push("/");
         }
-    }, [user, authLoading, router, openLoginModal]);
+    }, [user, isInitialized, router, openLoginModal]);
 
     // Handle mobile keyboard height dynamically using VisualViewport API
     useEffect(() => {

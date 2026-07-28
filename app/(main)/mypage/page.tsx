@@ -19,7 +19,7 @@ import { apiUrl } from "@shared/lib/api";
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
-    const { user, userProfile, signOut, loading: authLoading, refreshChildren, children, refreshProfile } = useAuth();
+    const { user, userProfile, signOut, loading: authLoading, isInitialized, refreshChildren, children, refreshProfile } = useAuth();
 
     const [isEditingNickname, setIsEditingNickname] = useState(false);
     const [editedNickname, setEditedNickname] = useState("");
@@ -161,16 +161,16 @@ export default function MyPage() {
     };
 
     useEffect(() => {
-        if (!authLoading && children.length > 0 && !activeChild) {
+        if (isInitialized && children.length > 0 && !activeChild) {
             setActiveChild(children[0]);
         }
-    }, [authLoading, children, activeChild]);
+    }, [isInitialized, children, activeChild]);
 
     useEffect(() => {
-        if (!authLoading && !user) {
+        if (isInitialized && !user) {
             router.push('/?login=true');
         }
-    }, [authLoading, user, router]);
+    }, [isInitialized, user, router]);
 
     // Removed local fetchChildren logic to avoid race conditions with AuthContext
 
@@ -320,7 +320,7 @@ export default function MyPage() {
 
 
             <div className="max-w-xl mx-auto px-6 py-8">
-                {authLoading ? (
+                {!isInitialized || authLoading ? (
                     // Loading Skeleton
                     <div className="space-y-8 animate-pulse">
                         <div className="flex items-center gap-5 mb-10">

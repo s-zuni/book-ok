@@ -36,6 +36,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     // To prevent redundant fetches and race conditions
     const fetchInProgress = useRef<string | null>(null);
     const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+    const isInitRef = useRef(false);
     const INACTIVITY_TIMEOUT = 2 * 60 * 60 * 1000; // 2 hours in milliseconds
 
     const getProfileFromMetadata = (user: User): Profile => {
@@ -170,17 +171,20 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 setUserProfile(profile);
                 setLoading(false);
                 setIsInitialized(true);
+                isInitRef.current = true;
             } else {
                 setUserProfile(null);
                 setChildren([]);
                 setLoading(false);
                 setIsInitialized(true);
+                isInitRef.current = true;
             }
         } catch (err) {
             console.error("Error syncing user data:", err);
             if (currentSession?.user) setUser(currentSession.user);
             setLoading(false);
             setIsInitialized(true);
+            isInitRef.current = true;
         } finally {
             fetchInProgress.current = null;
         }
@@ -338,6 +342,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
                         setLoading(false);
                         setIsInitialized(true);
+                        isInitRef.current = true;
                         sessionStorage.setItem('bookok_session_active', 'true');
                         return;
                     }
@@ -353,11 +358,13 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     // No user found, finalize initialization
                     setLoading(false);
                     setIsInitialized(true);
+                    isInitRef.current = true;
                 }
             } catch (e) {
                 console.error("Initial auth check failed:", e);
                 setLoading(false);
                 setIsInitialized(true);
+                isInitRef.current = true;
             } finally {
                 clearTimeout(failsafeTimer);
             }
@@ -367,6 +374,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
         // Listen for auth changes
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+            if (!isInitRef.current) {
+                console.log("AuthContext: ignoring auth event during initial setup:", event);
+                return;
+            }
+
             console.log("Auth event:", event);
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 setLoading(true);
