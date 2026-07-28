@@ -52,6 +52,7 @@ export default function HomeContent() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
     const [searchQuery, setSearchQuery] = useState("");
+    const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
     const handleSearch = (page?: number) => {
         if (searchQuery.trim()) {
@@ -487,8 +488,11 @@ export default function HomeContent() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <button className="text-gray-700 p-1">
-                                    <Search size={20} />
+                                <button 
+                                    onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+                                    className="text-gray-700 p-1"
+                                >
+                                    {isMobileSearchOpen ? <X size={20} /> : <Search size={20} />}
                                 </button>
                                 <button className="text-gray-700 p-1">
                                     <Bell size={20} />
@@ -510,6 +514,29 @@ export default function HomeContent() {
                                 )}
                             </div>
                         </header>
+
+                        {/* Mobile Search Input Overlay */}
+                        {isMobileSearchOpen && (
+                            <div className="p-4 bg-white border-b border-gray-100 sticky top-[calc(3.5rem+env(safe-area-inset-top,0px))] z-30 animate-in slide-in-from-top-2">
+                                <div className="relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                                    <input
+                                        type="text"
+                                        placeholder="도서 검색..."
+                                        className="w-full bg-gray-50 rounded-xl py-2.5 pl-12 pr-4 outline-none focus:ring-2 focus:ring-green-500 font-medium text-sm text-gray-900"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && searchQuery.trim()) {
+                                                router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+                                                setIsMobileSearchOpen(false);
+                                            }
+                                        }}
+                                        autoFocus
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Welcome Message */}
                         <div className="p-5 bg-white">
