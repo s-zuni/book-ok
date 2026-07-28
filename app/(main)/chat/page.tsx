@@ -10,6 +10,7 @@ import OptimizedImage from "@shared/ui/OptimizedImage";
 import { supabase } from "@shared/lib/supabase";
 import { Book } from "@shared/types";
 import { apiUrl } from "@shared/lib/api";
+import { Capacitor } from '@capacitor/core';
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -126,6 +127,11 @@ export default function ChatPage() {
         if (!vv) return;
 
         const handleResize = () => {
+            if (Capacitor.isNativePlatform()) {
+                setKeyboardOffset(0);
+                setTimeout(scrollToBottom, 150);
+                return;
+            }
             const offset = window.innerHeight - vv.height;
             setKeyboardOffset(offset > 0 ? offset : 0);
             setTimeout(scrollToBottom, 100);
