@@ -354,10 +354,10 @@ export default function LandingPage() {
           <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-center lg:text-left">
             <div className="inline-block px-3 py-1.5 bg-yellow-50 text-yellow-600 rounded-full text-xs font-black">AI CHATBOT</div>
             <h3 className="text-2xl sm:text-4xl font-black text-gray-900 leading-tight break-keep">
-              질문하고 소통하며 찾아가는<br />아이 맞춤 똑똑한 'AI 사서'
+              질문하고 소통하며 찾아가는<br />아이 맞춤 똑똑한 &apos;AI 사서&apos;
             </h3>
             <p className="text-base text-gray-500 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0 break-keep">
-              "공룡을 좋아하는 7살에게 적합한 책은?", "우정에 대한 깊은 생각을 가르치는 그림책은?" AI 사서에게 자유롭게 말해보세요. 방대한 DB에서 엄선한 도서를 단 몇 초 만에 완벽히 매칭해 줍니다.
+              &quot;공룡을 좋아하는 7살에게 적합한 책은?&quot;, &quot;우정에 대한 깊은 생각을 가르치는 그림책은?&quot; AI 사서에게 자유롭게 말해보세요. 방대한 DB에서 엄선한 도서를 단 몇 초 만에 완벽히 매칭해 줍니다.
             </p>
             <div className="space-y-4 max-w-md mx-auto lg:mx-0">
               <div className="flex items-start gap-3 text-left">
@@ -491,7 +491,7 @@ export default function LandingPage() {
                 <div className="flex items-start gap-4">
                   <div className="w-7 h-7 rounded-lg bg-green-50 text-[#01C54F] font-bold text-xs shrink-0 flex items-center justify-center">2</div>
                   <div>
-                    <h5 className="text-sm sm:text-base font-black text-gray-900">무제한 똑똑한 'AI 사서'를 포함한 프리미엄 AI 서비스 무제한 이용</h5>
+                    <h5 className="text-sm sm:text-base font-black text-gray-900">무제한 똑똑한 &apos;AI 사서&apos;를 포함한 프리미엄 AI 서비스 무제한 이용</h5>
                     <p className="text-gray-400 text-[11px] sm:text-xs font-medium leading-relaxed mt-1 break-keep">질문 횟수 제한 없이 AI 사서와 마음껏 대화하며 책을 추천받고, 독서 퀴즈 등 다양한 프리미엄 독서 학습 도구를 사용합니다.</p>
                   </div>
                 </div>

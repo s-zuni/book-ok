@@ -136,7 +136,7 @@ export default function ServiceIntro() {
             </div>
             <div className="flex-1 text-center md:text-left space-y-3">
               <div className="inline-block px-2.5 py-1 bg-yellow-50 text-yellow-600 rounded-full text-xs font-black">지능형 챗봇</div>
-              <h4 className="text-lg sm:text-xl font-bold text-gray-900">24시간 소통하는 똑똑한 'AI 사서'</h4>
+              <h4 className="text-lg sm:text-xl font-bold text-gray-900">24시간 소통하는 똑똑한 &apos;AI 사서&apos;</h4>
               <p className="text-gray-500 font-medium leading-relaxed text-sm break-keep">
                 아이가 관심 있거나 궁금한 것에 대해 실시간 대화를 통해 그에 알맞은 검증 도서를 즉각 매칭해 줍니다. 부모님의 독서 교육 고민에 대한 유용한 가이드도 실시간으로 제공합니다.
               </p>

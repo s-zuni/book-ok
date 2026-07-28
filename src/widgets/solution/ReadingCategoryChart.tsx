@@ -59,7 +59,7 @@ export default function ReadingCategoryChart({ books }: ReadingCategoryChartProp
                     </Pie>
                     <Tooltip
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                        formatter={(value: any) => [`${value}권`, '']}
+                        formatter={(value: number | string | undefined) => [`${value ?? 0}권`, '']}
                     />
                     <Legend
                         layout="vertical"

@@ -150,7 +150,7 @@ export default function WritePage() {
                     </div>
 
                     <div className="bg-yellow-50 p-4 rounded-xl text-xs text-yellow-700 font-bold mb-2">
-                        * 사진 업로드를 위해서는 Supabase Storage에 'post_images' 버킷이 생성되어 있어야 합니다.
+                        * 사진 업로드를 위해서는 Supabase Storage에 &apos;post_images&apos; 버킷이 생성되어 있어야 합니다.
                     </div>
 
                     <button

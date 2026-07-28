@@ -14,7 +14,7 @@ import { useNativeBridge } from "@shared/lib/native-bridge";
 interface ReadingAnalysisProps {
     activeChild: Child | null;
     userReadBooks: Book[];
-    getReadingAnalysis: (observations?: any) => void;
+    getReadingAnalysis: (observations?: Record<string, string>) => void;
     loading: boolean;
     result: string;
     chartData: { subject: string; A: number; fullMark: number; }[];
@@ -95,7 +95,7 @@ export default function ReadingAnalysis({
             <div className="grid lg:grid-cols-2 gap-8">
                 {/* Left: Input & Button */}
                 <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 h-fit">
-                    <h3 className="text-2xl font-black mb-6">'{activeChild?.name}' 아이가 읽은 책 목록</h3>
+                    <h3 className="text-2xl font-black mb-6">&apos;{activeChild?.name}&apos; 아이가 읽은 책 목록</h3>
                     <div className="max-h-60 overflow-y-auto space-y-3 mb-6 border p-4 rounded-2xl bg-gray-50/50">
                         {userReadBooks.length > 0 ? userReadBooks.map(book => (
                             <div key={book.id} className="p-3 bg-white rounded-lg shadow-sm text-sm font-medium">{book.title}</div>

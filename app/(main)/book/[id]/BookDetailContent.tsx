@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@shared/lib/supabase";
-import { Book, Review, Child } from "@shared/types";
+import { Book, Review, Child, MainMenu } from "@shared/types";
 import { Star, ChevronLeft, Bookmark, BookOpen, Check, Building, MapPin } from "lucide-react";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
@@ -12,6 +12,13 @@ import { useLoginModal } from "@features/auth/LoginModalContext";
 import ChildSelectionModal from "@features/children/ChildSelectionModal";
 import { toast } from "sonner";
 import { apiUrl } from "@shared/lib/api";
+import { getOptimizedImageUrl } from "@shared/lib/image-utils";
+
+interface HoldingResult {
+    libCode: string;
+    hasBook: string;
+    loanAvailable: string;
+}
 
 export default function BookDetailContent() {
     const params = useParams();
@@ -32,7 +39,7 @@ export default function BookDetailContent() {
     const { openLoginModal } = useLoginModal();
     const [userChildren, setUserChildren] = useState<Child[]>([]);
     const [activeChild, setActiveChild] = useState<Child | null>(null);
-    const [activeMenu, setActiveMenu] = useState<any>('rec');
+    const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
 
     // Additional Actions State
@@ -154,7 +161,7 @@ export default function BookDetailContent() {
                 const data = await res.json();
                 
                 // Map the results back to include the library names
-                const statusResults = (data.results || []).map((result: any) => {
+                const statusResults = (data.results || []).map((result: HoldingResult) => {
                     const libInfo = favoriteLibs.find(l => String(l.libCode) === String(result.libCode));
                     return {
                         libCode: result.libCode,
@@ -181,7 +188,7 @@ export default function BookDetailContent() {
             .eq('book_id', bookId)
             .order('created_at', { ascending: false });
 
-        if (data) setReviews(data as any);
+        if (data) setReviews(data as unknown as Review[]);
     };
 
     // Helper to ensure book exists in DB before linking actions
@@ -243,9 +250,10 @@ export default function BookDetailContent() {
             toast.success("읽은 책으로 기록되었습니다!");
             setIsRead(true);
             setShowChildModal(false);
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            toast.error("저장 중 오류가 발생했습니다: " + err.message);
+            const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
+            toast.error("저장 중 오류가 발생했습니다: " + errorMessage);
         }
     };
 
@@ -318,7 +326,7 @@ export default function BookDetailContent() {
                         ) : book ? (
                             <>
                                 <div className="flex justify-center md:block">
-                                    <img src={book.imgsrc} alt={book.title} className="w-40 md:w-48 h-56 md:h-64 object-cover rounded-xl shadow-md" />
+                                    <img src={getOptimizedImageUrl(book.imgsrc, 'detail')} alt={book.title} className="w-40 md:w-48 h-56 md:h-64 object-cover rounded-xl shadow-md" />
                                 </div>
                                 <div className="flex-1">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">

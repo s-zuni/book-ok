@@ -108,7 +108,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 toast.success("로그인되었습니다.");
                 onClose();
             }
-        } catch (err: any) {
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
+            console.error("Login error:", errorMessage);
             toast.error("로그인 중 오류가 발생했습니다.");
             setIsLoading(false);
         }

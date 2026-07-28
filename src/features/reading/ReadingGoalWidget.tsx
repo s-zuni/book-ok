@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { Child, ReadingGoal, ReadBook } from "@shared/types";
@@ -42,7 +42,7 @@ export default function ReadingGoalWidget({ child, userId, readBooks }: ReadingG
 
             if (error) throw error;
             setGoals(data || []);
-        } catch (err: any) {
+        } catch (err) {
             console.error('Error fetching goals:', err);
         } finally {
             setLoading(false);
@@ -151,9 +151,10 @@ export default function ReadingGoalWidget({ child, userId, readBooks }: ReadingG
             setShowModal(false);
             setEditingGoal(null);
             fetchGoals();
-        } catch (err: any) {
+        } catch (err) {
             console.error(err);
-            toast.error('저장 중 오류가 발생했습니다: ' + err.message);
+            const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
+            toast.error('저장 중 오류가 발생했습니다: ' + errorMessage);
         }
     };
 

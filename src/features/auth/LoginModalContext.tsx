@@ -19,7 +19,9 @@ export function LoginModalProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         if (typeof window !== 'undefined' && window.location.search.includes('login=true')) {
-            setIsModalOpen(true);
+            setTimeout(() => {
+                setIsModalOpen(true);
+            }, 0);
             const url = new URL(window.location.href);
             url.searchParams.delete('login');
             window.history.replaceState({}, '', url.pathname + url.search);

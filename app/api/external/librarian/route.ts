@@ -52,8 +52,15 @@ export async function GET(request: NextRequest) {
             lists = [lists]; // Handle single item case
         }
 
-        const items = lists.map((item: any) => {
-            const getField = (field: any) => (typeof field === 'string' ? field : field?.['#text'] || '');
+        const items = (lists as Record<string, unknown>[]).map((item) => {
+            const getField = (field: unknown): string => {
+                if (typeof field === 'string') return field;
+                if (field && typeof field === 'object' && '#text' in field) {
+                    const textVal = (field as Record<string, unknown>)['#text'];
+                    return typeof textVal === 'string' ? textVal : '';
+                }
+                return '';
+            };
 
             const title = getField(item.title_info);
             const author = getField(item.author_info);
@@ -75,7 +82,7 @@ export async function GET(request: NextRequest) {
                 link: link,
                 category: { id: '0', name: '사서추천' }
             };
-        }).filter((item: any) => item.title);
+        }).filter((item) => item.title);
 
         return NextResponse.json({
             items,

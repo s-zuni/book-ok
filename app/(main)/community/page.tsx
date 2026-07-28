@@ -92,9 +92,10 @@ export default function CommunityPage() {
                     setHasMore(false);
                 }
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error("Error fetching posts:", err);
-            toast.error("게시글을 불러오는데 실패했습니다: " + (err.message || "알 수 없는 오류"));
+            const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
+            toast.error("게시글을 불러오는데 실패했습니다: " + errorMessage);
         } finally {
             if (isInitial) setLoading(false);
         }

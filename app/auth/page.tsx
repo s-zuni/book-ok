@@ -72,7 +72,7 @@ export default function AuthPage() {
                 setAuthError('로그인에 실패했습니다. 다시 시도해주세요.');
                 setIsLoading(false);
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('Login error:', err);
             setAuthError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
             setIsLoading(false);
@@ -170,7 +170,7 @@ export default function AuthPage() {
                     }
                 }
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error('Signup error:', err);
             setAuthError('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.');
             setIsLoading(false);
@@ -247,7 +247,7 @@ export default function AuthPage() {
             //     body: { userId: profiles.id, newPassword }
             // });
 
-        } catch (err: any) {
+        } catch (err) {
             console.error('Password reset error:', err);
             setAuthError('오류가 발생했습니다. 다시 시도해주세요.');
             setIsLoading(false);

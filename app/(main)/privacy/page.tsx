@@ -17,7 +17,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-bold text-[#2E5A44] mb-4">1. 개인정보의 수집 항목 및 방법</h2>
             <p className="text-gray-600 leading-relaxed">
-              '북콕'(이하 '회사')은 소셜 로그인을 통한 회원가입 및 서비스 제공을 위해 아래와 같은 개인정보를 수집합니다.
+              &apos;북콕&apos;(이하 &apos;회사&apos;)은 소셜 로그인을 통한 회원가입 및 서비스 제공을 위해 아래와 같은 개인정보를 수집합니다.
             </p>
             <ul className="list-disc pl-5 mt-4 space-y-2 text-gray-600">
               <li><strong>소셜 로그인 (구글, 카카오, 애플):</strong> 이름, 이메일 주소, 프로필 이미지, 서비스 식별자(UID)</li>

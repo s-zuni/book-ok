@@ -29,8 +29,11 @@ export default function SplashScreen() {
 
         // Immediately hide if native platform, on desktop, or already shown
         if (Capacitor.isNativePlatform() || (typeof window !== 'undefined' && (window.innerWidth >= 1024 || isSplashShown))) {
-            setIsVisible(false);
-            return;
+            // Use setTimeout to avoid synchronous setState inside render/effect phase
+            const timer = setTimeout(() => {
+                setIsVisible(false);
+            }, 0);
+            return () => clearTimeout(timer);
         }
 
         // Mark as shown
@@ -56,7 +59,7 @@ export default function SplashScreen() {
             clearTimeout(fadeTimer);
             clearTimeout(removeTimer);
         };
-    }, [isVisible]);
+    }, []); // Only run once on mount to avoid dependency loop and state updates during updates
 
     if (!isVisible) return null;
 

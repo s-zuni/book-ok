@@ -41,21 +41,23 @@ export async function GET(request: NextRequest) {
                     hasBook: result.hasBook || 'N',
                     loanAvailable: result.loanAvailable || 'N'
                 };
-            } catch (err: any) {
+            } catch (err) {
+                const errMsg = err instanceof Error ? err.message : String(err);
                 console.error(`Error checking library ${libCode}:`, err);
                 return {
                     libCode,
                     hasBook: 'N',
                     loanAvailable: 'N',
-                    error: err.message
+                    error: errMsg
                 };
             }
         });
 
         const results = await Promise.all(fetchPromises);
         return NextResponse.json({ results });
-    } catch (error: any) {
+    } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
         console.error('Error fetching book status:', error);
-        return NextResponse.json({ error: '도서 소장 정보 조회 중 오류가 발생했습니다.', details: error.message }, { status: 500 });
+        return NextResponse.json({ error: '도서 소장 정보 조회 중 오류가 발생했습니다.', details: errMsg }, { status: 500 });
     }
 }

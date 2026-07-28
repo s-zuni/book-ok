@@ -7,7 +7,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { Child, Profile } from "@shared/types";
 import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, PluginListenerHandle } from "@capacitor/core";
 
 interface AuthContextType {
     user: User | null;
@@ -391,7 +391,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         });
 
         // Listen for deep link events on native platform
-        let deepLinkSub: any = null;
+        let deepLinkSub: Promise<PluginListenerHandle> | null = null;
         if (Capacitor.isNativePlatform()) {
             const handleDeepLink = async (event: { url: string }) => {
                 console.log("App opened with URL:", event.url);
@@ -454,7 +454,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         return () => {
             authListener.subscription.unsubscribe();
             if (deepLinkSub) {
-                deepLinkSub.then((s: any) => s.remove());
+                deepLinkSub.then((s) => s.remove());
             }
         };
     }, [syncUserData, router]);

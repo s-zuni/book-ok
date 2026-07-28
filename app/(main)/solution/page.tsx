@@ -10,34 +10,69 @@ import ReadingAnalysis from "@widgets/solution/ReadingAnalysis";
 import AISolution from "@widgets/solution/AISolution";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
-import { Child, Book } from "@shared/types";
+import { Child, Book, MainMenu } from "@shared/types";
 import { Star, Send, Sparkles } from "lucide-react";
 import Image from "next/image";
+import OptimizedImage from "@shared/ui/OptimizedImage";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 
 
 
+interface RecommendedBook {
+    id?: string;
+    bookid?: string;
+    title: string;
+    author: string;
+    publisher: string;
+    rating: number;
+    reviewsCount: number;
+    coverUrl: string;
+}
+
+interface SupabaseReadBook {
+    book_id: string;
+    read_date: string;
+    observation_data: Record<string, string> | null;
+    books: Book | Book[] | null;
+}
+
+interface AladinRecommendItem {
+    isbn13?: string;
+    itemId?: string;
+    title: string;
+    author: string;
+    publisher: string;
+    customerRating?: number;
+    salesPoint?: number;
+    cover: string;
+    pubDate?: string;
+}
+
+interface BookWithObservation extends Book {
+    _observation?: Record<string, string> | null;
+}
+
 export default function SolutionPage() {
     const { openLoginModal } = useLoginModal();
-    const [activeMenu, setActiveMenu] = useState<any>('solution');
+    const [activeMenu, setActiveMenu] = useState<MainMenu>('solution');
     const [activeSubMenu, setActiveSubMenu] = useState('우리 아이 독서 성향 AI 분석');
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
     // Mobile specific states
     const [mobileTab, setMobileTab] = useState<'analysis' | 'solution'>('analysis');
-    const [analysisBooks, setAnalysisBooks] = useState<any[]>([]);
-    const [mobileSolutionHistory, setMobileSolutionHistory] = useState<{ role: 'user' | 'assistant', content: string, books?: any[] }[]>([]);
+    const [analysisBooks, setAnalysisBooks] = useState<RecommendedBook[]>([]);
+    const [mobileSolutionHistory, setMobileSolutionHistory] = useState<{ role: 'user' | 'assistant', content: string, books?: RecommendedBook[] }[]>([]);
     const [mobileInput, setMobileInput] = useState('');
     const [mobileLoading, setMobileLoading] = useState(false);
 
     // States for Reading Analysis
-    const [userReadBooks, setUserReadBooks] = useState<Book[]>([]);
+    const [userReadBooks, setUserReadBooks] = useState<BookWithObservation[]>([]);
     const [readingAnalysisResult, setReadingAnalysisResult] = useState('');
     const [readingAnalysisLoading, setReadingAnalysisLoading] = useState(false);
 
     // Helper to fetch and format book details from Aladin API
-    const fetchAladinBook = async (title: string): Promise<any> => {
+    const fetchAladinBook = async (title: string): Promise<RecommendedBook | null> => {
         try {
             const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`));
             if (!res.ok) return null;
@@ -67,7 +102,7 @@ export default function SolutionPage() {
                 "왜 먼저 물어보지 않니?"
             ];
             
-            const loaded: any[] = [];
+            const loaded: RecommendedBook[] = [];
             for (const title of bookTitles) {
                 const book = await fetchAladinBook(title);
                 if (book) loaded.push(book);
@@ -82,7 +117,7 @@ export default function SolutionPage() {
     const [prevMonthDiffText, setPrevMonthDiffText] = useState("지난달과 동일");
     const [totalReadCount, setTotalReadCount] = useState(0);
     const [readingKingLevelText, setReadingKingLevelText] = useState("독서 초보 Lv.1");
-    const [preferredGenres, setPreferredGenres] = useState<any[]>([]);
+    const [preferredGenres, setPreferredGenres] = useState<Array<{ label: string, pct: string, pctNum: number, dot: string, color: string }>>([]);
     const [monthlyVolumes, setMonthlyVolumes] = useState<{ label: string; count: number; y: number; height: number }[]>([]);
     const [maxVolumeVal, setMaxVolumeVal] = useState(1);
     
@@ -128,7 +163,7 @@ export default function SolutionPage() {
             if (res.ok) {
                 const data = await res.json();
                 const items = data.item?.slice(0, 5) || [];
-                const parsed = items.map((item: any) => ({
+                const parsed = items.map((item: AladinRecommendItem) => ({
                     id: item.itemId,
                     bookid: item.itemId,
                     title: item.title.split(" - ")[0],
@@ -199,12 +234,12 @@ export default function SolutionPage() {
             }
 
             // Fetch matching recommendation books from Aladin
-            let parsedBooks: any[] = [];
+            let parsedBooks: RecommendedBook[] = [];
             const searchRes = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`));
             if (searchRes.ok) {
                 const searchData = await searchRes.json();
                 const items = searchData.item?.slice(0, 3) || [];
-                parsedBooks = items.map((item: any) => ({
+                parsedBooks = items.map((item: AladinRecommendItem) => ({
                     title: item.title.split(" - ")[0],
                     author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                     publisher: item.publisher,
@@ -229,7 +264,7 @@ export default function SolutionPage() {
     };
 
     // Fetch AI Coach recommendation category based on actual books
-    const fetchAICoachRecommendation = async (books: Book[]) => {
+    const fetchAICoachRecommendation = async (books: BookWithObservation[]) => {
         if (!books || books.length === 0) {
             // Default based on age if no books
             const age = activeChild?.age || 0;
@@ -328,27 +363,32 @@ export default function SolutionPage() {
 
         if (readBooksData) {
             // Map books and attach their specific observation
-            const booksWithObs = readBooksData.map((r: any) => ({
-                ...r.books,
-                _observation: r.observation_data // Store internally for analysis
-            })).filter((b: any) => b && b.id); // Filter invalid
+            const booksWithObs = readBooksData.map((r: SupabaseReadBook) => {
+                const bookData = Array.isArray(r.books) ? r.books[0] : r.books;
+                if (!bookData) return null;
+                const mapped: BookWithObservation = {
+                    ...bookData,
+                    _observation: r.observation_data
+                };
+                return mapped;
+            }).filter((b) => b !== null) as BookWithObservation[];
 
             // Deduplicate (Keep most recent if duplicate)
-            const uniqueBooks = Array.from(new Map(booksWithObs.map((b: any) => [b.id, b])).values());
-            setUserReadBooks(uniqueBooks as Book[]);
+            const uniqueBooks = Array.from(new Map(booksWithObs.map((b) => [b.id, b])).values());
+            setUserReadBooks(uniqueBooks);
 
             // 1. Calculate Monthly read count
             const now = new Date();
             const currentYear = now.getFullYear();
             const currentMonth = now.getMonth();
 
-            const thisMonthBooks = readBooksData.filter((r: any) => {
+            const thisMonthBooks = readBooksData.map((r: SupabaseReadBook) => r).filter((r: SupabaseReadBook) => {
                 if (!r.read_date) return false;
                 const d = new Date(r.read_date);
                 return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
             });
 
-            const lastMonthBooks = readBooksData.filter((r: any) => {
+            const lastMonthBooks = readBooksData.map((r: SupabaseReadBook) => r).filter((r: SupabaseReadBook) => {
                 if (!r.read_date) return false;
                 const d = new Date(r.read_date);
                 let targetYear = currentYear;
@@ -385,9 +425,10 @@ export default function SolutionPage() {
 
             // 3. Preferred Genres calculation
             const genreCounts: Record<string, number> = {};
-            readBooksData.forEach((r: any) => {
-                if (r.books) {
-                    const genre = mapCategoryToGenre(r.books.category);
+            readBooksData.forEach((r: SupabaseReadBook) => {
+                const bookData = Array.isArray(r.books) ? r.books[0] : r.books;
+                if (bookData) {
+                    const genre = mapCategoryToGenre(bookData.category);
                     genreCounts[genre] = (genreCounts[genre] || 0) + 1;
                 }
             });
@@ -439,7 +480,7 @@ export default function SolutionPage() {
             };
 
             const monthsData = getRecent6Months();
-            readBooksData.forEach((r: any) => {
+            readBooksData.forEach((r: SupabaseReadBook) => {
                 if (!r.read_date) return;
                 const d = new Date(r.read_date);
                 const y = d.getFullYear();
@@ -465,7 +506,7 @@ export default function SolutionPage() {
             setMonthlyVolumes(calculatedVolumes);
 
             // 5. Query LLM for Coach recommendation
-            fetchAICoachRecommendation(uniqueBooks as Book[]);
+            fetchAICoachRecommendation(uniqueBooks);
 
             // 6. Load initial books based on child's top preferred genre
             const topGenre = sortedGenres.length > 0 ? sortedGenres[0].label : "그림책";
@@ -485,7 +526,7 @@ export default function SolutionPage() {
     const [chartData, setChartData] = useState<{ subject: string; A: number; fullMark: number; }[]>([]);
     const [aiKeywords, setAiKeywords] = useState<string[]>([]);
 
-    const getReadingAnalysis = async (observations?: any) => {
+    const getReadingAnalysis = async (observations?: Record<string, string>) => {
         if (userReadBooks.length === 0) return;
         setReadingAnalysisLoading(true);
         setReadingAnalysisResult('');
@@ -496,7 +537,7 @@ export default function SolutionPage() {
             // STEP 1: Enrich Book Data (Phase 2 - Data Enrichment)
             // Fetch details for up to 5 most recent books to avoid API overload/timeout
             const recentBooks = userReadBooks.slice(0, 5);
-            const enrichedBooks = await Promise.all(recentBooks.map(async (book) => {
+            const enrichedBooks = await Promise.all(recentBooks.map(async (book: BookWithObservation) => {
                 try {
                     // Assuming book.bookid is the ISBN13 or ItemId
                     const res = await fetch(apiUrl(`/api/book-detail?itemId=${book.bookid}`));
@@ -509,7 +550,7 @@ export default function SolutionPage() {
                 }
             }));
 
-            const bookListText = enrichedBooks.map((book: any) => {
+            const bookListText = enrichedBooks.map((book: BookWithObservation) => {
                 let info = `- 제목: **${book.title}** (저자: ${book.author})`;
 
                 // Add Historical Observation if exists (Phase 3)
@@ -977,7 +1018,7 @@ export default function SolutionPage() {
                                 <div className="flex-1">
                                     <div className="text-[10px] font-black text-[#16A34A] tracking-wider leading-none uppercase">AI 독서코치</div>
                                     <div className="text-[13px] font-bold text-gray-800 mt-1 block tracking-tight">
-                                        "{aiCoachCategory}" 분야를 시도해보면 어떨까요? (클릭 시 추천도서 탐색)
+                                        &quot;{aiCoachCategory}&quot; 분야를 시도해보면 어떨까요? (클릭 시 추천도서 탐색)
                                     </div>
                                     <div className="text-[11px] text-gray-400 mt-0.5">{aiCoachMent}</div>
                                 </div>
@@ -1020,7 +1061,7 @@ export default function SolutionPage() {
                                                 className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
                                             >
                                                 <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
-                                                    <Image src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" />
+                                                    <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
                                                 </div>
                                                 <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                                 <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
@@ -1089,7 +1130,7 @@ export default function SolutionPage() {
                                                             className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-95 transition-transform"
                                                         >
                                                             <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
-                                                                <Image src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" />
+                                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
                                                             </div>
                                                             <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                                             <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>

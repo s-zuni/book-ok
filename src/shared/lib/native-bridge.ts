@@ -17,9 +17,9 @@ export type NativeMessageType =
   | 'CLOSE_APP'       // 앱 종료 (안드로이드 전용)
   | 'CONSOLE_LOG';    // 앱 터미널에 로그 남기기
 
-interface NativeMessage {
+export interface NativeMessage {
   type: NativeMessageType;
-  data?: any;
+  data?: unknown;
 }
 
 // --- Global Declaration ---
@@ -55,7 +55,7 @@ export const getNativePlatform = () => {
 /**
  * 앱으로 메시지를 전송합니다.
  */
-export const sendToNative = (type: NativeMessageType, data?: any) => {
+export const sendToNative = (type: NativeMessageType, data?: unknown) => {
   if (typeof window === 'undefined') return;
   if (process.env.NODE_ENV === 'development') {
     console.log(`[NativeBridge] Event: ${type}`, data);
@@ -72,9 +72,11 @@ export const useNativeBridge = () => {
   const [platform, setPlatform] = useState<'ios' | 'android' | undefined>(undefined);
 
   useEffect(() => {
-    const nativeApp = isNativeApp();
-    setIsApp(nativeApp);
-    setPlatform(getNativePlatform());
+    const timer = setTimeout(() => {
+      setIsApp(isNativeApp());
+      setPlatform(getNativePlatform());
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   /**

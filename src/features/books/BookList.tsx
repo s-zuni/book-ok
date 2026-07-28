@@ -1,5 +1,5 @@
-﻿import { Book } from "@shared/types";
-import Image from "next/image";
+import { Book } from "@shared/types";
+import OptimizedImage from "@shared/ui/OptimizedImage";
 import { Printer, XCircle, RefreshCw, ShoppingBag } from "lucide-react";
 
 interface BookListProps {
@@ -25,12 +25,13 @@ export default function BookList({ books, onSelectBook }: BookListProps) {
                                 {book.category.substring(0, 2)}
                             </div>
                         )}
-                        <Image
-                            src={book.imgsrc && book.imgsrc.startsWith('http') ? book.imgsrc : '/file.svg'}
+                        <OptimizedImage
+                            src={book.imgsrc}
                             alt={book.title}
                             fill
                             className="object-cover hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 768px) 96px, 160px"
+                            sizePreset="card"
                         />
                     </div>
 

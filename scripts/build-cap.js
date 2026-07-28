@@ -32,6 +32,13 @@ try {
         }
     }
 
+    // Clean .next cache to prevent stale type validator references
+    const nextDir = path.join(__dirname, '../.next');
+    if (fs.existsSync(nextDir)) {
+        console.log('Cleaning .next cache...');
+        fs.rmSync(nextDir, { recursive: true, force: true });
+    }
+
     console.log('Running next build for Capacitor...');
     execSync('npx cross-env NEXT_DISABLE_TURBOPACK=1 BUILD_TARGET=capacitor next build', { stdio: 'inherit' });
     console.log('Next build completed successfully!');

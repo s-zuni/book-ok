@@ -6,7 +6,7 @@ import { ChevronLeft, Send, Sparkles, Star } from "lucide-react";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from "marked";
-import Image from "next/image";
+import OptimizedImage from "@shared/ui/OptimizedImage";
 import { supabase } from "@shared/lib/supabase";
 import { Book } from "@shared/types";
 import { apiUrl } from "@shared/lib/api";
@@ -184,7 +184,7 @@ export default function ChatPage() {
             const botMessage = data.result;
             let content = botMessage.content;
             
-            let loadedBooks: Book[] = [];
+            const loadedBooks: Book[] = [];
             const match = content.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
             if (match) {
                 const titles = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
@@ -284,13 +284,14 @@ export default function ChatPage() {
                                                 className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] w-[160px] shrink-0 hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer hover:border-[#16A34A]/30 hover:-translate-y-1 transform"
                                             >
                                                 <div className="relative w-full h-[190px] rounded-[16px] overflow-hidden mb-3.5 border border-gray-100">
-                                                    <Image
-                                                        src={book.coverUrl || book.imgsrc || '/og-default.png'}
+                                                    <OptimizedImage
+                                                        src={book.coverUrl || book.imgsrc}
                                                         alt={book.title}
                                                         fill
                                                         className="object-cover"
                                                         sizes="160px"
-                                                        priority
+                                                        sizePreset="thumbnail"
+                                                        fallbackSrc="/og-default.png"
                                                     />
                                                 </div>
                                                 <h4 className="font-extrabold text-[13px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>

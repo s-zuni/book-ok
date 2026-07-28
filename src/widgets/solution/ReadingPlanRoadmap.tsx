@@ -26,9 +26,15 @@ interface ReadingPlan {
     improvementAreas: string[];
 }
 
+interface ExtendedBook extends Book {
+    rating?: number;
+    difficulty_rating?: string;
+    read_date?: string;
+}
+
 interface ReadingPlanRoadmapProps {
     child: Child | null;
-    readBooks: Book[];
+    readBooks: ExtendedBook[];
     keywords?: string[];
     missingGenres?: string[];
     analysisResult?: string;
@@ -65,9 +71,9 @@ export default function ReadingPlanRoadmap({
                     readBooks: readBooks.map(book => ({
                         title: book.title,
                         category: book.category,
-                        rating: (book as any).rating,
-                        difficulty: (book as any).difficulty_rating,
-                        readDate: (book as any).read_date || new Date().toISOString()
+                        rating: book.rating,
+                        difficulty: book.difficulty_rating,
+                        readDate: book.read_date || new Date().toISOString()
                     })),
                     analysisResult,
                     keywords,
@@ -82,8 +88,8 @@ export default function ReadingPlanRoadmap({
             } else {
                 setError(data.error || '계획 생성에 실패했습니다.');
             }
-        } catch (err: any) {
-            setError(err.message || '네트워크 오류가 발생했습니다.');
+        } catch (err) {
+            setError(err instanceof Error ? err.message : '네트워크 오류가 발생했습니다.');
         } finally {
             setLoading(false);
         }

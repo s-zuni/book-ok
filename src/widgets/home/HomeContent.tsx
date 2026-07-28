@@ -11,9 +11,33 @@ import RecommendationSection from "@features/books/RecommendationSection";
 import { ChevronLeft, ChevronRight, Bell, Search, Star, BookOpen, X, Check, Award } from "lucide-react";
 import MainPopup from "@shared/ui/MainPopup";
 import Image from "next/image";
+import OptimizedImage from "@shared/ui/OptimizedImage";
 import { toast } from "sonner";
 import { supabase } from "@shared/lib/supabase";
 import { apiUrl } from "@shared/lib/api";
+
+interface AladinRecommendItem {
+    isbn13?: string;
+    itemId?: string;
+    title: string;
+    author: string;
+    publisher: string;
+    customerRating?: number;
+    salesPoint?: number;
+    cover: string;
+    pubDate?: string;
+}
+
+interface FormattedRecommendBook {
+    id: string;
+    title: string;
+    author: string;
+    publisher: string;
+    rating: number;
+    reviewsCount: number;
+    coverUrl: string;
+}
+
 
 // Premium Icon Wrappers to match the new design system
 const CustomIcon = ({ children, colorClass }: { children: React.ReactNode, colorClass: string }) => (
@@ -66,8 +90,8 @@ export default function HomeContent() {
     const router = useRouter();
 
     // Mobile specific states for Aladin books
-    const [librarianBooks, setLibrarianBooks] = useState<any[]>([]);
-    const [awardBooks, setAwardBooks] = useState<any[]>([]);
+    const [librarianBooks, setLibrarianBooks] = useState<FormattedRecommendBook[]>([]);
+    const [awardBooks, setAwardBooks] = useState<FormattedRecommendBook[]>([]);
     const [librarianLoading, setLibrarianLoading] = useState(false);
     const [awardLoading, setAwardLoading] = useState(false);
     const [librarianSort, setLibrarianSort] = useState<'latest' | 'popular'>('popular');
@@ -169,7 +193,7 @@ export default function HomeContent() {
 
                 let streak = 0;
                 if (readToday || readYesterday) {
-                    let expectedDate = new Date();
+                    const expectedDate = new Date();
                     if (!readToday) {
                         expectedDate.setDate(expectedDate.getDate() - 1);
                     }
@@ -196,7 +220,7 @@ export default function HomeContent() {
                 if (readToday) {
                     const todayRecord = data.find(r => getLocalDateString(new Date(r.read_date)) === todayStr);
                     if (todayRecord && todayRecord.observation_data) {
-                        const obs = todayRecord.observation_data as any;
+                        const obs = todayRecord.observation_data;
                         setChallengeBookTitle(obs.book_title || "오늘 읽은 책");
                         setChallengeReview(obs.review || "독서 기록이 완료되었습니다.");
                     } else {
@@ -237,7 +261,7 @@ export default function HomeContent() {
                     const items = data.item || [];
                     
                     // Client-side sort to support popular vs latest
-                    const sortedItems = [...items].sort((a: any, b: any) => {
+                    const sortedItems = [...items].sort((a: AladinRecommendItem, b: AladinRecommendItem) => {
                         if (librarianSort === 'popular') {
                             return (b.salesPoint || 0) - (a.salesPoint || 0);
                         } else {
@@ -248,8 +272,8 @@ export default function HomeContent() {
                     });
 
                     const sliced = sortedItems.slice(0, 8);
-                    const formatted = sliced.map((item: any) => ({
-                        id: item.isbn13 || item.itemId,
+                    const formatted = sliced.map((item: AladinRecommendItem) => ({
+                        id: item.isbn13 || item.itemId || '',
                         title: item.title.split(" - ")[0],
                         author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                         publisher: item.publisher,
@@ -277,9 +301,9 @@ export default function HomeContent() {
                 const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("문학상")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
                 if (res.ok) {
                     const data = await res.json();
-                    const items = data.item?.slice(0, 8) || [];
-                    const formatted = items.map((item: any) => ({
-                        id: item.isbn13 || item.itemId,
+                    const items: AladinRecommendItem[] = data.item?.slice(0, 8) || [];
+                    const formatted = items.map((item: AladinRecommendItem) => ({
+                        id: item.isbn13 || item.itemId || '',
                         title: item.title.split(" - ")[0],
                         author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                         publisher: item.publisher,
@@ -667,7 +691,7 @@ export default function HomeContent() {
                                     librarianBooks.map((book, idx) => (
                                         <div key={idx} onClick={() => router.push(`/book/${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
                                             <div className="relative w-full h-[145px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
-                                                <Image src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" />
+                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
                                             </div>
                                             <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                             <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
@@ -727,7 +751,7 @@ export default function HomeContent() {
                                     awardBooks.map((book, idx) => (
                                         <div key={idx} onClick={() => router.push(`/book/${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
                                             <div className="relative w-full h-[145px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
-                                                <Image src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" />
+                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
                                             </div>
                                             <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                             <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
@@ -902,7 +926,7 @@ export default function HomeContent() {
                                 </h4>
                                 <p className="text-[11px] text-green-700 font-bold leading-relaxed">
                                     📖 <strong>{challengeBookTitle}</strong><br/>
-                                    💬 "{challengeReview}"
+                                    💬 &quot;{challengeReview}&quot;
                                 </p>
                             </div>
                         )}
@@ -913,7 +937,7 @@ export default function HomeContent() {
                                 <div className="text-xl">🎉</div>
                                 <h4 className="text-xs font-black text-amber-900 mt-1">축하합니다!</h4>
                                 <p className="text-[10px] text-amber-700 font-bold mt-0.5">
-                                    7일 연속 독서 달성으로 <strong>'독서왕'</strong> 뱃지를 잠금 해제했습니다!
+                                    7일 연속 독서 달성으로 <strong>&apos;독서왕&apos;</strong> 뱃지를 잠금 해제했습니다!
                                 </p>
                             </div>
                         ) : null}

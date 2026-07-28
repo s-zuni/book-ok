@@ -39,8 +39,9 @@ export default function MyPage() {
             await refreshProfile();
             setIsEditingNickname(false);
             toast.success("닉네임이 변경되었습니다.");
-        } catch (error: any) {
-            toast.error("닉네임 변경 실패: " + error.message);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
+            toast.error("닉네임 변경 실패: " + errorMessage);
         } finally {
             setIsSavingNickname(false);
         }
@@ -80,7 +81,7 @@ export default function MyPage() {
                 if (!res.ok) throw new Error("도서관 검색 실패");
                 const data = await res.json();
                 setFoundLibraries(data.libraries || []);
-            } catch (err: any) {
+            } catch (err) {
                 console.error(err);
                 toast.error("도서관 목록을 불러오지 못했습니다.");
             } finally {
@@ -131,9 +132,10 @@ export default function MyPage() {
             setSelectedRegion("");
             setSelectedSubRegion("");
             setFoundLibraries([]);
-        } catch (err: any) {
+        } catch (err) {
             console.error("Supabase update error:", err);
-            toast.error("도서관 등록 실패: " + err.message);
+            const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
+            toast.error("도서관 등록 실패: " + errorMessage);
         } finally {
             setIsSavingLibrary(false);
         }
@@ -154,9 +156,10 @@ export default function MyPage() {
             if (error) throw error;
             await refreshProfile();
             toast.success("도서관이 삭제되었습니다.");
-        } catch (err: any) {
+        } catch (err) {
             console.error("Supabase delete error:", err);
-            toast.error("도서관 삭제 실패: " + err.message);
+            const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
+            toast.error("도서관 삭제 실패: " + errorMessage);
         }
     };
 
@@ -200,9 +203,10 @@ export default function MyPage() {
 
             setReadBookCount(count || 0);
             if (data) setReadBooks(data);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error fetching read books:", error);
-            toast.error("읽은 책 목록을 불러오는데 실패했습니다: " + error.message);
+            const errorMessage = error instanceof Error ? error.message : "알 수 없는 오류";
+            toast.error("읽은 책 목록을 불러오는데 실패했습니다: " + errorMessage);
             setReadBookCount(0);
             setReadBooks([]);
         } finally {
@@ -270,8 +274,9 @@ export default function MyPage() {
                     setActiveChild({ ...data, age });
                 }
             }
-        } catch (err: any) {
-            toast.error("오류가 발생했습니다: " + err.message);
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
+            toast.error("오류가 발생했습니다: " + errorMessage);
         } finally {
             setIsLoading(false);
         }

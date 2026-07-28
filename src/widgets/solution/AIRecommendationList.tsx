@@ -95,12 +95,23 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
                     apiUrl(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=1108&sort=SalesPoint`)
                 );
 
+interface AladinItem {
+    isbn13?: string;
+    isbn?: string;
+    title: string;
+    author: string;
+    cover: string;
+    categoryName: string;
+    pubDate: string;
+    description: string;
+}
+
                 if (preferredRes.ok) {
                     const data = await preferredRes.json();
                     if (data.item) {
-                        const mapped: Book[] = data.item.map((item: any) => ({
-                            id: item.isbn13 || item.isbn,
-                            bookid: item.isbn13 || item.isbn,
+                        const mapped: Book[] = data.item.map((item: AladinItem) => ({
+                            id: item.isbn13 || item.isbn || '',
+                            bookid: item.isbn13 || item.isbn || '',
                             title: item.title,
                             author: item.author,
                             imgsrc: item.cover,
@@ -128,9 +139,9 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
                         if (balancedRes.ok) {
                             const data = await balancedRes.json();
                             if (data.item) {
-                                const mapped: Book[] = data.item.slice(0, 2).map((item: any) => ({
-                                    id: item.isbn13 || item.isbn,
-                                    bookid: item.isbn13 || item.isbn,
+                                const mapped: Book[] = data.item.slice(0, 2).map((item: AladinItem) => ({
+                                    id: item.isbn13 || item.isbn || '',
+                                    bookid: item.isbn13 || item.isbn || '',
                                     title: item.title,
                                     author: item.author,
                                     imgsrc: item.cover,

@@ -17,15 +17,15 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-bold text-[#2E5A44] mb-4">제 1 조 (목적)</h2>
             <p className="text-gray-600 leading-relaxed">
-              본 약관은 '북콕'(이하 '회사')이 제공하는 독서 분석 및 추천 서비스(이하 '서비스')의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+              본 약관은 &apos;북콕&apos;(이하 &apos;회사&apos;)이 제공하는 독서 분석 및 추천 서비스(이하 &apos;서비스&apos;)의 이용과 관련하여 회사와 회원 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-[#2E5A44] mb-4">제 2 조 (용어의 정의)</h2>
             <ul className="list-disc pl-5 mt-4 space-y-2 text-gray-600">
-              <li>'회원'이라 함은 소셜 계정 연동을 통해 서비스에 가입하여 본 약관에 동의한 사용자를 말합니다.</li>
-              <li>'분석 리포트'라 함은 AI 기술을 활용하여 사용자의 독서 데이터를 분석한 결과물을 말합니다.</li>
+              <li>&apos;회원&apos;이라 함은 소셜 계정 연동을 통해 서비스에 가입하여 본 약관에 동의한 사용자를 말합니다.</li>
+              <li>&apos;분석 리포트&apos;라 함은 AI 기술을 활용하여 사용자의 독서 데이터를 분석한 결과물을 말합니다.</li>
             </ul>
           </section>
 

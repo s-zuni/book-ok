@@ -32,19 +32,20 @@ export async function GET(request: NextRequest) {
         const data = await response.json();
         
         // Extract libraries
-        const libsData = data.response?.libs || [];
-        const libraries = libsData.map((item: any) => {
-            const lib = item.doc || item.lib || {}; // Handle both potential wrapper structures
+        const libsData = (data.response?.libs || []) as Record<string, unknown>[];
+        const libraries = libsData.map((item) => {
+            const lib = (item.doc || item.lib || {}) as Record<string, unknown>;
             return {
                 libCode: String(lib.libCode || ''),
                 libName: String(lib.libName || ''),
                 address: String(lib.address || '')
             };
-        }).filter((lib: any) => lib.libCode && lib.libName);
+        }).filter((lib) => lib.libCode && lib.libName);
 
         return NextResponse.json({ libraries });
-    } catch (error: any) {
+    } catch (error) {
+        const errMsg = error instanceof Error ? error.message : String(error);
         console.error('Error fetching libraries:', error);
-        return NextResponse.json({ error: '도서관 목록을 불러오는 중 오류가 발생했습니다.', details: error.message }, { status: 500 });
+        return NextResponse.json({ error: '도서관 목록을 불러오는 중 오류가 발생했습니다.', details: errMsg }, { status: 500 });
     }
 }

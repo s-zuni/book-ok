@@ -19,6 +19,19 @@ import AdminStatistics from "@widgets/admin/AdminStatistics";
 
 type AdminTab = 'dashboard' | 'statistics' | 'community' | 'popups' | 'users' | 'books' | 'reports';
 
+interface AdminStats {
+    totalUsers: number;
+    totalPosts: number;
+    todaySignups: number;
+}
+
+interface ReportWithProfile extends Omit<Report, 'profiles'> {
+    profiles?: {
+        nickname: string;
+        email: string;
+    } | null;
+}
+
 export default function AdminPage() {
     const { user, userProfile, loading, isInitialized, signOut } = useAuth();
     const { openLoginModal } = useLoginModal();
@@ -41,7 +54,7 @@ export default function AdminPage() {
     const [reportFilter, setReportFilter] = useState<'all' | 'pending' | 'resolved' | 'rejected'>('all');
 
     // Stats states
-    const [stats, setStats] = useState<any>(null);
+    const [stats, setStats] = useState<AdminStats | null>(null);
 
     // Form states for Popups
     const [isPopupModalOpen, setIsPopupModalOpen] = useState(false);
@@ -68,20 +81,6 @@ export default function AdminPage() {
     // Replying report state
     const [replyingReportId, setReplyingReportId] = useState<string | null>(null);
     const [replyContent, setReplyContent] = useState('');
-
-    useEffect(() => {
-        if (userProfile?.is_admin) {
-            if (activeTab === 'community') {
-                if (communitySubTab === 'posts') fetchPosts();
-                else fetchComments();
-            }
-            if (activeTab === 'popups') fetchPopups();
-            if (activeTab === 'dashboard' || activeTab === 'statistics') fetchStats();
-            if (activeTab === 'users') fetchUsers();
-            if (activeTab === 'books') fetchBooks();
-            if (activeTab === 'reports') fetchReports();
-        }
-    }, [activeTab, communitySubTab, userProfile]);
 
     const fetchStats = async () => {
         // We will implement the RPC next, for now use a temporary query
@@ -112,6 +111,104 @@ export default function AdminPage() {
         }
         setIsDataLoading(false);
     };
+
+    const fetchBooks = async () => {
+        setIsDataLoading(true);
+        const { data, error } = await supabase
+            .from('books')
+            .select('*')
+            .order('title', { ascending: true });
+        
+        if (error) {
+            toast.error('도서 목록을 불러오지 못했습니다: ' + error.message);
+        } else {
+            setBooks(data || []);
+        }
+        setIsDataLoading(false);
+    };
+
+    const fetchReports = async () => {
+        setIsDataLoading(true);
+        const { data, error } = await supabase
+            .from('reports')
+            .select(`
+                *,
+                profiles (
+                    nickname,
+                    email
+                )
+            `)
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            toast.error('신고/문의 내역을 불러오지 못했습니다: ' + error.message);
+        } else {
+            const mappedData = (data || []).map((item: ReportWithProfile) => ({
+                ...item,
+                profiles: item.profiles ? {
+                    nickname: item.profiles.nickname,
+                    email: item.profiles.email
+                } : undefined
+            }));
+            setReports(mappedData);
+        }
+        setIsDataLoading(false);
+    };
+
+    const fetchPosts = async () => {
+        setIsDataLoading(true);
+        const { data, error } = await supabase
+            .from('posts')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) toast.error('게시글을 불러오지 못했습니다.');
+        else setPosts(data || []);
+        setIsDataLoading(false);
+    };
+
+    const fetchComments = async () => {
+        setIsDataLoading(true);
+        const { data, error } = await supabase
+            .from('comments')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) toast.error('댓글을 불러오지 못했습니다.');
+        else setComments(data || []);
+        setIsDataLoading(false);
+    };
+
+    const fetchPopups = async () => {
+        setIsDataLoading(true);
+        const { data, error } = await supabase
+            .from('popups')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) toast.error('팝업 목록을 불러오지 못했습니다.');
+        else setPopups(data || []);
+        setIsDataLoading(false);
+    };
+
+    useEffect(() => {
+        if (userProfile?.is_admin) {
+            const loadData = async () => {
+                if (activeTab === 'community') {
+                    if (communitySubTab === 'posts') await fetchPosts();
+                    else await fetchComments();
+                }
+                if (activeTab === 'popups') await fetchPopups();
+                if (activeTab === 'dashboard' || activeTab === 'statistics') await fetchStats();
+                if (activeTab === 'users') await fetchUsers();
+                if (activeTab === 'books') await fetchBooks();
+                if (activeTab === 'reports') await fetchReports();
+            };
+            loadData();
+        }
+    }, [activeTab, communitySubTab, userProfile]);
+
+
 
     const toggleAdminStatus = async (userId: string, currentStatus: boolean) => {
         const { error } = await supabase
@@ -155,20 +252,7 @@ export default function AdminPage() {
         }
     };
 
-    const fetchBooks = async () => {
-        setIsDataLoading(true);
-        const { data, error } = await supabase
-            .from('books')
-            .select('*')
-            .order('title', { ascending: true });
-        
-        if (error) {
-            toast.error('도서 목록을 불러오지 못했습니다: ' + error.message);
-        } else {
-            setBooks(data || []);
-        }
-        setIsDataLoading(false);
-    };
+
 
     const handleCreateBook = async () => {
         if (!newBook.title || !newBook.author || !newBook.bookid) {
@@ -213,33 +297,7 @@ export default function AdminPage() {
         }
     };
 
-    const fetchReports = async () => {
-        setIsDataLoading(true);
-        const { data, error } = await supabase
-            .from('reports')
-            .select(`
-                *,
-                profiles (
-                    nickname,
-                    email
-                )
-            `)
-            .order('created_at', { ascending: false });
-        
-        if (error) {
-            toast.error('신고/문의 내역을 불러오지 못했습니다: ' + error.message);
-        } else {
-            const mappedData = (data || []).map((item: any) => ({
-                ...item,
-                profiles: item.profiles ? {
-                    nickname: item.profiles.nickname,
-                    email: item.profiles.email
-                } : undefined
-            }));
-            setReports(mappedData);
-        }
-        setIsDataLoading(false);
-    };
+
 
     const handleResolveReport = async (reportId: string, reply: string) => {
         if (!reply.trim()) return toast.error('답변 내용을 입력해주세요.');
@@ -282,41 +340,7 @@ export default function AdminPage() {
         }
     };
 
-    const fetchPosts = async () => {
-        setIsDataLoading(true);
-        const { data, error } = await supabase
-            .from('posts')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error) toast.error('게시글을 불러오지 못했습니다.');
-        else setPosts(data || []);
-        setIsDataLoading(false);
-    };
 
-    const fetchComments = async () => {
-        setIsDataLoading(true);
-        const { data, error } = await supabase
-            .from('comments')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error) toast.error('댓글을 불러오지 못했습니다.');
-        else setComments(data || []);
-        setIsDataLoading(false);
-    };
-
-    const fetchPopups = async () => {
-        setIsDataLoading(true);
-        const { data, error } = await supabase
-            .from('popups')
-            .select('*')
-            .order('created_at', { ascending: false });
-        
-        if (error) toast.error('팝업 목록을 불러오지 못했습니다.');
-        else setPopups(data || []);
-        setIsDataLoading(false);
-    };
 
     const toggleNotice = async (postId: number, currentStatus: boolean) => {
         const { error } = await supabase
@@ -773,15 +797,15 @@ export default function AdminPage() {
                                         <p className="text-gray-500 font-medium">사용자들이 접수한 서비스 문의 및 게시글/댓글 신고 내역입니다.</p>
                                     </div>
                                     <div className="flex bg-gray-100 p-1 rounded-xl">
-                                        {[
+                                                                        {([
                                             { id: 'all', label: '전체' },
                                             { id: 'pending', label: '대기중' },
                                             { id: 'resolved', label: '해결완료' },
                                             { id: 'rejected', label: '반려됨' }
-                                        ].map((t) => (
+                                        ] as const).map((t) => (
                                             <button
                                                 key={t.id}
-                                                onClick={() => setReportFilter(t.id as any)}
+                                                onClick={() => setReportFilter(t.id)}
                                                 className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${reportFilter === t.id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                                             >
                                                 {t.label}

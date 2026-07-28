@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Book, Child } from "@shared/types";
+import { Book, Child, MainMenu } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import BookList from "@features/books/BookList";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -25,6 +25,17 @@ export default function SearchPage() {
     );
 }
 
+interface AladinSearchItem {
+    isbn13?: string;
+    isbn?: string;
+    title: string;
+    author: string;
+    cover: string;
+    categoryName: string;
+    pubDate?: string;
+    description?: string;
+}
+
 function SearchContent() {
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q") || "";
@@ -37,7 +48,7 @@ function SearchContent() {
     const [totalResults, setTotalResults] = useState(0);
 
     // States needed for Header/Sidebar to work visually (simulated for now)
-    const [activeMenu, setActiveMenu] = useState<any>('rec');
+    const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
 
     // Auth context
@@ -72,9 +83,9 @@ function SearchContent() {
             const data = await res.json();
             if (data.item) {
                 setTotalResults(data.totalResults || 0);
-                setSearchResults(data.item.map((it: any) => ({
-                    id: it.isbn13 || it.isbn,
-                    bookid: it.isbn13 || it.isbn,
+                setSearchResults(data.item.map((it: AladinSearchItem) => ({
+                    id: it.isbn13 || it.isbn || '',
+                    bookid: it.isbn13 || it.isbn || '',
                     title: it.title,
                     author: it.author,
                     imgsrc: it.cover,
@@ -124,7 +135,7 @@ function SearchContent() {
                 <main className="flex-1 min-h-[600px]">
                     <div className="mb-8 flex items-center justify-between">
                         <div>
-                            <h2 className="text-2xl font-black text-gray-900 mb-2">'{searchQuery}' 검색 결과</h2>
+                            <h2 className="text-2xl font-black text-gray-900 mb-2">&apos;{searchQuery}&apos; 검색 결과</h2>
                             <p className="text-gray-500 text-sm">전체 {totalResults}권 중 {(currentPage - 1) * 10 + 1}-{Math.min(currentPage * 10, totalResults)}권 표시</p>
                         </div>
                     </div>

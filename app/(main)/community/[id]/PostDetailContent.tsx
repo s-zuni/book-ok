@@ -7,7 +7,7 @@ import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
-import { Child, Post, Comment } from "@shared/types";
+import { Child, Post, Comment, MainMenu } from "@shared/types";
 
 export default function PostDetailPage() {
     const params = useParams();
@@ -19,23 +19,8 @@ export default function PostDetailPage() {
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState("");
     const [activeChild, setActiveChild] = useState<Child | null>(null);
-    const [activeMenu, setActiveMenu] = useState<any>('comm');
+    const [activeMenu, setActiveMenu] = useState<MainMenu>('comm');
     const [activeSubMenu, setActiveSubMenu] = useState('');
-
-    useEffect(() => {
-        if (user) {
-            supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) setActiveChild(data[0]);
-            });
-        }
-    }, [user]);
-
-    useEffect(() => {
-        if (postId) {
-            fetchPost();
-            fetchComments();
-        }
-    }, [postId]);
 
     const fetchPost = async () => {
         const { data } = await supabase.from('posts').select('*').eq('id', postId).single();
@@ -58,6 +43,24 @@ export default function PostDetailPage() {
             .order('created_at', { ascending: true });
         if (data) setComments(data);
     };
+
+    useEffect(() => {
+        if (user) {
+            supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
+                if (data && data.length > 0) setActiveChild(data[0]);
+            });
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (postId) {
+            const loadData = async () => {
+                await fetchPost();
+                await fetchComments();
+            };
+            loadData();
+        }
+    }, [postId]);
 
     const handleAddComment = async () => {
         if (!newComment.trim() || !user) return;

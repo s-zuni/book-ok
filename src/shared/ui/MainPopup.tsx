@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { supabase } from "@shared/lib/supabase";
@@ -10,34 +10,41 @@ export default function MainPopup() {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        fetchActivePopups();
-    }, []);
+        let isMounted = true;
+        const fetchActivePopups = async () => {
+            const { data, error } = await supabase
+                .from('popups')
+                .select('*')
+                .eq('is_active', true)
+                .order('created_at', { ascending: false })
+                .limit(1);
 
-    const fetchActivePopups = async () => {
-        const { data, error } = await supabase
-            .from('popups')
-            .select('*')
-            .eq('is_active', true)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        if (!error && data && data.length > 0) {
-            const popup = data[0];
-            
-            // Check localStorage
-            const hideUntil = localStorage.getItem(`popup_hide_${popup.id}`);
-            if (hideUntil) {
-                if (new Date().getTime() < parseInt(hideUntil)) {
-                    return; // Still hidden
+            if (isMounted && !error && data && data.length > 0) {
+                const popup = data[0];
+                
+                // Check localStorage
+                const hideUntil = localStorage.getItem(`popup_hide_${popup.id}`);
+                if (hideUntil) {
+                    if (new Date().getTime() < parseInt(hideUntil)) {
+                        return; // Still hidden
+                    }
+                    localStorage.removeItem(`popup_hide_${popup.id}`);
                 }
-                localStorage.removeItem(`popup_hide_${popup.id}`);
+                
+                setActivePopup(popup);
+                // Small delay for animation
+                const timer = setTimeout(() => {
+                    if (isMounted) setIsVisible(true);
+                }, 1000);
+                return () => clearTimeout(timer);
             }
-            
-            setActivePopup(popup);
-            // Small delay for animation
-            setTimeout(() => setIsVisible(true), 1000);
-        }
-    };
+        };
+
+        fetchActivePopups();
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const handleClose = () => {
         setIsVisible(false);

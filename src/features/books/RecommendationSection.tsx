@@ -52,11 +52,24 @@ export default function RecommendationSection({ title, subtitle, query, category
     };
 
     useEffect(() => {
+interface AladinRecommendItem {
+    isbn13?: string;
+    isbn?: string;
+    title: string;
+    author: string;
+    cover: string;
+    categoryName: string;
+    pubDate: string;
+    description: string;
+    customerRating?: number;
+    salesPoint?: number;
+}
+
         const fetchBooks = async () => {
             setLoading(true);
             try {
-                let items = [];
-
+                let items: AladinRecommendItem[] = [];
+ 
                 // Existing logic for Aladin API
                 // Determine sort param
                 // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
@@ -68,9 +81,9 @@ export default function RecommendationSection({ title, subtitle, query, category
                 console.log('Aladin Data:', data);
                 if (data.item) {
                     items = limit ? data.item.slice(0, limit) : data.item;
-                    const mappedBooks: any[] = items.map((item: any) => ({
-                        id: String(item.isbn13 || item.isbn),
-                        bookid: String(item.isbn13 || item.isbn),
+                    const mappedBooks: Book[] = items.map((item: AladinRecommendItem) => ({
+                        id: String(item.isbn13 || item.isbn || ''),
+                        bookid: String(item.isbn13 || item.isbn || ''),
                         title: item.title.split(" - ")[0],
                         author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                         imgsrc: item.cover, // Ensures high res if available

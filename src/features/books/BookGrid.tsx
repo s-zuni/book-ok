@@ -1,10 +1,10 @@
 import { Book } from "@shared/types";
-import Image from "next/image";
+import OptimizedImage from "@shared/ui/OptimizedImage";
 import { Star } from "lucide-react";
 
 interface BookGridProps {
-    books: any[];
-    onSelectBook: (book: any) => void;
+    books: Book[];
+    onSelectBook: (book: Book) => void;
     size?: 'default' | 'small';
 }
 
@@ -20,12 +20,13 @@ export default function BookGrid({ books, onSelectBook, size = 'default' }: Book
                     >
                         <div>
                             <div className="relative w-full aspect-[3/4.2] rounded-[14px] overflow-hidden mb-2 border border-gray-50">
-                                <Image
-                                    src={book.imgsrc && book.imgsrc.startsWith('http') ? book.imgsrc : '/file.svg'}
+                                <OptimizedImage
+                                    src={book.imgsrc}
                                     alt={book.title}
                                     fill
                                     className="object-cover"
                                     sizes="(max-width: 768px) 33vw, 16vw"
+                                    sizePreset="thumbnail"
                                 />
                             </div>
                             <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
@@ -49,12 +50,13 @@ export default function BookGrid({ books, onSelectBook, size = 'default' }: Book
             {books.length > 0 ? books.map((book) => (
                 <div key={book.id} className="group cursor-pointer" onClick={() => onSelectBook(book)}>
                     <div className="aspect-[3/4.2] rounded-[2rem] overflow-hidden bg-white shadow-sm border border-gray-100 mb-5 relative transition-all duration-500 group-hover:shadow-2xl group-hover:-translate-y-2">
-                        <Image
-                            src={book.imgsrc && book.imgsrc.startsWith('http') ? book.imgsrc : '/file.svg'}
+                        <OptimizedImage
+                            src={book.imgsrc}
                             alt={book.title}
                             fill
                             className="object-cover group-hover:scale-105 transition-transform duration-700"
                             sizes="(max-width: 768px) 50vw, 25vw"
+                            sizePreset="card"
                         />
                     </div>
                     <h3 className="font-black text-gray-800 group-hover:text-green-600 transition-colors line-clamp-1 text-base">{book.title}</h3>
