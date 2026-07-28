@@ -70,16 +70,7 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([
         {
             role: "assistant",
-            content: "안녕하세요! 북콕 AI 사서입니다.\n로그인하시면 우리 아이의 연령과 성향에 딱 맞는 도서 추천과 맞춤 큐레이션을 경험하실 수 있어요. 로그인하시겠어요?"
-        },
-        {
-            role: "user",
-            content: "6살 아이가 친구랑 자주 다툼이 생겨요. 우정이나 갈등 해결에 도움될 만한 책이 있을까요?"
-        },
-        {
-            role: "assistant",
-            content: "◆ 우정과 갈등 해결을 다룬 그림책 3권을 추천드릴게요",
-            books: [] // Loaded dynamically on mount
+            content: "안녕하세요! 아이가 읽을 책을 추천받고 싶으신가요? 상황을 알려주시면 도서 추천과 전문가 조언을 해드릴게요!"
         }
     ]);
     const [input, setInput] = useState("");
@@ -118,35 +109,7 @@ export default function ChatPage() {
         }
     };
 
-    // Load initial recommended books on mount from Aladin API
-    useEffect(() => {
-        const loadInitialBooks = async () => {
-            const bookTitles = [
-                "진짜 일학년 책가방을 지켜라!",
-                "하늘이 딱딱했대?",
-                "왜 먼저 물어보지 않니?"
-            ];
-            
-            const loadedBooks: Book[] = [];
-            for (const title of bookTitles) {
-                const book = await fetchAladinBook(title);
-                if (book) loadedBooks.push(book);
-            }
 
-            if (loadedBooks.length > 0) {
-                setMessages(prev => {
-                    const newMsgs = [...prev];
-                    // Update books for the 3rd message
-                    if (newMsgs[2]) {
-                        newMsgs[2] = { ...newMsgs[2], books: loadedBooks };
-                    }
-                    return newMsgs;
-                });
-            }
-        };
-
-        loadInitialBooks();
-    }, []);
 
     // Handle authentication redirect if accessed directly
     useEffect(() => {
@@ -175,6 +138,30 @@ export default function ChatPage() {
             vv.removeEventListener("scroll", handleResize);
         };
     }, []);
+
+    const handleNewChat = () => {
+        const userName = userProfile?.nickname || user?.email?.split('@')[0] || "학부모";
+        const firstChild = children?.[0];
+        
+        let greeting = "";
+        if (user) {
+            if (firstChild) {
+                greeting = `${userName}님 안녕하세요! ${firstChild.name}가 읽을 책 추천하고 계신가요? 상황 알려주시면 저희가 책 추천 혹은 전문가 조언을 해드릴게요!`;
+            } else {
+                greeting = `${userName}님 안녕하세요! 우리 아이가 읽을 책 추천하고 계신가요? 상황 알려주시면 저희가 책 추천 혹은 전문가 조언을 해드릴게요!`;
+            }
+        } else {
+            greeting = "안녕하세요! 아이가 읽을 책을 추천받고 싶으신가요? 상황을 알려주시면 도서 추천과 전문가 조언을 해드릴게요!";
+        }
+
+        setMessages([
+            {
+                role: "assistant",
+                content: greeting
+            }
+        ]);
+        setInput("");
+    };
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
@@ -242,9 +229,13 @@ export default function ChatPage() {
                         <span className="text-[11px] font-bold text-[#16A34A] tracking-tighter">● 대화 중</span>
                     </div>
                 </div>
-                <div className="w-10 h-10 bg-[#E8F5E9] rounded-full flex items-center justify-center text-[#16A34A]">
-                    <Sparkles size={20} />
-                </div>
+                <button
+                    onClick={handleNewChat}
+                    className="bg-[#E8F5E9] hover:bg-[#E8F5E9]/80 active:scale-[0.98] text-[#16A34A] rounded-full px-3 py-1.5 text-xs font-black tracking-tight transition-all flex items-center gap-1"
+                >
+                    <Sparkles size={14} fill="currentColor" />
+                    <span>새 채팅</span>
+                </button>
             </header>
 
             {/* Chat History */}

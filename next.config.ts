@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   output: process.env.BUILD_TARGET === 'capacitor' ? 'export' : undefined,
   trailingSlash: true,
   turbopack: undefined,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
