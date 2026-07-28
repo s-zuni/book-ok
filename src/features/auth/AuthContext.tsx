@@ -395,10 +395,35 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         if (Capacitor.isNativePlatform()) {
             const handleDeepLink = async (event: { url: string }) => {
                 console.log("App opened with URL:", event.url);
-                if (event.url.includes('auth-callback')) {
+                if (event.url.includes('auth-callback') || event.url.includes('code=')) {
                     // Close the In-App browser
                     Browser.close().catch(() => {});
 
+                    // 1. Check for PKCE Authorization Code (?code=...)
+                    if (event.url.includes('code=')) {
+                        try {
+                            const urlObj = new URL(event.url.replace('#', '?'));
+                            const code = urlObj.searchParams.get('code');
+                            if (code) {
+                                console.log("Exchanging PKCE code for session:", code);
+                                setLoading(true);
+                                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+                                if (!error && data.session) {
+                                    console.log("PKCE Session exchange successful!");
+                                    await syncUserData(data.session);
+                                    router.refresh();
+                                } else {
+                                    console.error("PKCE Session exchange error:", error);
+                                }
+                                setLoading(false);
+                                return;
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse code URL:", e);
+                        }
+                    }
+
+                    // 2. Check for hash parameters (#access_token=...)
                     const hash = event.url.split('#')[1];
                     if (hash) {
                         const params = new URLSearchParams(hash);
@@ -413,6 +438,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                             });
                             if (!error && data.session) {
                                 await syncUserData(data.session);
+                                router.refresh();
                             } else {
                                 console.error("Failed to set session from deep link:", error);
                             }
