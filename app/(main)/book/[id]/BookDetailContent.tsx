@@ -69,33 +69,8 @@ export default function BookDetailContent() {
             if (sbBook) {
                 setBook(sbBook);
                 setIsApiBook(false);
-                setLoading(false);
-                return;
-            }
-
-            // 2. If not in DB, try Aladin API
-            try {
-                const res = await fetch(apiUrl(`/api/book?isbn=${bookId}`));
-                if (!res.ok) throw new Error('Failed to fetch from API');
-
-                const data = await res.json();
-                if (data.item && data.item.length > 0) {
-                    const apiItem = data.item[0];
-                    const mappedBook: Book = {
-                        id: apiItem.isbn13 || apiItem.isbn,
-                        bookid: apiItem.isbn13 || apiItem.isbn,
-                        title: apiItem.title,
-                        author: apiItem.author,
-                        imgsrc: apiItem.cover,
-                        category: apiItem.categoryName,
-                        pubDate: apiItem.pubDate,
-                        description: apiItem.description
-                    };
-                    setBook(mappedBook);
-                    setIsApiBook(true);
-                }
-            } catch (error) {
-                console.error(error);
+            } else {
+                setBook(null);
             }
 
             setLoading(false);

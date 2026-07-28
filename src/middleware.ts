@@ -2,10 +2,22 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  const allowedOrigins = ['https://bookok.kr', 'capacitor://localhost', 'http://localhost'];
+  const origin = request.headers.get('origin');
+  const isAllowedOrigin = origin && (
+    allowedOrigins.includes(origin) ||
+    origin.startsWith('http://localhost:') ||
+    origin.startsWith('https://localhost:')
+  );
+
   // Handle CORS preflight OPTIONS request
   if (request.method === 'OPTIONS' && request.nextUrl.pathname.startsWith('/api/')) {
     const response = new NextResponse(null, { status: 204 });
-    response.headers.set('Access-Control-Allow-Origin', '*');
+    if (isAllowedOrigin) {
+      response.headers.set('Access-Control-Allow-Origin', origin);
+    } else {
+      response.headers.set('Access-Control-Allow-Origin', 'https://bookok.kr');
+    }
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     return response;
@@ -49,7 +61,11 @@ export async function middleware(request: NextRequest) {
   await supabase.auth.getUser();
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
-    supabaseResponse.headers.set('Access-Control-Allow-Origin', '*');
+    if (isAllowedOrigin) {
+      supabaseResponse.headers.set('Access-Control-Allow-Origin', origin);
+    } else {
+      supabaseResponse.headers.set('Access-Control-Allow-Origin', 'https://bookok.kr');
+    }
     supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
   }

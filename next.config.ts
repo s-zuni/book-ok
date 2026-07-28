@@ -11,14 +11,7 @@ const isCapacitorBuild = process.env.BUILD_TARGET === 'capacitor';
 const SUPABASE_URL =
   process.env.NEXT_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://holaqlorkluptvrcfwtu.supabase.co";
 
-// ──────────────────────────────────────────────
-// 허용 Origin 목록 (CORS)
-// ──────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://bookok.kr",
-  "capacitor://localhost",
-  "http://localhost",
-].join(", ");
+
 
 // ──────────────────────────────────────────────
 // 공통 설정 (웹/앱 모두 적용)
@@ -55,19 +48,7 @@ const nextConfig: NextConfig = isCapacitorBuild
       // ── Web (Vercel SSR/ISR) ──────────────
       ...baseConfig,
 
-      // 보안 헤더 (CORS)
-      async headers() {
-        return [
-          {
-            source: "/api/:path*",
-            headers: [
-              { key: "Access-Control-Allow-Origin", value: ALLOWED_ORIGINS },
-              { key: "Access-Control-Allow-Methods", value: "GET,POST,PUT,DELETE,OPTIONS" },
-              { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
-            ],
-          },
-        ];
-      },
+
 
       // Supabase 프록시 리라이트
       async rewrites() {
