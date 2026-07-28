@@ -265,7 +265,7 @@ interface AladinItem {
                     <>
                         <BookGrid
                             books={(activeTab === 'preferred' ? preferredBooks : balancedBooks).slice(0, 8)}
-                            onSelectBook={(book) => window.open(`/book/${book.id}`, '_self')}
+                            onSelectBook={(book) => window.open(`/book/?id=${book.id}`, '_self')}
                             size="small"
                         />
                         <p className={`text-center text-xs font-bold mt-6 opacity-60 ${activeTab === 'preferred' ? 'text-green-600' : 'text-orange-600'

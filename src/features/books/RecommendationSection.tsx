@@ -175,7 +175,7 @@ interface AladinRecommendItem {
                     <SkeletonLoader count={4} type="card" />
                 ) : (
                     <>
-                        <BookGrid books={books.slice(0, limit || displayCount)} onSelectBook={(book) => router.push(`/book/${book.id}`)} size="small" />
+                        <BookGrid books={books.slice(0, limit || displayCount)} onSelectBook={(book) => router.push(`/book/?id=${book.id}`)} size="small" />
 
                         {/* Show More Button */}
                         {!limit && books.length > displayCount && (

@@ -278,7 +278,7 @@ export default function ChatPage() {
                                                 key={bIdx}
                                                 onClick={() => {
                                                     if (book.id) {
-                                                        router.push(`/book/${book.id}`);
+                                                        router.push(`/book/?id=${book.id}`);
                                                     }
                                                 }}
                                                 className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] w-[160px] shrink-0 hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] transition-all duration-300 cursor-pointer hover:border-[#16A34A]/30 hover:-translate-y-1 transform"
@@ -337,7 +337,7 @@ export default function ChatPage() {
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSend()}
                         placeholder="메시지를 입력하세요"
-                        className="flex-1 bg-gray-50 border border-gray-100 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] text-sm font-medium text-gray-900 transition-all placeholder-gray-400"
+                        className="flex-1 bg-gray-50 border border-gray-100 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] text-base font-medium text-gray-900 transition-all placeholder-gray-400"
                         enterKeyHint="send"
                     />
                     <button

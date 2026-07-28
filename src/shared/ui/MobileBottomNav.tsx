@@ -50,7 +50,14 @@ export default function MobileBottomNav() {
     const { user, loading: authLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
-    if (pathname === "/chat") return null;
+    if (
+        pathname === "/chat" || 
+        pathname === "/chat/" || 
+        pathname === "/solution" || 
+        pathname === "/solution/"
+    ) {
+        return null;
+    }
 
     const handleLibrarianClick = () => {
         if (authLoading) return;

@@ -64,6 +64,11 @@ export function getOptimizedImageUrl(
     return src;
   }
 
+  // 외부 이미지(예: 알라딘 커버)는 Supabase 리사이징 프록시를 사용할 수 없으므로 원본 반환
+  if (src && !src.includes(SUPABASE_URL)) {
+    return src;
+  }
+
   const { width, height } = SIZE_PRESETS[preset];
 
   // Supabase Storage Image Transformations를 리사이징 프록시로 활용
@@ -100,6 +105,11 @@ export function getResizedImageUrl(
 
   // Web/SSR 환경에서는 원본 반환
   if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) {
+    return src;
+  }
+
+  // 외부 이미지는 Supabase 리사이징 프록시를 사용할 수 없으므로 원본 반환
+  if (src && !src.includes(SUPABASE_URL)) {
     return src;
   }
 

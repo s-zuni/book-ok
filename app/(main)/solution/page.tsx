@@ -1057,7 +1057,7 @@ export default function SolutionPage() {
                                         analysisBooks.map((book, idx) => (
                                             <div 
                                                 key={idx} 
-                                                onClick={() => router.push(`/book/${book.id || book.bookid || '9788997984848'}`)}
+                                                onClick={() => router.push(`/book/?id=${book.id || book.bookid || '9788997984848'}`)}
                                                 className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
                                             >
                                                 <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
@@ -1126,7 +1126,7 @@ export default function SolutionPage() {
                                                     {msg.books.map((book, bIdx) => (
                                                         <div 
                                                             key={bIdx} 
-                                                            onClick={() => router.push(`/book/${book.id || book.bookid || '9788997984848'}`)}
+                                                            onClick={() => router.push(`/book/?id=${book.id || book.bookid || '9788997984848'}`)}
                                                             className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-95 transition-transform"
                                                         >
                                                             <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
@@ -1169,7 +1169,7 @@ export default function SolutionPage() {
                                         onChange={(e) => setMobileInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleMobileSolutionSubmit()}
                                         placeholder={`${childName}의 독서 고민을 들려주세요...`}
-                                        className="flex-1 bg-white border border-gray-200 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 text-xs font-semibold text-gray-900 placeholder-gray-400"
+                                        className="flex-1 bg-white border border-gray-200 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 text-base font-semibold text-gray-900 placeholder-gray-400"
                                     />
                                     <button
                                         onClick={handleMobileSolutionSubmit}

@@ -146,7 +146,7 @@ function SearchContent() {
                         </div>
                     ) : (
                         <>
-                            <BookList books={searchResults} onSelectBook={(book) => window.location.href = `/book/${book.id}`} />
+                            <BookList books={searchResults} onSelectBook={(book) => window.location.href = `/book/?id=${book.id}`} />
 
                             {totalResults > 10 && (
                                 <div className="mt-12 flex items-center justify-center gap-4">

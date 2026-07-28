@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { Suspense } from 'react';
 import BookDetailContent from './BookDetailContent';
 import { supabase } from '@shared/lib/supabase'; // NOTE: This client might be configured for client-side. For server, usually we use createServerComponentClient but for public data standard client or fetch is okay-ish if no RLS blocks it.
 // Actually, for Aladin API, we can just fetch directly or reuse logic.
@@ -66,5 +67,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function Page() {
-    return <BookDetailContent />;
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center py-20">
+                <div className="w-8 h-8 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        }>
+            <BookDetailContent />
+        </Suspense>
+    );
 }

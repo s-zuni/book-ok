@@ -689,7 +689,7 @@ export default function HomeContent() {
                                     ))
                                 ) : (
                                     librarianBooks.map((book, idx) => (
-                                        <div key={idx} onClick={() => router.push(`/book/${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
+                                        <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
                                             <div className="relative w-full h-[145px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
                                                 <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
                                             </div>
@@ -749,7 +749,7 @@ export default function HomeContent() {
                                     ))
                                 ) : (
                                     awardBooks.map((book, idx) => (
-                                        <div key={idx} onClick={() => router.push(`/book/${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
+                                        <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
                                             <div className="relative w-full h-[145px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
                                                 <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
                                             </div>
