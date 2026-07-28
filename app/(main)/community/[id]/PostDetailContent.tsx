@@ -41,7 +41,11 @@ export default function PostDetailPage() {
             .eq('post_id', postId)
             .eq('is_deleted', false)
             .order('created_at', { ascending: true });
-        if (data) setComments(data);
+        if (data) {
+            const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
+            const filtered = data.filter(comment => !blockedUsers.includes(comment.user_id));
+            setComments(filtered);
+        }
     };
 
     useEffect(() => {
@@ -84,6 +88,78 @@ export default function PostDetailPage() {
         if (!post) return;
         setPost({ ...post, likes: post.likes + 1 });
         await supabase.from('posts').update({ likes: post.likes + 1 }).eq('id', postId);
+    };
+
+    const handleReportPost = async () => {
+        if (!user) return;
+        const reason = prompt("이 게시글을 신고하시겠습니까? 신고 사유를 적어주세요 (스팸, 욕설, 부적절한 홍보 등):");
+        if (reason === null) return;
+        if (!reason.trim()) {
+            alert("신고 사유를 입력해 주세요.");
+            return;
+        }
+
+        const { error } = await supabase.from('community_reports').insert({
+            reporter_id: user.id,
+            post_id: String(postId),
+            reason: reason,
+            status: 'pending'
+        });
+
+        if (!error) {
+            alert("신고가 접수되었습니다. 관리자 검토 후 24시간 내에 조치됩니다.");
+        } else {
+            alert("신고 접수 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleBlockPostAuthor = () => {
+        if (!post || !user) return;
+        if (!confirm("이 사용자를 차단하시겠습니까? 차단하면 이 사용자의 모든 글과 댓글이 숨겨집니다.")) return;
+
+        const blockedUsers = JSON.parse(localStorage.getItem('blocked_users') || '[]');
+        if (!blockedUsers.includes(post.user_id)) {
+            blockedUsers.push(post.user_id);
+            localStorage.setItem('blocked_users', JSON.stringify(blockedUsers));
+        }
+        alert("차단되었습니다.");
+        router.push('/community');
+    };
+
+    const handleReportComment = async (commentId: number | string) => {
+        if (!user) return;
+        const reason = prompt("이 댓글을 신고하시겠습니까? 신고 사유를 적어주세요 (스팸, 욕설, 부적절한 홍보 등):");
+        if (reason === null) return;
+        if (!reason.trim()) {
+            alert("신고 사유를 입력해 주세요.");
+            return;
+        }
+
+        const { error } = await supabase.from('community_reports').insert({
+            reporter_id: user.id,
+            comment_id: String(commentId),
+            reason: reason,
+            status: 'pending'
+        });
+
+        if (!error) {
+            alert("신고가 접수되었습니다. 관리자 검토 후 24시간 내에 조치됩니다.");
+        } else {
+            alert("신고 접수 중 오류가 발생했습니다.");
+        }
+    };
+
+    const handleBlockUser = (targetUserId: string) => {
+        if (!user) return;
+        if (!confirm("이 사용자를 차단하시겠습니까? 차단하면 이 사용자의 모든 글과 댓글이 숨겨집니다.")) return;
+
+        const blockedUsers = JSON.parse(localStorage.getItem('blocked_users') || '[]');
+        if (!blockedUsers.includes(targetUserId)) {
+            blockedUsers.push(targetUserId);
+            localStorage.setItem('blocked_users', JSON.stringify(blockedUsers));
+        }
+        alert("차단되었습니다.");
+        setComments(prev => prev.filter(c => c.user_id !== targetUserId));
     };
 
     const dummySetView = () => { };
@@ -129,9 +205,15 @@ export default function PostDetailPage() {
                         </div>
                         <h1 className="text-3xl font-black mb-6">{post.title}</h1>
                         <div className="flex items-center justify-between border-b pb-6 mb-8">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs font-black">{post.author_nickname[0]}</div>
                                 <span className="font-bold text-gray-700">{post.author_nickname}</span>
+                                {user && post.user_id !== user.id && (
+                                    <div className="flex gap-2 ml-4">
+                                        <button onClick={handleReportPost} className="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 rounded px-2 py-0.5 transition">신고</button>
+                                        <button onClick={handleBlockPostAuthor} className="text-xs text-gray-500 hover:text-gray-700 font-bold border border-gray-200 rounded px-2 py-0.5 transition">차단</button>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex gap-4 text-gray-400 text-sm font-bold">
                                 <span className="flex items-center gap-1"><Eye size={16} /> {post.views}</span>
@@ -162,8 +244,16 @@ export default function PostDetailPage() {
                         <div className="space-y-4 mb-8">
                             {comments.map(comment => (
                                 <div key={comment.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                                    <div className="flex justify-between mb-2">
-                                        <span className="font-bold text-gray-800">{comment.author_name}</span>
+                                    <div className="flex justify-between items-center mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-gray-800">{comment.author_name}</span>
+                                            {user && comment.user_id !== user.id && (
+                                                <div className="flex gap-1.5 ml-3">
+                                                    <button onClick={() => handleReportComment(comment.id)} className="text-[10px] text-red-500 hover:text-red-700 font-bold border border-red-100 rounded px-1.5 py-0.5 transition">신고</button>
+                                                    <button onClick={() => handleBlockUser(comment.user_id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold border border-gray-100 rounded px-1.5 py-0.5 transition">차단</button>
+                                                </div>
+                                            )}
+                                        </div>
                                         <span className="text-xs text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
                                     </div>
                                     <p className="text-gray-600">{comment.content}</p>

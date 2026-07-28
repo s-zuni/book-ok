@@ -79,10 +79,13 @@ export default function CommunityPage() {
             if (error) throw error;
 
             if (data) {
+                const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
+                const filteredData = data.filter((post: any) => !blockedUsers.includes(post.user_id));
+
                 if (isInitial) {
-                    setPosts(data);
+                    setPosts(filteredData);
                 } else {
-                    setPosts(prev => [...prev, ...data]);
+                    setPosts(prev => [...prev, ...filteredData]);
                 }
 
                 // Check if we have more data
