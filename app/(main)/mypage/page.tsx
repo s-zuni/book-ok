@@ -175,6 +175,20 @@ export default function MyPage() {
         }
     }, [isInitialized, user, router]);
 
+    // Fallback automatic recovery timer to trigger profile refresh if it stays missing for too long
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (isInitialized && user && !userProfile && !authLoading) {
+            timer = setTimeout(() => {
+                console.log("UserProfile missing after initialization, triggering fallback profile refresh.");
+                refreshProfile?.().catch(console.error);
+            }, 4000);
+        }
+        return () => {
+            if (timer) clearTimeout(timer);
+        };
+    }, [isInitialized, user, userProfile, authLoading, refreshProfile]);
+
     // Removed local fetchChildren logic to avoid race conditions with AuthContext
 
     useEffect(() => {
@@ -325,7 +339,7 @@ export default function MyPage() {
 
 
             <div className="max-w-xl mx-auto px-6 py-8">
-                {!isInitialized || authLoading ? (
+                {!isInitialized || authLoading || (user && !userProfile) ? (
                     // Loading Skeleton
                     <div className="space-y-8 animate-pulse">
                         <div className="flex items-center gap-5 mb-10">

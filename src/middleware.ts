@@ -2,9 +2,9 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  const allowedOrigins = ['https://bookok.kr', 'capacitor://localhost', 'http://localhost'];
+  const allowedOrigins = ['https://bookok.kr', 'https://www.bookok.kr', 'capacitor://localhost', 'http://localhost'];
   const origin = request.headers.get('origin');
-  const isAllowedOrigin = origin && (
+  const isAllowedOrigin = !origin || (
     allowedOrigins.includes(origin) ||
     origin.startsWith('http://localhost:') ||
     origin.startsWith('https://localhost:')
@@ -14,9 +14,9 @@ export async function middleware(request: NextRequest) {
   if (request.method === 'OPTIONS' && request.nextUrl.pathname.startsWith('/api/')) {
     const response = new NextResponse(null, { status: 204 });
     if (isAllowedOrigin) {
-      response.headers.set('Access-Control-Allow-Origin', origin);
+      response.headers.set('Access-Control-Allow-Origin', origin || '*');
     } else {
-      response.headers.set('Access-Control-Allow-Origin', 'https://bookok.kr');
+      response.headers.set('Access-Control-Allow-Origin', 'https://www.bookok.kr');
     }
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
@@ -62,9 +62,9 @@ export async function middleware(request: NextRequest) {
 
   if (request.nextUrl.pathname.startsWith('/api/')) {
     if (isAllowedOrigin) {
-      supabaseResponse.headers.set('Access-Control-Allow-Origin', origin);
+      supabaseResponse.headers.set('Access-Control-Allow-Origin', origin || '*');
     } else {
-      supabaseResponse.headers.set('Access-Control-Allow-Origin', 'https://bookok.kr');
+      supabaseResponse.headers.set('Access-Control-Allow-Origin', 'https://www.bookok.kr');
     }
     supabaseResponse.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     supabaseResponse.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');

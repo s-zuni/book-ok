@@ -11,6 +11,7 @@ import { supabase } from "@shared/lib/supabase";
 import { Book } from "@shared/types";
 import { apiUrl } from "@shared/lib/api";
 import { Capacitor } from '@capacitor/core';
+import { Keyboard } from '@capacitor/keyboard';
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -79,6 +80,7 @@ export default function ChatPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const [keyboardOffset, setKeyboardOffset] = useState(0);
+    const [isKeyboardActive, setIsKeyboardActive] = useState(false);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -120,29 +122,42 @@ export default function ChatPage() {
         }
     }, [user, isInitialized, router, openLoginModal]);
 
-    // Handle mobile keyboard height dynamically using VisualViewport API
+    // Handle mobile keyboard height dynamically using VisualViewport API & Capacitor Keyboard
     useEffect(() => {
-        if (typeof window === "undefined") return;
-        const vv = window.visualViewport;
-        if (!vv) return;
-
-        const handleResize = () => {
-            if (Capacitor.isNativePlatform()) {
-                setKeyboardOffset(0);
+        if (Capacitor.isNativePlatform()) {
+            const showSub = Keyboard.addListener('keyboardWillShow', () => {
+                setIsKeyboardActive(true);
                 setTimeout(scrollToBottom, 150);
-                return;
-            }
-            const offset = window.innerHeight - vv.height;
-            setKeyboardOffset(offset > 0 ? offset : 0);
-            setTimeout(scrollToBottom, 100);
-        };
+            });
 
-        vv.addEventListener("resize", handleResize);
-        vv.addEventListener("scroll", handleResize);
-        return () => {
-            vv.removeEventListener("resize", handleResize);
-            vv.removeEventListener("scroll", handleResize);
-        };
+            const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+                setIsKeyboardActive(false);
+                setTimeout(scrollToBottom, 100);
+            });
+
+            return () => {
+                showSub.then(h => h.remove());
+                hideSub.then(h => h.remove());
+            };
+        } else {
+            if (typeof window === "undefined") return;
+            const vv = window.visualViewport;
+            if (!vv) return;
+
+            const handleResize = () => {
+                const offset = window.innerHeight - vv.height;
+                setKeyboardOffset(offset > 0 ? offset : 0);
+                setIsKeyboardActive(offset > 0);
+                setTimeout(scrollToBottom, 100);
+            };
+
+            vv.addEventListener("resize", handleResize);
+            vv.addEventListener("scroll", handleResize);
+            return () => {
+                vv.removeEventListener("resize", handleResize);
+                vv.removeEventListener("scroll", handleResize);
+            };
+        }
     }, []);
 
     const handleNewChat = () => {
@@ -219,27 +234,27 @@ export default function ChatPage() {
     return (
         <div className="flex flex-col h-dvh bg-[#F8F9FA] overflow-hidden text-gray-900 font-sans">
             {/* Header */}
-            <header className="bg-white border-b border-gray-100 px-4 pb-3 flex items-center justify-between shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
-                <div className="flex items-center gap-3">
+            <header className="bg-white border-b border-gray-100 px-4 pb-2.5 flex items-center justify-between shrink-0 pt-[calc(0.6rem+env(safe-area-inset-top,0px))]">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => router.back()}
-                        className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
+                        className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
                     >
-                        <ChevronLeft size={24} />
+                        <ChevronLeft size={22} />
                     </button>
                     <div>
-                        <div className="flex items-center gap-1.5">
-                            <span className="font-black text-lg tracking-tight">북콕 AI 사서</span>
-                            <span className="w-1.5 h-1.5 bg-[#16A34A] rounded-full mt-1 animate-pulse" />
+                        <div className="flex items-center gap-1">
+                            <span className="font-black text-[16px] tracking-tight">북콕 AI 사서</span>
+                            <span className="w-1.5 h-1.5 bg-[#16A34A] rounded-full mt-0.5 animate-pulse" />
                         </div>
-                        <span className="text-[11px] font-bold text-[#16A34A] tracking-tighter">● 대화 중</span>
+                        <span className="text-[10px] font-bold text-[#16A34A] tracking-tighter block leading-none mt-0.5">● 대화 중</span>
                     </div>
                 </div>
                 <button
                     onClick={handleNewChat}
-                    className="bg-[#E8F5E9] hover:bg-[#E8F5E9]/80 active:scale-[0.98] text-[#16A34A] rounded-full px-3 py-1.5 text-xs font-black tracking-tight transition-all flex items-center gap-1"
+                    className="bg-[#E8F5E9] hover:bg-[#E8F5E9]/80 active:scale-[0.98] text-[#16A34A] rounded-full px-2.5 py-1 text-[11px] font-black tracking-tight transition-all flex items-center gap-1"
                 >
-                    <Sparkles size={14} fill="currentColor" />
+                    <Sparkles size={12} fill="currentColor" />
                     <span>새 채팅</span>
                 </button>
             </header>
@@ -333,7 +348,11 @@ export default function ChatPage() {
             {/* Input Form Area */}
             <div
                 className="bg-white border-t border-gray-100 px-4 py-3 shrink-0"
-                style={{ paddingBottom: `calc(0.75rem + ${keyboardOffset}px + env(safe-area-inset-bottom, 0px))` }}
+                style={{ 
+                    paddingBottom: isKeyboardActive 
+                        ? '0.75rem' 
+                        : `calc(0.75rem + ${keyboardOffset}px + env(safe-area-inset-bottom, 0px))` 
+                }}
             >
                 <div className="flex items-center gap-2 max-w-3xl mx-auto">
                     <input

@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 
@@ -44,17 +45,18 @@ const ProfileIcon = ({ active }: { active: boolean }) => (
     </svg>
 );
 
-export default function MobileBottomNav() {
+export function MobileBottomNavContent() {
     const router = useRouter();
     const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const tab = searchParams?.get('tab') || 'analysis';
     const { user, loading: authLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     if (
         pathname === "/chat" || 
         pathname === "/chat/" || 
-        pathname === "/solution" || 
-        pathname === "/solution/"
+        (pathname?.startsWith("/solution") && tab === "solution")
     ) {
         return null;
     }
@@ -141,5 +143,13 @@ export default function MobileBottomNav() {
                 </div>
             </nav>
         </div>
+    );
+}
+
+export default function MobileBottomNav() {
+    return (
+        <Suspense fallback={null}>
+            <MobileBottomNavContent />
+        </Suspense>
     );
 }

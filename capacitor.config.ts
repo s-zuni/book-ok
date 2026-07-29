@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize, KeyboardStyle } from '@capacitor/keyboard';
 
 const config: CapacitorConfig = {
   appId: 'com.bookok.kr',
@@ -10,6 +11,11 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       backgroundColor: "#FFFFFF",
       androidScaleType: "CENTER_INSIDE"
+    },
+    Keyboard: {
+      resize: KeyboardResize.Body,
+      style: KeyboardStyle.Light,
+      resizeOnFullScreen: true
     }
   }
 };

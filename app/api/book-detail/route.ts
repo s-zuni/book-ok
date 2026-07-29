@@ -40,7 +40,8 @@ export async function GET(request: NextRequest) {
 
         return new Response(JSON.stringify({
             description: item.description || '',
-            toc: item.toc || '' // Table of Contents
+            toc: item.toc || '', // Table of Contents
+            item: item // Return the full Aladin item object for client fallback loading
         }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },

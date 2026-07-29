@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
 import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
@@ -15,6 +15,10 @@ import { Star, Send, Sparkles } from "lucide-react";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { useLoginModal } from "@features/auth/LoginModalContext";
+import { Capacitor } from "@capacitor/core";
+import { Keyboard } from "@capacitor/keyboard";
+import { marked } from "marked";
+import { toast } from "sonner";
 
 
 
@@ -52,7 +56,10 @@ interface BookWithObservation extends Book {
     _observation?: Record<string, string> | null;
 }
 
-export default function SolutionPage() {
+export function SolutionPageContent() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const tabParam = searchParams?.get('tab') as 'analysis' | 'solution' | null;
     const { openLoginModal } = useLoginModal();
     const [activeMenu, setActiveMenu] = useState<MainMenu>('solution');
     const [activeSubMenu, setActiveSubMenu] = useState('우리 아이 독서 성향 AI 분석');
@@ -61,6 +68,35 @@ export default function SolutionPage() {
 
     // Mobile specific states
     const [mobileTab, setMobileTab] = useState<'analysis' | 'solution'>('analysis');
+    const [isKeyboardActive, setIsKeyboardActive] = useState(false);
+
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform()) return;
+
+        const showSub = Keyboard.addListener('keyboardWillShow', () => {
+            setIsKeyboardActive(true);
+        });
+
+        const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+            setIsKeyboardActive(false);
+        });
+
+        return () => {
+            showSub.then(h => h.remove());
+            hideSub.then(h => h.remove());
+        };
+    }, []);
+
+    useEffect(() => {
+        if (tabParam && (tabParam === 'analysis' || tabParam === 'solution')) {
+            setMobileTab(tabParam);
+        }
+    }, [tabParam]);
+
+    const handleTabChange = (newTab: 'analysis' | 'solution') => {
+        setMobileTab(newTab);
+        router.replace(`/solution?tab=${newTab}`);
+    };
     const [analysisBooks, setAnalysisBooks] = useState<RecommendedBook[]>([]);
     const [mobileSolutionHistory, setMobileSolutionHistory] = useState<{ role: 'user' | 'assistant', content: string, books?: RecommendedBook[] }[]>([]);
     const [mobileInput, setMobileInput] = useState('');
@@ -127,7 +163,6 @@ export default function SolutionPage() {
     const [selectedCoachCategory, setSelectedCoachCategory] = useState<string | null>(null);
 
     const { user, children, userProfile } = useAuth();
-    const router = useRouter();
 
     const childName = activeChild ? activeChild.name : (userProfile?.nickname ? `${userProfile.nickname} 부모님` : "부모님");
 
@@ -211,8 +246,12 @@ export default function SolutionPage() {
             2. 고민을 해결할 수 있는 **구체적인 실천 전략 3가지**를 제안하되, 글머리 기호(-)로 작성하세요.
             3. 답변에는 실제 아이의 이름인 **'${childName}'**을 언급하여 부모님의 고민에 직접 응답한다는 인상을 주세요.
             4. 자녀의 최근 독서 성향(선호 장르나 최근 읽은 책)을 언급하며 솔루션과 연계해 조언해주세요.
-            5. 핵심 행동 팁이나 키워드는 **굵게** 표시하세요.
-            6. 마지막에 추천할 만한 도서 테마 1가지를 언급해주세요.
+            5. 핵심 행동 팁이나 키워드는 **굵게** 표시하세요. 단, 마크다운(**) 기호를 제외한 일반 글귀 형태로 표시해도 무방하며 줄바꿈(\n)을 활용하세요.
+            6. **[중요] 추천도서 태깅**:
+               - 만약 답변 도중 추천하고 싶은 구체적인 아동 도서가 있다면, 답변 맨 마지막 줄에 반드시 \`[RECOMMENDED_BOOKS: 책제목1, 책제목2, ...]\` 형태로 추천한 도서들의 정확한 제목을 쉼표로 구분하여 기재해주세요.
+               - 단, 가상의 책 제목이 아닌 실제 출판된 아동 도서의 정확한 제목이어야 합니다.
+               - 예: ... 따라서 "무지개 물고기"와 "언제나 사랑해"를 읽어보시길 권합니다.
+                 [RECOMMENDED_BOOKS: 무지개 물고기, 언제나 사랑해]
             `;
 
             const response = await fetch(apiUrl('/api/openai'), {
@@ -224,35 +263,51 @@ export default function SolutionPage() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'API Error');
 
-            const resultText = data.result || "죄송해요, 솔루션을 생성할 수 없습니다.";
+            let resultText = data.result || "죄송해요, 솔루션을 생성할 수 없습니다.";
 
-            // Extract recommendation keywords to search matching books
-            const matchKeywords = resultText.match(/\*\*([^*]+)\*\*/g) || [];
-            let keywordToSearch = preferredGenreLabel !== "미정" ? preferredGenreLabel : "그림책";
-            if (matchKeywords.length > 0) {
-                keywordToSearch = matchKeywords[0].replace(/\*\*/g, '').substring(0, 10);
-            }
+            // Parse RECOMMENDED_BOOKS tags
+            const loadedBooks: RecommendedBook[] = [];
+            const match = resultText.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
+            if (match) {
+                const titles = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
+                // Strip the tagging markup from visible text
+                resultText = resultText.replace(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/, '').trim();
+                
+                // Fetch each recommended book's Aladin details
+                for (const title of titles) {
+                    const book = await fetchAladinBook(title);
+                    if (book) loadedBooks.push(book);
+                }
+            } else {
+                // Fallback: Extract recommendation keywords to search matching books
+                const matchKeywords = resultText.match(/\*\*([^*]+)\*\*/g) || [];
+                let keywordToSearch = preferredGenreLabel !== "미정" ? preferredGenreLabel : "그림책";
+                if (matchKeywords.length > 0) {
+                    keywordToSearch = matchKeywords[0].replace(/\*\*/g, '').substring(0, 10);
+                }
 
-            // Fetch matching recommendation books from Aladin
-            let parsedBooks: RecommendedBook[] = [];
-            const searchRes = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`));
-            if (searchRes.ok) {
-                const searchData = await searchRes.json();
-                const items = searchData.item?.slice(0, 3) || [];
-                parsedBooks = items.map((item: AladinRecommendItem) => ({
-                    title: item.title.split(" - ")[0],
-                    author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                    publisher: item.publisher,
-                    rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
-                    reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
-                    coverUrl: item.cover
-                }));
+                // Fetch matching recommendation books from Aladin
+                const searchRes = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`));
+                if (searchRes.ok) {
+                    const searchData = await searchRes.json();
+                    const items = searchData.item?.slice(0, 3) || [];
+                    for (const item of items) {
+                        loadedBooks.push({
+                            title: item.title.split(" - ")[0],
+                            author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
+                            publisher: item.publisher,
+                            rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
+                            reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
+                            coverUrl: item.cover
+                        });
+                    }
+                }
             }
 
             setMobileSolutionHistory(prev => [...prev, {
                 role: 'assistant',
                 content: resultText,
-                books: parsedBooks
+                books: loadedBooks.length > 0 ? loadedBooks : undefined
             }]);
 
         } catch (error) {
@@ -261,6 +316,12 @@ export default function SolutionPage() {
         } finally {
             setMobileLoading(false);
         }
+    };
+
+    const handleNewSolutionChat = () => {
+        setMobileSolutionHistory([]);
+        setMobileInput('');
+        toast.success("새로운 독서 고민 상담을 시작합니다.");
     };
 
     // Fetch AI Coach recommendation category based on actual books
@@ -780,7 +841,7 @@ export default function SolutionPage() {
             {/* ============================================================== */}
             {/* Mobile / Hybrid App View (lg:hidden) */}
             {/* ============================================================== */}
-            <div className="lg:hidden flex flex-col min-h-screen bg-[#F8F9FA]">
+            <div className="lg:hidden flex flex-col h-dvh bg-[#F8F9FA] overflow-hidden">
                 {/* Mobile Top Header (Shared from Home screen layout) */}
                 <header className="bg-white border-b border-gray-100 px-4 pb-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0 pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
@@ -798,8 +859,16 @@ export default function SolutionPage() {
                         <span className="text-[17px] font-extrabold tracking-tight text-[#101828]">Book,ok</span>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        {user ? (
+                    <div className="flex items-center gap-2.5">
+                        {mobileTab === 'solution' ? (
+                            <button
+                                onClick={handleNewSolutionChat}
+                                className="bg-[#E8F5E9] hover:bg-[#E8F5E9]/80 active:scale-[0.98] text-[#16A34A] rounded-full px-2.5 py-1 text-[11px] font-black tracking-tight transition-all flex items-center gap-1 shadow-sm"
+                            >
+                                <Sparkles size={11} fill="currentColor" />
+                                <span>새 상담</span>
+                            </button>
+                        ) : user ? (
                             <button 
                                 onClick={() => router.push('/mypage')}
                                 className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 transition-colors"
@@ -820,7 +889,7 @@ export default function SolutionPage() {
                 {/* Mobile Tab Control */}
                 <div className="bg-white border-b border-gray-100 flex sticky top-[calc(53px+env(safe-area-inset-top,0px))] z-40 shrink-0">
                     <button
-                        onClick={() => setMobileTab('analysis')}
+                        onClick={() => handleTabChange('analysis')}
                         className={`flex-1 py-4 text-center font-extrabold text-[15px] border-b-2 transition-all ${
                             mobileTab === 'analysis'
                                 ? 'border-[#16A34A] text-[#1A1A1A]'
@@ -830,7 +899,7 @@ export default function SolutionPage() {
                         성향 분석
                     </button>
                     <button
-                        onClick={() => setMobileTab('solution')}
+                        onClick={() => handleTabChange('solution')}
                         className={`flex-1 py-4 text-center font-extrabold text-[15px] border-b-2 transition-all ${
                             mobileTab === 'solution'
                                 ? 'border-[#16A34A] text-[#1A1A1A]'
@@ -842,10 +911,10 @@ export default function SolutionPage() {
                 </div>
 
                 {/* Mobile Tab Content */}
-                <div className="flex-1 p-4 space-y-4">
+                <div className="flex-1 overflow-hidden">
                     {mobileTab === 'analysis' ? (
                         /* ================= ANALYSIS TAB ================= */
-                        <div className="space-y-4">
+                        <div className="h-full overflow-y-auto p-4 space-y-4 pb-28">
                             {/* Top Grid: Read books stats */}
                             <div className="grid grid-cols-2 gap-3">
                                 {/* Current Month Read Books */}
@@ -1086,7 +1155,7 @@ export default function SolutionPage() {
                         </div>
                     ) : (
                         /* ================= SOLUTION TAB ================= */
-                        <div className="flex flex-col h-[calc(100vh-230px)]">
+                        <div className="flex flex-col h-full overflow-hidden p-4">
                             {/* Scrollable conversation history */}
                             <div className="flex-1 overflow-y-auto space-y-4 pb-4">
                                 <div className="bg-white border border-gray-100 rounded-[28px] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-3">
@@ -1115,9 +1184,14 @@ export default function SolutionPage() {
                                                             <span className="text-[#16A34A] font-black">{msg.content.slice(0, msg.content.indexOf(" ") + 1)}</span>
                                                             <span className="font-bold">{msg.content.slice(msg.content.indexOf(" ") + 1)}</span>
                                                         </div>
-                                                    ) : (
-                                                        <div className="whitespace-pre-line">{msg.content}</div>
-                                                    )}
+                                                     ) : !isUser ? (
+                                                         <div 
+                                                             className="prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-0.5 prose-li:my-0 text-gray-800 whitespace-pre-line"
+                                                             dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
+                                                         />
+                                                     ) : (
+                                                         <div className="whitespace-pre-line">{msg.content}</div>
+                                                     )}
                                                 </div>
                                             </div>
 
@@ -1161,7 +1235,14 @@ export default function SolutionPage() {
                             </div>
 
                             {/* Chat Input form */}
-                            <div className="bg-[#F8F9FA] pt-2">
+                            <div 
+                                className="bg-[#F8F9FA] pt-2"
+                                style={{ 
+                                    paddingBottom: isKeyboardActive 
+                                        ? '0.5rem' 
+                                        : 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' 
+                                }}
+                            >
                                 <div className="flex items-center gap-2">
                                     <input
                                         type="text"
@@ -1185,5 +1266,13 @@ export default function SolutionPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SolutionPage() {
+    return (
+        <Suspense fallback={null}>
+            <SolutionPageContent />
+        </Suspense>
     );
 }
