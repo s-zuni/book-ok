@@ -22,6 +22,6 @@ const config: CapacitorConfig = {
   server: {
     iosSwipeBack: true
   }
-};
+} as any;
 
 export default config;
