@@ -7,16 +7,20 @@ const config: CapacitorConfig = {
   webDir: 'out',
   plugins: {
     SplashScreen: {
-      launchShowDuration: 3000,
-      launchAutoHide: true,
+      launchShowDuration: 0,
+      launchAutoHide: false,
       backgroundColor: "#FFFFFF",
-      androidScaleType: "CENTER_INSIDE"
+      androidScaleType: "CENTER_INSIDE",
+      showSpinner: false
     },
     Keyboard: {
       resize: KeyboardResize.Body,
       style: KeyboardStyle.Light,
       resizeOnFullScreen: true
     }
+  },
+  server: {
+    iosSwipeBack: true
   }
 };
 

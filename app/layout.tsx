@@ -43,6 +43,7 @@ import { AuthProvider } from "@features/auth/AuthContext";
 import { ChatbotProvider } from "@widgets/chatbot/ChatbotContext";
 import { LoginModalProvider } from "@features/auth/LoginModalContext";
 import SplashScreen from "@shared/ui/SplashScreen";
+import MobileUXProvider from "@shared/lib/MobileUXProvider";
 
 export default function RootLayout({
   children,
@@ -75,13 +76,15 @@ export default function RootLayout({
         }}
       >
         <AuthProvider>
-          <LoginModalProvider>
-            <ChatbotProvider>
-              <Toaster position="top-center" richColors closeButton />
-              <SplashScreen />
-              {children}
-            </ChatbotProvider>
-          </LoginModalProvider>
+          <MobileUXProvider>
+            <LoginModalProvider>
+              <ChatbotProvider>
+                <Toaster position="top-center" richColors closeButton />
+                <SplashScreen />
+                {children}
+              </ChatbotProvider>
+            </LoginModalProvider>
+          </MobileUXProvider>
         </AuthProvider>
       </body>
     </html>

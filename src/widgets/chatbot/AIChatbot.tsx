@@ -6,6 +6,8 @@ import { useChatbot } from "@widgets/chatbot/ChatbotContext";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from 'marked';
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -56,6 +58,10 @@ export default function AIChatbot() {
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
+
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
 
         const userMessage: Message = { role: "user", content: input };
         setMessages(prev => [...prev, userMessage]);

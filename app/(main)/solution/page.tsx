@@ -3,11 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@shared/ui/Header";
-import Sidebar from "@shared/ui/Sidebar";
-import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
 import { apiUrl } from "@shared/lib/api";
-import ReadingAnalysis from "@widgets/solution/ReadingAnalysis";
-import AISolution from "@widgets/solution/AISolution";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
 import { Child, Book, MainMenu } from "@shared/types";
@@ -15,7 +11,7 @@ import { Star, Send, Sparkles } from "lucide-react";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { useLoginModal } from "@features/auth/LoginModalContext";
-import { Capacitor } from "@capacitor/core";
+import { Capacitor, PluginListenerHandle } from "@capacitor/core";
 import { Keyboard } from "@capacitor/keyboard";
 import { marked } from "marked";
 import { toast } from "sonner";
@@ -69,21 +65,46 @@ export function SolutionPageContent() {
     // Mobile specific states
     const [mobileTab, setMobileTab] = useState<'analysis' | 'solution'>('analysis');
     const [isKeyboardActive, setIsKeyboardActive] = useState(false);
+    const [viewportHeight, setViewportHeight] = useState("100dvh");
 
     useEffect(() => {
-        if (!Capacitor.isNativePlatform()) return;
+        if (typeof window === "undefined") return;
+        const vv = window.visualViewport;
+        if (!vv) return;
 
-        const showSub = Keyboard.addListener('keyboardWillShow', () => {
-            setIsKeyboardActive(true);
-        });
+        const updateViewportHeight = () => {
+            setViewportHeight(`${vv.height}px`);
+        };
 
-        const hideSub = Keyboard.addListener('keyboardWillHide', () => {
-            setIsKeyboardActive(false);
-        });
+        updateViewportHeight();
+
+        vv.addEventListener("resize", updateViewportHeight);
+        vv.addEventListener("scroll", updateViewportHeight);
+
+        let showSub: Promise<PluginListenerHandle> | null = null;
+        let hideSub: Promise<PluginListenerHandle> | null = null;
+
+        if (Capacitor.isNativePlatform()) {
+            showSub = Keyboard.addListener('keyboardWillShow', () => {
+                setIsKeyboardActive(true);
+                setTimeout(() => {
+                    updateViewportHeight();
+                }, 100);
+            });
+
+            hideSub = Keyboard.addListener('keyboardWillHide', () => {
+                setIsKeyboardActive(false);
+                setTimeout(() => {
+                    updateViewportHeight();
+                }, 100);
+            });
+        }
 
         return () => {
-            showSub.then(h => h.remove());
-            hideSub.then(h => h.remove());
+            vv.removeEventListener("resize", updateViewportHeight);
+            vv.removeEventListener("scroll", updateViewportHeight);
+            if (showSub) showSub.then((h: PluginListenerHandle) => h.remove());
+            if (hideSub) hideSub.then((h: PluginListenerHandle) => h.remove());
         };
     }, []);
 
@@ -841,7 +862,10 @@ export function SolutionPageContent() {
             {/* ============================================================== */}
             {/* Mobile / Hybrid App View (lg:hidden) */}
             {/* ============================================================== */}
-            <div className="lg:hidden flex flex-col h-dvh bg-[#F8F9FA] overflow-hidden">
+            <div 
+                className="lg:hidden flex flex-col bg-[#F8F9FA] overflow-hidden"
+                style={{ height: viewportHeight }}
+            >
                 {/* Mobile Top Header (Shared from Home screen layout) */}
                 <header className="bg-white border-b border-gray-100 px-4 pb-3.5 flex items-center justify-between sticky top-0 z-40 shrink-0 pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
                     <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>

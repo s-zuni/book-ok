@@ -27,8 +27,8 @@ export default function SplashScreen() {
             console.warn("Failed to access sessionStorage:", e);
         }
 
-        // Immediately hide if native platform, on desktop, or already shown
-        if (Capacitor.isNativePlatform() || (typeof window !== 'undefined' && (window.innerWidth >= 1024 || isSplashShown))) {
+        // Immediately hide if on desktop, or already shown (for web)
+        if (typeof window !== 'undefined' && (window.innerWidth >= 1024 || isSplashShown)) {
             // Use setTimeout to avoid synchronous setState inside render/effect phase
             const timer = setTimeout(() => {
                 setIsVisible(false);

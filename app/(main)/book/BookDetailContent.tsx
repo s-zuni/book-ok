@@ -64,17 +64,56 @@ export default function BookDetailContent() {
     useEffect(() => {
         const fetchBook = async () => {
             setLoading(true);
+            let success = false;
 
-            // 1. Try Supabase first
-            const { data: sbBook } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
-            if (sbBook) {
-                setBook(sbBook);
-                setIsApiBook(false);
-            } else {
-                setBook(null);
+            try {
+                // 1. Try Supabase first
+                const { data: sbBook, error: sbError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
+                if (sbBook && !sbError) {
+                    setBook(sbBook);
+                    setIsApiBook(false);
+                    setLoading(false);
+                    success = true;
+                }
+            } catch (dbErr) {
+                console.warn("Supabase fetch book error, trying fallback:", dbErr);
             }
 
-            setLoading(false);
+            if (!success) {
+                // 2. Try Aladin via API fallback if not found in Supabase (e.g. from Aladin recommendations/search)
+                try {
+                    const res = await fetch(apiUrl(`/api/book-detail?itemId=${bookId}`));
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.item) {
+                            const rawItem = data.item;
+                            // Format raw Aladin item to match Book type
+                            const formattedBook: Book = {
+                                id: rawItem.isbn13 || rawItem.isbn || bookId,
+                                bookid: rawItem.isbn13 || rawItem.isbn || bookId,
+                                title: rawItem.title?.split(" - ")?.[0] || rawItem.title,
+                                author: rawItem.author?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || rawItem.author || '저자 미상',
+                                imgsrc: rawItem.cover,
+                                category: rawItem.categoryName?.split('>')?.[1]?.trim() || rawItem.categoryName || '기타',
+                                description: rawItem.description || data.description || '',
+                                pubDate: rawItem.pubDate || '',
+                                publisher: rawItem.publisher || '',
+                            };
+                            setBook(formattedBook);
+                            setIsApiBook(true);
+                        } else {
+                            setBook(null);
+                        }
+                    } else {
+                        setBook(null);
+                    }
+                } catch (err) {
+                    console.error("Error fetching fallback book from API:", err);
+                    setBook(null);
+                } finally {
+                    setLoading(false);
+                }
+            }
         };
 
         fetchBook();

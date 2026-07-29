@@ -4,6 +4,8 @@ import { Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
 
 // Premium SVG Icons matching the mockup
 const HomeIcon = ({ active }: { active: boolean }) => (
@@ -61,11 +63,18 @@ export function MobileBottomNavContent() {
         return null;
     }
 
-    const handleLibrarianClick = () => {
-        if (authLoading) return;
-        if (!user) {
+    const handleLibrarianClick = async () => {
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Medium });
+        }
+
+        if (user) {
+            router.push("/chat");
+        } else if (!authLoading) {
             openLoginModal();
         } else {
+            // Fallback: If loading, still allow routing to /chat. 
+            // The ChatPage will handle authentication redirect if needed.
             router.push("/chat");
         }
     };
@@ -124,7 +133,16 @@ export function MobileBottomNavContent() {
                         ) : (
                             <button
                                 key={item.label}
-                                onClick={() => item.action ? item.action() : router.push(item.path!)}
+                                onClick={async () => {
+                                    if (Capacitor.isNativePlatform()) {
+                                        await Haptics.impact({ style: ImpactStyle.Light });
+                                    }
+                                    if (item.action) {
+                                        item.action();
+                                    } else {
+                                        router.push(item.path!);
+                                    }
+                                }}
                                 className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 group transition-all duration-300 ${
                                     item.isActive ? "text-[#1A1A1A]" : "text-[#999999]"
                                 }`}

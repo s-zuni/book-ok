@@ -7,11 +7,11 @@ import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from "marked";
 import OptimizedImage from "@shared/ui/OptimizedImage";
-import { supabase } from "@shared/lib/supabase";
 import { Book } from "@shared/types";
 import { apiUrl } from "@shared/lib/api";
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -21,7 +21,7 @@ interface Message {
 
 export default function ChatPage() {
     const router = useRouter();
-    const { user, userProfile, children, loading: authLoading, isInitialized } = useAuth();
+    const { user, userProfile, children, isInitialized } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     // Personalize welcome greeting with user name and child name dynamically
@@ -79,7 +79,7 @@ export default function ChatPage() {
     const [isLoading, setIsLoading] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
-    const [keyboardOffset, setKeyboardOffset] = useState(0);
+    const [viewportHeight, setViewportHeight] = useState("100dvh");
     const [isKeyboardActive, setIsKeyboardActive] = useState(false);
 
     const scrollToBottom = () => {
@@ -122,45 +122,71 @@ export default function ChatPage() {
         }
     }, [user, isInitialized, router, openLoginModal]);
 
-    // Handle mobile keyboard height dynamically using VisualViewport API & Capacitor Keyboard
+    // Handle mobile viewport height dynamically using VisualViewport API & Capacitor Keyboard
     useEffect(() => {
+        if (typeof window === "undefined") return;
+        const vv = window.visualViewport;
+        if (!vv) return;
+
+        const updateViewportHeight = () => {
+            setViewportHeight(`${vv.height}px`);
+        };
+
+        updateViewportHeight();
+
+        vv.addEventListener("resize", updateViewportHeight);
+        vv.addEventListener("scroll", updateViewportHeight);
+
+        let showSub: Promise<PluginListenerHandle> | null = null;
+        let hideSub: Promise<PluginListenerHandle> | null = null;
+
         if (Capacitor.isNativePlatform()) {
-            const showSub = Keyboard.addListener('keyboardWillShow', () => {
+            showSub = Keyboard.addListener('keyboardWillShow', () => {
                 setIsKeyboardActive(true);
-                setTimeout(scrollToBottom, 150);
+                setTimeout(() => {
+                    updateViewportHeight();
+                    scrollToBottom();
+                }, 100);
             });
 
-            const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+            hideSub = Keyboard.addListener('keyboardWillHide', () => {
                 setIsKeyboardActive(false);
-                setTimeout(scrollToBottom, 100);
+                setTimeout(() => {
+                    updateViewportHeight();
+                    scrollToBottom();
+                }, 100);
             });
-
-            return () => {
-                showSub.then(h => h.remove());
-                hideSub.then(h => h.remove());
-            };
         } else {
-            if (typeof window === "undefined") return;
-            const vv = window.visualViewport;
-            if (!vv) return;
-
             const handleResize = () => {
                 const offset = window.innerHeight - vv.height;
-                setKeyboardOffset(offset > 0 ? offset : 0);
                 setIsKeyboardActive(offset > 0);
+                updateViewportHeight();
                 setTimeout(scrollToBottom, 100);
             };
-
             vv.addEventListener("resize", handleResize);
             vv.addEventListener("scroll", handleResize);
+
             return () => {
+                vv.removeEventListener("resize", updateViewportHeight);
+                vv.removeEventListener("scroll", updateViewportHeight);
                 vv.removeEventListener("resize", handleResize);
                 vv.removeEventListener("scroll", handleResize);
             };
         }
+
+        return () => {
+            vv.removeEventListener("resize", updateViewportHeight);
+            vv.removeEventListener("scroll", updateViewportHeight);
+            if (showSub) showSub.then((h: PluginListenerHandle) => h.remove());
+            if (hideSub) hideSub.then((h: PluginListenerHandle) => h.remove());
+        };
     }, []);
 
-    const handleNewChat = () => {
+    const handleNewChat = async () => {
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Medium });
+        }
+        
         const userName = userProfile?.nickname || user?.email?.split('@')[0] || "학부모";
         const firstChild = children?.[0];
         
@@ -186,6 +212,10 @@ export default function ChatPage() {
 
     const handleSend = async () => {
         if (!input.trim() || isLoading) return;
+
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
 
         const userMessage: Message = { role: "user", content: input };
         setMessages(prev => [...prev, userMessage]);
@@ -232,7 +262,10 @@ export default function ChatPage() {
     };
 
     return (
-        <div className="flex flex-col h-dvh bg-[#F8F9FA] overflow-hidden text-gray-900 font-sans">
+        <div 
+            className="flex flex-col bg-[#F8F9FA] overflow-hidden text-gray-900 font-sans"
+            style={{ height: viewportHeight }}
+        >
             {/* Header */}
             <header className="bg-white border-b border-gray-100 px-4 pb-2.5 flex items-center justify-between shrink-0 pt-[calc(0.6rem+env(safe-area-inset-top,0px))]">
                 <div className="flex items-center gap-2">
@@ -351,7 +384,7 @@ export default function ChatPage() {
                 style={{ 
                     paddingBottom: isKeyboardActive 
                         ? '0.75rem' 
-                        : `calc(0.75rem + ${keyboardOffset}px + env(safe-area-inset-bottom, 0px))` 
+                        : 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' 
                 }}
             >
                 <div className="flex items-center gap-2 max-w-3xl mx-auto">
