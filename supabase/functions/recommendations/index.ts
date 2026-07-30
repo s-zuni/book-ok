@@ -48,7 +48,7 @@ serve(async (req) => {
     itemId = itemId || urlObj.searchParams.get("itemId") || "";
 
     // Get API Key from Supabase env
-    let ALADIN_KEY = Deno.env.get("ALADIN_API_KEY");
+    let ALADIN_KEY = Deno.env.get("ALADIN_API_KEY") || Deno.env.get("aladin_api_key");
     if (!ALADIN_KEY) {
       ALADIN_KEY = "ttbzxzx7290920001";
     }

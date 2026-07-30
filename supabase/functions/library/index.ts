@@ -41,7 +41,7 @@ serve(async (req) => {
     region = region || urlObj.searchParams.get("region") || "";
     dtl_region = dtl_region || urlObj.searchParams.get("dtl_region") || "";
 
-    let API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY");
+    let API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key");
     if (!API_KEY) {
       API_KEY = "6be31d996e38b30fa59d6be40c0f4f9f257a4192b0c36f54c935400ad6b85cc1";
     }
