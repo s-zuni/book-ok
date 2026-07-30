@@ -21,14 +21,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     let bookImage = "/og-default.png"; // Fallback image
 
     try {
-        // Try Supabase first (Public data)
-        const { data: sbBook } = await supabase.from('books').select('*').eq('id', id).maybeSingle();
+        if (id && id !== 'placeholder' && /^\d+$/.test(id)) {
+            // Try Supabase first (Public data)
+            const { data: sbBook } = await supabase.from('books').select('*').eq('id', id).maybeSingle();
 
-        if (sbBook) {
-            bookTitle = sbBook.title;
-            bookDescription = sbBook.description || bookDescription;
-            bookImage = sbBook.imgsrc || bookImage;
-        } else {
+            if (sbBook) {
+                bookTitle = sbBook.title;
+                bookDescription = sbBook.description || bookDescription;
+                bookImage = sbBook.imgsrc || bookImage;
+            }
+        }
+        if (!bookTitle || bookTitle === "도서 상세 정보") {
             // API Fallback (Using the same internal API route might be tricky from server side if using relative URL. Better to call external API directly or rely on absolute URL if deployed)
             // But since we are server-side, we can just call Aladin API directly if we have the key, OR just default to generic metadata if API key is not easily accessible here without env vars duplication.
             // Let's assume we want at least basic Title from ID if possible, but ID is just ISBN.

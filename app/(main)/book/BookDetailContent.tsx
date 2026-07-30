@@ -67,13 +67,15 @@ export default function BookDetailContent() {
             let success = false;
 
             try {
-                // 1. Try Supabase first
-                const { data: sbBook, error: sbError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
-                if (sbBook && !sbError) {
-                    setBook(sbBook);
-                    setIsApiBook(false);
-                    setLoading(false);
-                    success = true;
+                if (bookId && bookId !== 'placeholder' && /^\d+$/.test(bookId)) {
+                    // 1. Try Supabase first
+                    const { data: sbBook, error: sbError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
+                    if (sbBook && !sbError) {
+                        setBook(sbBook);
+                        setIsApiBook(false);
+                        setLoading(false);
+                        success = true;
+                    }
                 }
             } catch (dbErr) {
                 console.warn("Supabase fetch book error, trying fallback:", dbErr);

@@ -308,85 +308,60 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         }, 5000);
 
         // Initial session check
-        const init = async () => {
-            try {
-                // Check if this is a new browser tab/session (sessionActive is null)
-                // and the user opted NOT to keep logged in (keepLoggedIn is 'false')
-                if (typeof window !== 'undefined') {
-                    const sessionActive = sessionStorage.getItem('bookok_session_active');
-                    const keepLoggedIn = localStorage.getItem('bookok_keep_logged_in');
-                    
-                    if (!sessionActive && keepLoggedIn === 'false') {
-                        console.log("AuthContext: Session ended (keepLoggedIn is false). Force sign out.");
-                        
-                        // Clean all auth storage keys immediately
-                        const keysToRemove = ['bookok-auth-token', 'supabase.auth.token'];
-                        for (let i = 0; i < localStorage.length; i++) {
-                            const key = localStorage.key(i);
-                            if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase'))) {
-                                keysToRemove.push(key);
-                            }
-                        }
-                        keysToRemove.forEach(k => localStorage.removeItem(k));
-                        
-                        // Clean cookies
-                        document.cookie.split(';').forEach(cookie => {
-                            const name = cookie.split('=')[0].trim();
-                            if (name.includes('auth-token') || name.includes('supabase')) {
-                                document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-                            }
-                        });
-
-                        // Call signOut server API silently in the background
-                        supabase.auth.signOut().catch(e => console.warn(e));
-
-                        setLoading(false);
-                        setIsInitialized(true);
-                        isInitRef.current = true;
-                        sessionStorage.setItem('bookok_session_active', 'true');
-                        return;
+        if (typeof window !== 'undefined') {
+            const sessionActive = sessionStorage.getItem('bookok_session_active');
+            const keepLoggedIn = localStorage.getItem('bookok_keep_logged_in');
+            
+            if (!sessionActive && keepLoggedIn === 'false') {
+                console.log("AuthContext: Session ended (keepLoggedIn is false). Force sign out.");
+                
+                // Clean all auth storage keys immediately
+                const keysToRemove = ['bookok-auth-token', 'supabase.auth.token'];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('sb-') || key.includes('auth-token') || key.includes('supabase'))) {
+                        keysToRemove.push(key);
                     }
-                    
-                    sessionStorage.setItem('bookok_session_active', 'true');
                 }
+                keysToRemove.forEach(k => localStorage.removeItem(k));
+                
+                // Clean cookies
+                document.cookie.split(';').forEach(cookie => {
+                    const name = cookie.split('=')[0].trim();
+                    if (name.includes('auth-token') || name.includes('supabase')) {
+                        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+                    }
+                });
 
-                // Use getSession() to check cached session instead of getUser() which makes a concurrent network call
-                const { data: { session: initialSession } } = await supabase.auth.getSession();
-                if (initialSession) {
-                    await syncUserData(initialSession);
-                } else {
-                    // No user found, finalize initialization
-                    setLoading(false);
-                    setIsInitialized(true);
-                    isInitRef.current = true;
-                }
-            } catch (e) {
-                console.error("Initial auth check failed:", e);
+                // Call signOut server API silently in the background
+                supabase.auth.signOut().catch(e => console.warn(e));
+
                 setLoading(false);
                 setIsInitialized(true);
-                isInitRef.current = true;
-            } finally {
-                clearTimeout(failsafeTimer);
+                sessionStorage.setItem('bookok_session_active', 'true');
+            } else {
+                sessionStorage.setItem('bookok_session_active', 'true');
             }
-        };
-        
-        init();
+        }
 
-        // Listen for auth changes
+        // Listen for auth changes (INITIAL_SESSION triggers immediately on subscription)
+        let hasInitialized = false;
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-            if (!isInitRef.current) {
-                console.log("AuthContext: ignoring auth event during initial setup:", event);
-                return;
-            }
+            console.log("Auth event received:", event);
+            clearTimeout(failsafeTimer);
 
-            console.log("Auth event:", event);
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                setLoading(true);
+            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 await syncUserData(currentSession);
-                router.refresh();
+                if (hasInitialized && event !== 'INITIAL_SESSION') {
+                    router.refresh();
+                }
+                hasInitialized = true;
             } else if (event === 'SIGNED_OUT') {
                 await syncUserData(null);
-                router.refresh();
+                if (hasInitialized) {
+                    router.refresh();
+                }
+                hasInitialized = true;
             }
         });
 
