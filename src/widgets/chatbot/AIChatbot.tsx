@@ -8,13 +8,12 @@ import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from 'marked';
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Capacitor } from "@capacitor/core";
+import { supabase } from "@shared/lib/supabase";
 
 interface Message {
     role: "user" | "assistant" | "system";
     content: string;
 }
-
-import { apiUrl } from "@shared/lib/api";
 
 export default function AIChatbot() {
     const { user } = useAuth();
@@ -69,15 +68,11 @@ export default function AIChatbot() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(apiUrl('/api/chat'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: [...messages, userMessage] })
+            const { data, error } = await supabase.functions.invoke('chat', {
+                body: { messages: [...messages, userMessage] }
             });
 
-            if (!response.ok) throw new Error('Failed to fetch');
-
-            const data = await response.json();
+            if (error) throw new Error(error.message);
             const botMessage = data.result;
 
             setMessages(prev => [...prev, botMessage]);

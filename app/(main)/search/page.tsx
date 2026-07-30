@@ -11,7 +11,6 @@ import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
-import { apiUrl } from "@shared/lib/api";
 
 export default function SearchPage() {
     return (
@@ -79,8 +78,10 @@ function SearchContent() {
         setLoading(true);
         setCurrentPage(page);
         try {
-            const res = await fetch(apiUrl(`/api/search?query=${encodeURIComponent(query)}&page=${page}`));
-            const data = await res.json();
+            const { data, error } = await supabase.functions.invoke(
+                `recommendations?query=${encodeURIComponent(query)}&page=${page}&apiType=Search`
+            );
+            if (error) throw error;
             if (data.item) {
                 setTotalResults(data.totalResults || 0);
                 setSearchResults(data.item.map((it: AladinSearchItem) => ({

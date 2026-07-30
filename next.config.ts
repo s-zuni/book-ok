@@ -22,7 +22,7 @@ const baseConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   images: {
-    unoptimized: isCapacitorBuild,
+    unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "image.aladin.co.kr" },
       { protocol: "https", hostname: "covers.openlibrary.org" },
@@ -34,46 +34,9 @@ const baseConfig: NextConfig = {
   },
 };
 
-// ──────────────────────────────────────────────
-// 빌드 타겟별 최종 설정
-// ──────────────────────────────────────────────
-const nextConfig: NextConfig = isCapacitorBuild
-  ? {
-      // ── Capacitor (Static Export) ──────────
-      ...baseConfig,
-      output: 'export',
-      // headers/rewrites 함수를 아예 정의하지 않아 경고 방지
-    }
-  : {
-      // ── Web (Vercel SSR/ISR) ──────────────
-      ...baseConfig,
-
-
-
-      // Supabase 프록시 리라이트
-      async rewrites() {
-        return [
-          {
-            source: "/supabase/:path*",
-            destination: `${SUPABASE_URL}/:path*`,
-          },
-        ];
-      },
-
-      // 모바일 네이티브 앱(Capacitor) 통신 허용을 위한 글로벌 CORS 헤더 설정
-      async headers() {
-        return [
-          {
-            source: "/api/:path*",
-            headers: [
-              { key: "Access-Control-Allow-Credentials", value: "true" },
-              { key: "Access-Control-Allow-Origin", value: "*" },
-              { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
-              { key: "Access-Control-Allow-Headers", value: "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version" },
-            ],
-          },
-        ];
-      },
-    };
+const nextConfig: NextConfig = {
+  ...baseConfig,
+  output: 'export',
+};
 
 export default nextConfig;

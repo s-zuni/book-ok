@@ -255,9 +255,10 @@ export default function HomeContent() {
         const fetchLibrarianPicks = async () => {
             setLibrarianLoading(true);
             try {
-                const res = await fetch(apiUrl(`/api/recommendations?apiType=ItemList&queryType=ItemEditorChoice&categoryId=1108`));
-                if (res.ok) {
-                    const data = await res.json();
+                const { data, error } = await supabase.functions.invoke(
+                    `recommendations?apiType=ItemList&queryType=ItemEditorChoice&categoryId=1108`
+                );
+                if (!error && data) {
                     const items = data.item || [];
                     
                     // Client-side sort to support popular vs latest
@@ -298,9 +299,10 @@ export default function HomeContent() {
             setAwardLoading(true);
             try {
                 const sortType = awardSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent("문학상")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`));
-                if (res.ok) {
-                    const data = await res.json();
+                const { data, error } = await supabase.functions.invoke(
+                    `recommendations?query=${encodeURIComponent("문학상")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`
+                );
+                if (!error && data) {
                     const items: AladinRecommendItem[] = data.item?.slice(0, 8) || [];
                     const formatted = items.map((item: AladinRecommendItem) => ({
                         id: item.isbn13 || item.itemId || '',

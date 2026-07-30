@@ -7,7 +7,7 @@ import { RECOMMENDATION_TABS } from "@shared/lib/constants";
 import EmptyState from "@shared/ui/EmptyState";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 
-import { apiUrl } from "@shared/lib/api";
+import { supabase } from "@shared/lib/supabase";
 
 interface RecommendationSectionProps {
     title: string;
@@ -70,14 +70,12 @@ interface AladinRecommendItem {
             try {
                 let items: AladinRecommendItem[] = [];
  
-                // Existing logic for Aladin API
-                // Determine sort param
-                // PublishTime: Newest, SalesPoint: Best Selling, Accuracy: Relevance
-                const fetchUrl = apiUrl(`/api/recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&apiType=${currentApiType}&queryType=${currentQueryType}&_t=${Date.now()}`);
-                console.log(`Fetching Aladin: ${fetchUrl}`);
-                const res = await fetch(fetchUrl);
-                if (!res.ok) throw new Error("Failed");
-                const data = await res.json();
+                // Invoke Supabase Edge Function recommendations
+                const { data, error } = await supabase.functions.invoke(
+                    `recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&apiType=${currentApiType}&queryType=${currentQueryType}`
+                );
+                
+                if (error) throw error;
                 console.log('Aladin Data:', data);
                 if (data.item) {
                     items = limit ? data.item.slice(0, limit) : data.item;

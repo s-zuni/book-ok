@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Book } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import { Sparkles, TrendingUp, AlertCircle, BarChart3 } from "lucide-react";
-import { apiUrl } from "@shared/lib/api";
+import { supabase } from "@shared/lib/supabase";
 
 interface AIRecommendationListProps {
     keywords: string[];
@@ -91,8 +91,8 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
 
                 // 2. 선호 장르 기반 추천 (기존 키워드 + 선호 장르)
                 const query = keywords.slice(0, 2).join(' ');
-                const preferredRes = await fetch(
-                    apiUrl(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=1108&sort=SalesPoint`)
+                const { data: preferredData, error: preferredError } = await supabase.functions.invoke(
+                    `recommendations?query=${encodeURIComponent(query)}&categoryId=1108&sort=SalesPoint`
                 );
 
 interface AladinItem {
@@ -106,10 +106,9 @@ interface AladinItem {
     description: string;
 }
 
-                if (preferredRes.ok) {
-                    const data = await preferredRes.json();
-                    if (data.item) {
-                        const mapped: Book[] = data.item.map((item: AladinItem) => ({
+                if (!preferredError && preferredData) {
+                    if (preferredData.item) {
+                        const mapped: Book[] = preferredData.item.map((item: AladinItem) => ({
                             id: item.isbn13 || item.isbn || '',
                             bookid: item.isbn13 || item.isbn || '',
                             title: item.title,
@@ -132,14 +131,13 @@ interface AladinItem {
                         const config = GENRE_CATEGORIES[genre];
                         if (!config) continue;
 
-                        const balancedRes = await fetch(
-                            apiUrl(`/api/recommendations?query=${encodeURIComponent(config.keywords[0])}&categoryId=${config.categoryId}&sort=SalesPoint&maxResults=4`)
+                        const { data: balancedData, error: balancedError } = await supabase.functions.invoke(
+                            `recommendations?query=${encodeURIComponent(config.keywords[0])}&categoryId=${config.categoryId}&sort=SalesPoint&maxResults=4`
                         );
 
-                        if (balancedRes.ok) {
-                            const data = await balancedRes.json();
-                            if (data.item) {
-                                const mapped: Book[] = data.item.slice(0, 2).map((item: AladinItem) => ({
+                        if (!balancedError && balancedData) {
+                            if (balancedData.item) {
+                                const mapped: Book[] = balancedData.item.slice(0, 2).map((item: AladinItem) => ({
                                     id: item.isbn13 || item.isbn || '',
                                     bookid: item.isbn13 || item.isbn || '',
                                     title: item.title,
