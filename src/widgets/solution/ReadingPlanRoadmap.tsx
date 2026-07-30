@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Book, Child } from "@shared/types";
 import { Calendar, Target, Lightbulb, ChevronDown, ChevronUp, Sparkles, CheckCircle2, BookOpen, Activity, Loader2 } from "lucide-react";
-import { apiUrl } from "@shared/lib/api";
+import { supabase } from "@shared/lib/supabase";
 
 interface WeeklyPlan {
     week: number;
@@ -60,10 +60,8 @@ export default function ReadingPlanRoadmap({
         setError(null);
 
         try {
-            const response = await fetch(apiUrl('/api/reading-plan'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
+            const { data, error } = await supabase.functions.invoke('reading-plan', {
+                body: {
                     childName: child.name,
                     childAge: child.birthdate
                         ? Math.floor((Date.now() - new Date(child.birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
@@ -78,10 +76,12 @@ export default function ReadingPlanRoadmap({
                     analysisResult,
                     keywords,
                     missingGenres
-                })
+                }
             });
 
-            const data = await response.json();
+            if (error) {
+                throw error;
+            }
 
             if (data.success && data.plan) {
                 setPlan(data.plan);

@@ -131,9 +131,10 @@ export function SolutionPageContent() {
     // Helper to fetch and format book details from Aladin API
     const fetchAladinBook = async (title: string): Promise<RecommendedBook | null> => {
         try {
-            const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`));
-            if (!res.ok) return null;
-            const data = await res.json();
+            const { data, error } = await supabase.functions.invoke(
+                `recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`
+            );
+            if (error) throw error;
             const item = data.item?.[0];
             if (!item) return null;
             return {
@@ -215,9 +216,10 @@ export function SolutionPageContent() {
     // Load custom recommended books on demand
     const loadAnalysisBooks = async (categoryId: string = "1108", query: string = "추천도서") => {
         try {
-            const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`));
-            if (res.ok) {
-                const data = await res.json();
+            const { data, error } = await supabase.functions.invoke(
+                `recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`
+            );
+            if (!error && data) {
                 const items = data.item?.slice(0, 5) || [];
                 const parsed = items.map((item: AladinRecommendItem) => ({
                     id: item.itemId,
@@ -275,14 +277,11 @@ export function SolutionPageContent() {
                  [RECOMMENDED_BOOKS: 무지개 물고기, 언제나 사랑해]
             `;
 
-            const response = await fetch(apiUrl('/api/openai'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
+            const { data, error } = await supabase.functions.invoke('chat', {
+                body: { prompt, mode: 'expert' }
             });
 
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'API Error');
+            if (error) throw error;
 
             let resultText = data.result || "죄송해요, 솔루션을 생성할 수 없습니다.";
 
@@ -308,9 +307,10 @@ export function SolutionPageContent() {
                 }
 
                 // Fetch matching recommendation books from Aladin
-                const searchRes = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`));
-                if (searchRes.ok) {
-                    const searchData = await searchRes.json();
+                const { data: searchData, error: searchError } = await supabase.functions.invoke(
+                    `recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`
+                );
+                if (!searchError && searchData) {
                     const items = searchData.item?.slice(0, 3) || [];
                     for (const item of items) {
                         loadedBooks.push({
@@ -381,15 +381,12 @@ export function SolutionPageContent() {
             }
             `;
 
-            const res = await fetch(apiUrl('/api/openai'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
+            const { data, error } = await supabase.functions.invoke('chat', {
+                body: { prompt, mode: 'expert' }
             });
 
-            if (res.ok) {
-                const data = await res.json();
-                const cleanJson = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
+            if (!error && data) {
+                const cleanJson = data.result.content.replace(/```json/g, '').replace(/```/g, '').trim();
                 const recommendation = JSON.parse(cleanJson);
                 if (recommendation.recommendedCategory) {
                     setAiCoachCategory(recommendation.recommendedCategory);
@@ -621,10 +618,10 @@ export function SolutionPageContent() {
             const recentBooks = userReadBooks.slice(0, 5);
             const enrichedBooks = await Promise.all(recentBooks.map(async (book: BookWithObservation) => {
                 try {
-                    // Assuming book.bookid is the ISBN13 or ItemId
-                    const res = await fetch(apiUrl(`/api/book-detail?itemId=${book.bookid}`));
-                    if (!res.ok) return book;
-                    const details = await res.json();
+                    const { data: details, error } = await supabase.functions.invoke(
+                        `recommendations?itemId=${book.bookid}&apiType=ItemLookUp`
+                    );
+                    if (error || !details) return book;
                     return { ...book, description: details.description, toc: details.toc };
                 } catch (e) {
                     console.error("Failed to fetch details for", book.title);
@@ -746,21 +743,15 @@ export function SolutionPageContent() {
         }
       `;
 
-            const response = await fetch(apiUrl('/api/openai'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
+            const { data, error } = await supabase.functions.invoke('chat', {
+                body: { prompt, mode: 'expert' }
             });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'API Error');
-            }
+            if (error) throw error;
 
             let resultData;
             try {
-                const cleanJson = data.result.replace(/```json/g, '').replace(/```/g, '').trim();
+                const cleanJson = data.result.content.replace(/```json/g, '').replace(/```/g, '').trim();
                 resultData = JSON.parse(cleanJson);
             } catch (e) {
                 console.error("JSON Parse Error:", e);
@@ -810,19 +801,13 @@ export function SolutionPageContent() {
           5. **마무리**: 긍정적인 격려의 말로 마무리하세요.
         `;
 
-            const response = await fetch(apiUrl('/api/openai'), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
+            const { data, error } = await supabase.functions.invoke('chat', {
+                body: { prompt, mode: 'expert' }
             });
 
-            const data = await response.json();
+            if (error) throw error;
 
-            if (!response.ok) {
-                throw new Error(data.error || 'API Error');
-            }
-
-            const solutionText = data.result || "솔루션을 생성할 수 없습니다.";
+            const solutionText = data.result.content || "솔루션을 생성할 수 없습니다.";
             setAiSolutionResult(solutionText);
 
         } catch (error) {

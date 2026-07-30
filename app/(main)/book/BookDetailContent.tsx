@@ -80,30 +80,27 @@ export default function BookDetailContent() {
             }
 
             if (!success) {
-                // 2. Try Aladin via API fallback if not found in Supabase (e.g. from Aladin recommendations/search)
+                // 2. Try Aladin via Edge Function fallback if not found in Supabase
                 try {
-                    const res = await fetch(apiUrl(`/api/book-detail?itemId=${bookId}`));
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.item) {
-                            const rawItem = data.item;
-                            // Format raw Aladin item to match Book type
-                            const formattedBook: Book = {
-                                id: rawItem.isbn13 || rawItem.isbn || bookId,
-                                bookid: rawItem.isbn13 || rawItem.isbn || bookId,
-                                title: rawItem.title?.split(" - ")?.[0] || rawItem.title,
-                                author: rawItem.author?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || rawItem.author || '저자 미상',
-                                imgsrc: rawItem.cover,
-                                category: rawItem.categoryName?.split('>')?.[1]?.trim() || rawItem.categoryName || '기타',
-                                description: rawItem.description || data.description || '',
-                                pubDate: rawItem.pubDate || '',
-                                publisher: rawItem.publisher || '',
-                            };
-                            setBook(formattedBook);
-                            setIsApiBook(true);
-                        } else {
-                            setBook(null);
-                        }
+                    const { data, error } = await supabase.functions.invoke(
+                        `recommendations?itemId=${bookId}&apiType=ItemLookUp`
+                    );
+                    if (!error && data && data.item) {
+                        const rawItem = data.item;
+                        // Format raw Aladin item to match Book type
+                        const formattedBook: Book = {
+                            id: rawItem.isbn13 || rawItem.isbn || bookId,
+                            bookid: rawItem.isbn13 || rawItem.isbn || bookId,
+                            title: rawItem.title?.split(" - ")?.[0] || rawItem.title,
+                            author: rawItem.author?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || rawItem.author || '저자 미상',
+                            imgsrc: rawItem.cover,
+                            category: rawItem.categoryName?.split('>')?.[1]?.trim() || rawItem.categoryName || '기타',
+                            description: rawItem.description || data.description || '',
+                            pubDate: rawItem.pubDate || '',
+                            publisher: rawItem.publisher || '',
+                        };
+                        setBook(formattedBook);
+                        setIsApiBook(true);
                     } else {
                         setBook(null);
                     }
@@ -171,9 +168,10 @@ export default function BookDetailContent() {
                 const libCodes = favoriteLibs.map(l => l.libCode).join(',');
                 const isbn = book.id || book.bookid || bookId;
                 
-                const res = await fetch(apiUrl(`/api/library/book-status?isbn=${isbn}&libCodes=${libCodes}`));
-                if (!res.ok) throw new Error("도서관 소장 여부 조회 실패");
-                const data = await res.json();
+                const { data, error } = await supabase.functions.invoke(
+                    `library?apiType=book-status&isbn=${isbn}&libCodes=${libCodes}`
+                );
+                if (error) throw error;
                 
                 // Map the results back to include the library names
                 const statusResults = (data.results || []).map((result: HoldingResult) => {

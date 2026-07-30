@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
-import { apiUrl } from "@shared/lib/api";
+
 
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
@@ -77,9 +77,10 @@ export default function MyPage() {
             }
             setIsSearchingLibraries(true);
             try {
-                const res = await fetch(apiUrl(`/api/library/search?region=${selectedRegion}&dtl_region=${selectedSubRegion}`));
-                if (!res.ok) throw new Error("도서관 검색 실패");
-                const data = await res.json();
+                const { data, error } = await supabase.functions.invoke(
+                    `library?apiType=search&region=${selectedRegion}&dtl_region=${selectedSubRegion}`
+                );
+                if (error) throw error;
                 setFoundLibraries(data.libraries || []);
             } catch (err) {
                 console.error(err);
@@ -240,11 +241,12 @@ export default function MyPage() {
         const toastId = toast.loading("계정 삭제 중...");
 
         try {
-            const res = await fetch(apiUrl('/api/auth/delete-account'), { method: 'DELETE' });
-            const data = await res.json();
+            const { data, error } = await supabase.functions.invoke('delete-account', {
+                method: 'DELETE'
+            });
 
-            if (!res.ok) {
-                throw new Error(data.error || '계정 삭제 실패');
+            if (error) {
+                throw error;
             }
 
             toast.success("계정이 삭제되었습니다. 이용해 주셔서 감사합니다.", { id: toastId, duration: 4000 });

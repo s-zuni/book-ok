@@ -8,10 +8,10 @@ import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from "marked";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { Book } from "@shared/types";
-import { apiUrl } from "@shared/lib/api";
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { supabase } from "@shared/lib/supabase";
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -89,10 +89,13 @@ export default function ChatPage() {
     // Helper to fetch and format book details from Aladin API
     const fetchAladinBook = async (title: string): Promise<Book | null> => {
         try {
-            const res = await fetch(apiUrl(`/api/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`));
-            if (!res.ok) return null;
-            const data = await res.json();
-            const item = data.item?.[0];
+            // Fetch with query parameters in path:
+            const { data: bookData, error: bookError } = await supabase.functions.invoke(
+                `recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`
+            );
+
+            if (bookError) throw bookError;
+            const item = bookData?.item?.[0];
             if (!item) return null;
             return {
                 id: item.isbn13 || item.isbn || item.itemId,
@@ -223,15 +226,11 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(apiUrl("/api/chat"), {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage] })
+            const { data, error } = await supabase.functions.invoke("chat", {
+                body: { messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage] }
             });
 
-            if (!response.ok) throw new Error("Failed to fetch chat");
-
-            const data = await response.json();
+            if (error) throw error;
             const botMessage = data.result;
             let content = botMessage.content;
             
