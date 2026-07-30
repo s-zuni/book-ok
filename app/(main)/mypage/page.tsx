@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
-import ReadingGoalWidget from "@features/reading/ReadingGoalWidget";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 
@@ -650,15 +649,6 @@ export default function MyPage() {
                                 </div>
                                 <ChevronRight size={20} className="text-gray-300" />
                             </button>
-
-                            {/* Reading Goal Widget */}
-                            {activeChild && user && (
-                                <ReadingGoalWidget
-                                    child={activeChild}
-                                    userId={user.id}
-                                    readBooks={readBooks}
-                                />
-                            )}
                         </div>
 
                         <div className="mt-8 text-center space-y-3">
