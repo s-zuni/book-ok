@@ -78,7 +78,9 @@ export default function MyPage() {
             setIsSearchingLibraries(true);
             try {
                 const { data, error } = await supabase.functions.invoke(
-                    `library?apiType=search&region=${selectedRegion}&dtl_region=${selectedSubRegion}`
+                    'library', {
+                        body: { apiType: 'search', region: selectedRegion, dtl_region: selectedSubRegion }
+                    }
                 );
                 if (error) throw error;
                 setFoundLibraries(data.libraries || []);

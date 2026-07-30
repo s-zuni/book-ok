@@ -168,7 +168,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     fetchUserProfile(userId, currentUser),
                     fetchChildrenData(userId),
                 ]);
-                setUserProfile(profile);
+                setUserProfile(profile || getProfileFromMetadata(currentUser));
                 setLoading(false);
                 setIsInitialized(true);
                 isInitRef.current = true;

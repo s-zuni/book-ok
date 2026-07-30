@@ -72,7 +72,15 @@ interface AladinRecommendItem {
  
                 // Invoke Supabase Edge Function recommendations
                 const { data, error } = await supabase.functions.invoke(
-                    `recommendations?query=${encodeURIComponent(currentQuery)}&categoryId=${currentCategoryId}&sort=${sortBy}&apiType=${currentApiType}&queryType=${currentQueryType}`
+                    'recommendations', {
+                        body: {
+                            query: currentQuery,
+                            categoryId: currentCategoryId,
+                            sort: sortBy,
+                            apiType: currentApiType,
+                            queryType: currentQueryType
+                        }
+                    }
                 );
                 
                 if (error) throw error;

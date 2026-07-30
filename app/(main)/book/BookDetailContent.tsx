@@ -83,7 +83,9 @@ export default function BookDetailContent() {
                 // 2. Try Aladin via Edge Function fallback if not found in Supabase
                 try {
                     const { data, error } = await supabase.functions.invoke(
-                        `recommendations?itemId=${bookId}&apiType=ItemLookUp`
+                        'recommendations', {
+                            body: { itemId: bookId, apiType: 'ItemLookUp' }
+                        }
                     );
                     if (!error && data && data.item) {
                         const rawItem = data.item;
@@ -169,7 +171,9 @@ export default function BookDetailContent() {
                 const isbn = book.id || book.bookid || bookId;
                 
                 const { data, error } = await supabase.functions.invoke(
-                    `library?apiType=book-status&isbn=${isbn}&libCodes=${libCodes}`
+                    'library', {
+                        body: { apiType: 'book-status', isbn: isbn, libCodes: libCodes }
+                    }
                 );
                 if (error) throw error;
                 

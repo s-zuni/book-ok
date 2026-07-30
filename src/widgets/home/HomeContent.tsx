@@ -256,7 +256,9 @@ export default function HomeContent() {
             setLibrarianLoading(true);
             try {
                 const { data, error } = await supabase.functions.invoke(
-                    `recommendations?apiType=ItemList&queryType=ItemEditorChoice&categoryId=1108`
+                    'recommendations', {
+                        body: { apiType: 'ItemList', queryType: 'ItemEditorChoice', categoryId: '1108' }
+                    }
                 );
                 if (!error && data) {
                     const items = data.item || [];
@@ -300,7 +302,9 @@ export default function HomeContent() {
             try {
                 const sortType = awardSort === 'popular' ? 'SalesPoint' : 'PublishTime';
                 const { data, error } = await supabase.functions.invoke(
-                    `recommendations?query=${encodeURIComponent("문학상")}&apiType=ItemSearch&sort=${sortType}&categoryId=1108`
+                    'recommendations', {
+                        body: { query: '문학상', apiType: 'ItemSearch', sort: sortType, categoryId: '1108' }
+                    }
                 );
                 if (!error && data) {
                     const items: AladinRecommendItem[] = data.item?.slice(0, 8) || [];

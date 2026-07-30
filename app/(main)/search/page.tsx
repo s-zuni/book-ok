@@ -79,7 +79,9 @@ function SearchContent() {
         setCurrentPage(page);
         try {
             const { data, error } = await supabase.functions.invoke(
-                `recommendations?query=${encodeURIComponent(query)}&page=${page}&apiType=Search`
+                'recommendations', {
+                    body: { query: query, page: page, apiType: 'Search' }
+                }
             );
             if (error) throw error;
             if (data.item) {

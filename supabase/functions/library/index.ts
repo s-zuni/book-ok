@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -13,20 +13,40 @@ serve(async (req) => {
   }
 
   try {
+    let apiType = "";
+    let isbn = "";
+    let libCodesStr = "";
+    let region = "";
+    let dtl_region = "";
+
+    // 1. Try to read from POST JSON body first
+    if (req.method === "POST") {
+      try {
+        const body = await req.clone().json();
+        apiType = body.apiType || "";
+        isbn = body.isbn || "";
+        libCodesStr = body.libCodes || "";
+        region = body.region || "";
+        dtl_region = body.dtl_region || "";
+      } catch (e) {
+        // Ignore
+      }
+    }
+
+    // 2. Fallback to URL search parameters
     const urlObj = new URL(req.url);
-    const apiType = urlObj.searchParams.get("apiType"); // 'search' or 'book-status'
-    
+    apiType = apiType || urlObj.searchParams.get("apiType") || "";
+    isbn = isbn || urlObj.searchParams.get("isbn") || "";
+    libCodesStr = libCodesStr || urlObj.searchParams.get("libCodes") || "";
+    region = region || urlObj.searchParams.get("region") || "";
+    dtl_region = dtl_region || urlObj.searchParams.get("dtl_region") || "";
+
     let API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY");
     if (!API_KEY) {
-      // Fallback auth key
       API_KEY = "6be31d996e38b30fa59d6be40c0f4f9f257a4192b0c36f54c935400ad6b85cc1";
     }
 
-    if (apiType === "book-status" || urlObj.searchParams.has("isbn")) {
-      // 1. 도서관 소장 여부 확인 (library/book-status/route.ts 이관)
-      const isbn = urlObj.searchParams.get("isbn");
-      const libCodesStr = urlObj.searchParams.get("libCodes");
-
+    if (apiType === "book-status" || isbn) {
       if (!isbn) {
         return new Response(
           JSON.stringify({ error: "isbn parameter is required" }),
@@ -74,10 +94,6 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else {
-      // 2. 도서관 목록 검색 (library/search/route.ts 이관)
-      const region = urlObj.searchParams.get("region");
-      const dtl_region = urlObj.searchParams.get("dtl_region");
-
       let fetchUrl = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150`;
       if (region) fetchUrl += `&region=${region}`;
       if (dtl_region) fetchUrl += `&dtl_region=${dtl_region}`;
