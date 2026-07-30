@@ -107,6 +107,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 
                 toast.success("로그인되었습니다.");
                 onClose();
+                
+                // Force page reload to ensure Next.js App Router cache is updated
+                setTimeout(() => {
+                    window.location.reload();
+                }, 100);
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
