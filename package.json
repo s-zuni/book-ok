@@ -10,7 +10,8 @@
     "build:cap": "node scripts/build-cap.js",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
@@ -46,6 +47,7 @@
     "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "patch-package": "^8.0.1",
     "supabase": "^2.70.5",
     "tailwindcss": "^4",
     "typescript": "^5"
