@@ -43,6 +43,7 @@ export interface Post {
     image_url?: string;
     is_notice: boolean;
     is_deleted: boolean;
+    comments?: { count: number }[];
 }
 
 export interface Comment {

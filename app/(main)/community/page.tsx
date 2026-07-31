@@ -12,6 +12,21 @@ import SkeletonLoader from "@shared/ui/SkeletonLoader";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import { toast } from "sonner";
 
+const getRelativeTime = (dateStr: string) => {
+    const now = new Date();
+    const date = new Date(dateStr);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return "방금 전";
+    if (diffMins < 60) return `${diffMins}분 전`;
+    if (diffHours < 24) return `${diffHours}시간 전`;
+    if (diffDays < 7) return `${diffDays}일 전`;
+    return date.toLocaleDateString();
+};
+
 export default function CommunityPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('comm');
     const [activeSubMenu, setActiveSubMenu] = useState('전체 게시글');
@@ -51,7 +66,7 @@ export default function CommunityPage() {
         if (isInitial) setLoading(true);
 
         try {
-            let query = supabase.from('posts').select('*', { count: 'exact' });
+            let query = supabase.from('posts').select('*, comments(count)', { count: 'exact' });
 
             // Filter out hidden posts
             query = query.eq('is_deleted', false);
@@ -111,6 +126,8 @@ export default function CommunityPage() {
     };
 
     const dummySetView = () => { };
+    const notices = posts.filter(p => p.is_notice);
+    const regularPosts = posts.filter(p => !p.is_notice);
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] text-gray-900 font-sans pb-24 lg:pb-0">
@@ -152,32 +169,42 @@ export default function CommunityPage() {
                                 <SkeletonLoader count={5} type="list" />
                             ) : (
                                 <>
-                                    {posts.map((post) => (
+                                    {/* Notices Pinned at Top (Small & Compact) */}
+                                    {notices.length > 0 && (
+                                        <div className="bg-emerald-50/20 border border-emerald-100/50 rounded-3xl p-5 mb-8 space-y-3">
+                                            {notices.map((notice) => (
+                                                <div key={notice.id} className="flex items-center gap-3 py-2 cursor-pointer hover:bg-emerald-50/55 px-3 rounded-xl transition"
+                                                    onClick={() => router.push(`/community/post?id=${notice.id}`)}>
+                                                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black px-2 py-0.5 rounded border border-emerald-200 shadow-sm shrink-0">공지</span>
+                                                    <h4 className="font-extrabold text-sm text-gray-800 hover:text-emerald-700 transition truncate flex-1">{notice.title}</h4>
+                                                    <span className="text-xs text-gray-400 shrink-0 font-medium">{getRelativeTime(notice.created_at)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Regular Posts List */}
+                                    {regularPosts.map((post) => (
                                         <div key={post.id} className="border-b border-gray-100 pb-8 cursor-pointer group"
                                             onClick={() => router.push(`/community/post?id=${post.id}`)}>
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className="w-6 h-6 rounded-full bg-gray-200" />
                                                 <span className="text-xs font-bold text-gray-800">{post.author_nickname || '익명'}</span>
-                                                <span className="text-xs text-gray-400">· {new Date(post.created_at).toLocaleDateString()}</span>
+                                                <span className="text-xs text-gray-400">· {getRelativeTime(post.created_at)}</span>
                                             </div>
                                             <div className="flex justify-between gap-6">
                                                 <div className="flex-1">
-                                                    {post.is_notice && (
-                                                        <div className="flex items-center gap-1.5 mb-2">
-                                                            <Megaphone size={14} className="text-emerald-600 fill-emerald-50" />
-                                                            <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-100 shadow-sm shadow-emerald-50">NOTICE</span>
-                                                        </div>
-                                                    )}
-                                                    <h3 className={`font-black text-xl group-hover:text-green-600 transition-colors mb-2 leading-tight ${post.is_notice ? 'text-emerald-700' : 'text-gray-900'}`}>
+                                                    <h3 className="font-black text-xl group-hover:text-green-600 transition-colors mb-2 leading-tight text-gray-900">
                                                         {post.title}
                                                     </h3>
                                                     <p className="text-gray-500 text-sm line-clamp-3 mb-4 leading-relaxed font-medium">
                                                         {post.content.replace(/<[^>]*>?/gm, '').substring(0, 100)}...
-                                                    </p>
+                                                     </p>
                                                     <div className="flex items-center gap-4 text-xs text-gray-400 font-medium">
                                                         <span className="bg-gray-100 px-2 py-1 rounded text-gray-500">{post.category}</span>
                                                         <span className="flex items-center gap-1"><Eye size={14} /> {post.views}</span>
                                                         <span className="flex items-center gap-1"><Heart size={14} /> {post.likes}</span>
+                                                        <span className="flex items-center gap-1"><MessageSquare size={14} /> {post.comments?.[0]?.count || 0}</span>
                                                     </div>
                                                 </div>
                                                 {post.image_url ? (
@@ -187,7 +214,7 @@ export default function CommunityPage() {
                                                 ) : (
                                                     <div className="w-32 h-32 bg-gray-55 rounded-xl shrink-0 overflow-hidden flex items-center justify-center text-gray-200">
                                                         <MessageSquare size={32} />
-                                                    </div>
+                                                     </div>
                                                 )}
                                             </div>
                                         </div>
@@ -263,8 +290,27 @@ export default function CommunityPage() {
                         <SkeletonLoader count={4} type="list" />
                     ) : (
                         <>
-                            {posts.map((post) => {
-                                const isNotice = post.is_notice;
+                            {/* Notices Pinned at Top (Small & Compact) */}
+                            {notices.length > 0 && (
+                                <div className="space-y-2 mb-4 bg-emerald-50/20 border border-emerald-100/50 rounded-3xl p-4">
+                                    {notices.map((notice) => (
+                                        <div
+                                            key={notice.id}
+                                            onClick={() => router.push(`/community/post?id=${notice.id}`)}
+                                            className="bg-white border border-emerald-100/40 rounded-xl px-4 py-3 active:scale-[0.99] transition-transform duration-200 flex items-center justify-between cursor-pointer gap-3"
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <span className="bg-emerald-100 text-emerald-800 text-[9.5px] font-black px-1.5 py-0.5 rounded-md shrink-0">공지</span>
+                                                <h4 className="font-extrabold text-[13px] text-gray-900 truncate leading-tight tracking-tight">{notice.title}</h4>
+                                            </div>
+                                            <span className="text-[10px] font-bold text-gray-400 shrink-0">{getRelativeTime(notice.created_at)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Regular Posts List */}
+                            {regularPosts.map((post) => {
                                 const isPopular = post.views > 20 || activeSubMenu === '인기 게시판';
                                 
                                 return (
@@ -281,14 +327,12 @@ export default function CommunityPage() {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-[12px] font-black text-gray-800">{post.author_nickname || '익명'}</span>
-                                                    <span className="text-[9.5px] font-bold text-gray-400">2시간 전</span> {/* Hardcoded mockup time similar to screenshot */}
+                                                    <span className="text-[9.5px] font-bold text-gray-400">{getRelativeTime(post.created_at)}</span>
                                                 </div>
                                             </div>
 
                                             {/* Tag badges */}
-                                            {isNotice ? (
-                                                <span className="bg-emerald-50 text-emerald-700 text-[9.5px] font-black px-2 py-0.5 rounded-full border border-emerald-100">공지</span>
-                                            ) : isPopular ? (
+                                            {isPopular ? (
                                                 <span className="bg-red-50 text-[#EF4444] text-[9.5px] font-black px-2 py-0.5 rounded-full">🔥 인기</span>
                                             ) : (
                                                 <span className="bg-sky-50 text-sky-700 text-[9.5px] font-black px-2 py-0.5 rounded-full">{post.category}</span>
@@ -314,8 +358,8 @@ export default function CommunityPage() {
 
                                         {/* Post footer interactions */}
                                         <div className="flex items-center gap-4 text-[11px] font-bold text-gray-400 mt-auto border-t border-gray-50 pt-3">
-                                            <span className="flex items-center gap-1.5"><Heart size={14} className="text-red-400 fill-red-50" /> 24</span>
-                                            <span className="flex items-center gap-1.5"><MessageSquare size={14} /> 12</span>
+                                            <span className="flex items-center gap-1.5"><Heart size={14} className="text-red-400 fill-red-50" /> {post.likes}</span>
+                                            <span className="flex items-center gap-1.5"><MessageSquare size={14} /> {post.comments?.[0]?.count || 0}</span>
                                         </div>
                                     </div>
                                 );
