@@ -64,6 +64,9 @@ workflows:
 
       - name: Build iOS App
         script: |
+          echo "=== 0. SPM 패키지 의존성 해결 ==="
+          xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT"
+
           echo "=== 1. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
           xcode-project use-profiles --project "$XCODE_PROJECT"
 
