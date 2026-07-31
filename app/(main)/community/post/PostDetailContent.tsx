@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { ChevronLeft, MessageSquare, Heart, Eye, Megaphone } from "lucide-react";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
@@ -10,8 +10,8 @@ import { supabase } from "@shared/lib/supabase";
 import { Child, Post, Comment, MainMenu } from "@shared/types";
 
 export default function PostDetailPage() {
-    const params = useParams();
-    const postId = params.id as string;
+    const searchParams = useSearchParams();
+    const postId = searchParams.get('id') as string;
     const router = useRouter();
     const { user, userProfile } = useAuth();
 

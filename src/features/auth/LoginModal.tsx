@@ -10,6 +10,7 @@ import { useNativeBridge } from "@shared/lib/native-bridge";
 import { useAuth } from "@features/auth/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
+import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 
 interface LoginModalProps {
     isOpen: boolean;
@@ -55,6 +56,37 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             }
             
             const isNative = Capacitor.isNativePlatform();
+
+            if (provider === 'apple' && isNative) {
+                try {
+                    const result = await SignInWithApple.authorize({
+                        clientId: 'com.bookok.kr.service',
+                        redirectURI: 'com.bookok.kr://auth-callback',
+                        scopes: 'email name',
+                    });
+
+                    if (result.response && result.response.identityToken) {
+                        const { data, error } = await supabase.auth.signInWithIdToken({
+                            provider: 'apple',
+                            token: result.response.identityToken,
+                        });
+                        
+                        if (error) throw error;
+                        
+                        if (data.session) {
+                            await syncUser(data.session);
+                            toast.success("로그인되었습니다.");
+                            onClose();
+                            setTimeout(() => window.location.reload(), 100);
+                        }
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Native Apple Sign In error:', err);
+                    toast.error('Apple 로그인에 실패했습니다.');
+                    return;
+                }
+            }
             const callbackUrl = isNative
                 ? 'com.bookok.kr://auth-callback'
                 : `${window.location.origin}/auth/callback`;

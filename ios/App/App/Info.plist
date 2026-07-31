@@ -62,5 +62,9 @@
 			</array>
 		</dict>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>사용자의 프로필 사진 등록 및 커뮤니티 게시글 사진 첨부를 위해 카메라 접근 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>사용자의 프로필 사진 등록 및 커뮤니티 게시글 사진 첨부를 위해 사진 라이브러리 접근 권한이 필요합니다.</string>
 </dict>
 </plist>

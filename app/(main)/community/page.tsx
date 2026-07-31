@@ -22,27 +22,21 @@ export default function CommunityPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
     const router = useRouter();
-    const { user, userProfile } = useAuth();
+    const { user, userProfile, children } = useAuth();
 
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const POSTS_PER_PAGE = 10;
 
     useEffect(() => {
-        if (user) {
-            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) {
-                    const child = data[0];
-                    const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
-                    setActiveChild({ ...child, age });
-                } else {
-                    setActiveChild(null);
-                }
-            });
+        if (children && children.length > 0) {
+            const child = children[0];
+            const age = new Date().getFullYear() - new Date(child.birthdate).getFullYear();
+            setActiveChild({ ...child, age });
         } else {
             setActiveChild(null);
         }
-    }, [user]);
+    }, [children]);
 
     // Reset posts when sub-menu (category) changes
     useEffect(() => {
@@ -160,7 +154,7 @@ export default function CommunityPage() {
                                 <>
                                     {posts.map((post) => (
                                         <div key={post.id} className="border-b border-gray-100 pb-8 cursor-pointer group"
-                                            onClick={() => router.push(`/community/${post.id}`)}>
+                                            onClick={() => router.push(`/community/post?id=${post.id}`)}>
                                             <div className="flex items-center gap-2 mb-3">
                                                 <div className="w-6 h-6 rounded-full bg-gray-200" />
                                                 <span className="text-xs font-bold text-gray-800">{post.author_nickname || '익명'}</span>
@@ -276,7 +270,7 @@ export default function CommunityPage() {
                                 return (
                                     <div
                                         key={post.id}
-                                        onClick={() => router.push(`/community/${post.id}`)}
+                                        onClick={() => router.push(`/community/post?id=${post.id}`)}
                                         className="bg-white border border-gray-100 rounded-[28px] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] active:scale-[0.99] transition-transform duration-200 flex flex-col cursor-pointer"
                                     >
                                         {/* Profile and Meta */}
