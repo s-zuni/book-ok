@@ -68,16 +68,26 @@ export default function AIChatbot() {
         setIsLoading(true);
 
         try {
-            const { data, error } = await supabase.functions.invoke('chat', {
-                body: { messages: [...messages, userMessage] }
+            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                },
+                body: JSON.stringify({ messages: [...messages, userMessage] })
             });
 
-            if (error) throw new Error(error.message);
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
             const botMessage = data.result;
 
             setMessages(prev => [...prev, botMessage]);
-        } catch (error) {
-            console.error(error);
+        } catch (error: any) {
+            console.error("AI Chatbot Native Fetch Error:", error);
             setMessages(prev => [...prev, { role: "assistant", content: "죄송해요, 잠시 문제가 발생했어요. 다시 시도해주시겠어요?" }]);
         } finally {
             setIsLoading(false);

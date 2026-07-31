@@ -277,11 +277,21 @@ export function SolutionPageContent() {
                  [RECOMMENDED_BOOKS: 무지개 물고기, 언제나 사랑해]
             `;
 
-            const { data, error } = await supabase.functions.invoke('chat', {
-                body: { prompt, mode: 'expert' }
+            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                },
+                body: JSON.stringify({ prompt, mode: 'expert' })
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
 
             let resultText = data.result || "죄송해요, 솔루션을 생성할 수 없습니다.";
 
@@ -381,11 +391,23 @@ export function SolutionPageContent() {
             }
             `;
 
-            const { data, error } = await supabase.functions.invoke('chat', {
-                body: { prompt, mode: 'expert' }
+            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                },
+                body: JSON.stringify({ prompt, mode: 'expert' })
             });
 
-            if (!error && data) {
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data && data.result && data.result.content) {
                 const cleanJson = data.result.content.replace(/```json/g, '').replace(/```/g, '').trim();
                 const recommendation = JSON.parse(cleanJson);
                 if (recommendation.recommendedCategory) {
@@ -743,11 +765,21 @@ export function SolutionPageContent() {
         }
       `;
 
-            const { data, error } = await supabase.functions.invoke('chat', {
-                body: { prompt, mode: 'expert' }
+            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                },
+                body: JSON.stringify({ prompt, mode: 'expert' })
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
 
             let resultData;
             try {
@@ -801,11 +833,21 @@ export function SolutionPageContent() {
           5. **마무리**: 긍정적인 격려의 말로 마무리하세요.
         `;
 
-            const { data, error } = await supabase.functions.invoke('chat', {
-                body: { prompt, mode: 'expert' }
+            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                },
+                body: JSON.stringify({ prompt, mode: 'expert' })
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
 
             const solutionText = data.result.content || "솔루션을 생성할 수 없습니다.";
             setAiSolutionResult(solutionText);
