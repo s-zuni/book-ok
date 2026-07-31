@@ -18,6 +18,8 @@ workflows:
           npm install
           npx patch-package
           node -e "const fs=require('fs');const p='node_modules/@capacitor-community/apple-sign-in/Package.swift';if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8');c=c.replace('7.0.0','8.0.0');fs.writeFileSync(p,c);console.log('✅ Apple Sign In Package.swift patched to 8.0.0');}"
+          echo "=== Debug: Package.swift content ==="
+          cat node_modules/@capacitor-community/apple-sign-in/Package.swift
       - name: Build Web App
         script: |
           npm run build:cap
@@ -66,6 +68,11 @@ workflows:
 
       - name: Build iOS App
         script: |
+          echo "=== 0. SPM 캐시 및 이전 결론 파일 삭제 ==="
+          rm -rf ~/Library/Caches/org.swift.swiftpm
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          find ios -name "Package.resolved" -exec rm -f {} +
+
           echo "=== 0. SPM 패키지 의존성 해결 ==="
           xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT"
 
