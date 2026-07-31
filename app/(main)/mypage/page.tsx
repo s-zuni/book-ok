@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { Child, MainMenu, ReadBook } from "@shared/types";
 import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building, Trash2 } from "lucide-react";
 import { REGIONS, SUB_REGIONS } from "@shared/lib/regions";
@@ -77,12 +77,18 @@ export default function MyPage() {
             }
             setIsSearchingLibraries(true);
             try {
-                const { data, error } = await supabase.functions.invoke(
-                    'library', {
-                        body: { apiType: 'search', region: selectedRegion, dtl_region: selectedSubRegion }
-                    }
-                );
-                if (error) throw error;
+                const response = await fetch(`${supabaseUrl}/functions/v1/library`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({ apiType: 'search', region: selectedRegion, dtl_region: selectedSubRegion })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
                 setFoundLibraries(data.libraries || []);
             } catch (err) {
                 console.error(err);

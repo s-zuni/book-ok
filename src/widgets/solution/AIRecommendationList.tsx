@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Book } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import { Sparkles, TrendingUp, AlertCircle, BarChart3 } from "lucide-react";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 
 interface AIRecommendationListProps {
     keywords: string[];
@@ -91,11 +91,21 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
 
                 // 2. 선호 장르 기반 추천 (기존 키워드 + 선호 장르)
                 const query = keywords.slice(0, 2).join(' ');
-                const { data: preferredData, error: preferredError } = await supabase.functions.invoke(
-                    'recommendations', {
-                        body: { query: query, categoryId: '1108', sort: 'SalesPoint' }
-                    }
-                );
+                const preferredResponse = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({ query: query, categoryId: '1108', sort: 'SalesPoint' })
+                });
+                let preferredData = null;
+                let preferredError = null;
+                if (!preferredResponse.ok) {
+                    preferredError = new Error(`HTTP error! status: ${preferredResponse.status}`);
+                } else {
+                    preferredData = await preferredResponse.json();
+                }
 
 interface AladinItem {
     isbn13?: string;
@@ -133,11 +143,21 @@ interface AladinItem {
                         const config = GENRE_CATEGORIES[genre];
                         if (!config) continue;
 
-                        const { data: balancedData, error: balancedError } = await supabase.functions.invoke(
-                            'recommendations', {
-                                body: { query: config.keywords[0], categoryId: config.categoryId, sort: 'SalesPoint', maxResults: 4 }
-                            }
-                        );
+                        const balancedResponse = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': supabaseAnonKey
+                            },
+                            body: JSON.stringify({ query: config.keywords[0], categoryId: config.categoryId, sort: 'SalesPoint', maxResults: 4 })
+                        });
+                        let balancedData = null;
+                        let balancedError = null;
+                        if (!balancedResponse.ok) {
+                            balancedError = new Error(`HTTP error! status: ${balancedResponse.status}`);
+                        } else {
+                            balancedData = await balancedResponse.json();
+                        }
 
                         if (!balancedError && balancedData) {
                             if (balancedData.item) {

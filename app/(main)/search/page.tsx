@@ -10,7 +10,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
 import { useAuth } from "@features/auth/AuthContext";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 
 export default function SearchPage() {
     return (
@@ -78,12 +78,18 @@ function SearchContent() {
         setLoading(true);
         setCurrentPage(page);
         try {
-            const { data, error } = await supabase.functions.invoke(
-                'recommendations', {
-                    body: { query: query, page: page, apiType: 'Search' }
-                }
-            );
-            if (error) throw error;
+            const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseAnonKey
+                },
+                body: JSON.stringify({ query: query, page: page, apiType: 'Search' })
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
             if (data.item) {
                 setTotalResults(data.totalResults || 0);
                 setSearchResults(data.item.map((it: AladinSearchItem) => ({

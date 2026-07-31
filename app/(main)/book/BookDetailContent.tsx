@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { Book, Review, Child, MainMenu } from "@shared/types";
 import { Star, ChevronLeft, Bookmark, BookOpen, Check, Building, MapPin } from "lucide-react";
 import Header from "@shared/ui/Header";
@@ -84,12 +84,19 @@ export default function BookDetailContent() {
             if (!success) {
                 // 2. Try Aladin via Edge Function fallback if not found in Supabase
                 try {
-                    const { data, error } = await supabase.functions.invoke(
-                        'recommendations', {
-                            body: { itemId: bookId, apiType: 'ItemLookUp' }
-                        }
-                    );
-                    if (!error && data && data.item) {
+                    const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': supabaseAnonKey
+                        },
+                        body: JSON.stringify({ itemId: bookId, apiType: 'ItemLookUp' })
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data && data.item) {
                         const rawItem = data.item;
                         // Format raw Aladin item to match Book type
                         const formattedBook: Book = {
@@ -172,12 +179,18 @@ export default function BookDetailContent() {
                 const libCodes = favoriteLibs.map(l => l.libCode).join(',');
                 const isbn = book.id || book.bookid || bookId;
                 
-                const { data, error } = await supabase.functions.invoke(
-                    'library', {
-                        body: { apiType: 'book-status', isbn: isbn, libCodes: libCodes }
-                    }
-                );
-                if (error) throw error;
+                const response = await fetch(`${supabaseUrl}/functions/v1/library`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({ apiType: 'book-status', isbn: isbn, libCodes: libCodes })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
                 
                 // Map the results back to include the library names
                 const statusResults = (data.results || []).map((result: HoldingResult) => {

@@ -13,7 +13,7 @@ import MainPopup from "@shared/ui/MainPopup";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { toast } from "sonner";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { apiUrl } from "@shared/lib/api";
 
 interface AladinRecommendItem {
@@ -255,12 +255,19 @@ export default function HomeContent() {
         const fetchLibrarianPicks = async () => {
             setLibrarianLoading(true);
             try {
-                const { data, error } = await supabase.functions.invoke(
-                    'recommendations', {
-                        body: { apiType: 'ItemList', queryType: 'ItemEditorChoice', categoryId: '1108' }
-                    }
-                );
-                if (!error && data) {
+                const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({ apiType: 'ItemList', queryType: 'ItemEditorChoice', categoryId: '1108' })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data) {
                     const items = data.item || [];
                     
                     // Client-side sort to support popular vs latest
@@ -301,12 +308,19 @@ export default function HomeContent() {
             setAwardLoading(true);
             try {
                 const sortType = awardSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const { data, error } = await supabase.functions.invoke(
-                    'recommendations', {
-                        body: { query: '문학상', apiType: 'ItemSearch', sort: sortType, categoryId: '1108' }
-                    }
-                );
-                if (!error && data) {
+                const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({ query: '문학상', apiType: 'ItemSearch', sort: sortType, categoryId: '1108' })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data) {
                     const items: AladinRecommendItem[] = data.item?.slice(0, 8) || [];
                     const formatted = items.map((item: AladinRecommendItem) => ({
                         id: item.isbn13 || item.itemId || '',

@@ -7,7 +7,7 @@ import { RECOMMENDATION_TABS } from "@shared/lib/constants";
 import EmptyState from "@shared/ui/EmptyState";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 
 interface RecommendationSectionProps {
     title: string;
@@ -71,19 +71,24 @@ interface AladinRecommendItem {
                 let items: AladinRecommendItem[] = [];
  
                 // Invoke Supabase Edge Function recommendations
-                const { data, error } = await supabase.functions.invoke(
-                    'recommendations', {
-                        body: {
-                            query: currentQuery,
-                            categoryId: currentCategoryId,
-                            sort: sortBy,
-                            apiType: currentApiType,
-                            queryType: currentQueryType
-                        }
-                    }
-                );
-                
-                if (error) throw error;
+                const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({
+                        query: currentQuery,
+                        categoryId: currentCategoryId,
+                        sort: sortBy,
+                        apiType: currentApiType,
+                        queryType: currentQueryType
+                    })
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
                 console.log('Aladin Data:', data);
                 if (data.item) {
                     items = limit ? data.item.slice(0, limit) : data.item;
