@@ -5,7 +5,7 @@ import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
 import { Child, MainMenu, ReadBook } from "@shared/types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building, Trash2 } from "lucide-react";
 import { REGIONS, SUB_REGIONS } from "@shared/lib/regions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -56,6 +56,7 @@ export default function MyPage() {
 
     // Active Child & Stats
     const [activeChild, setActiveChild] = useState<Child | null>(null);
+    const [editingChild, setEditingChild] = useState<Child | null>(null);
     const [readBookCount, setReadBookCount] = useState(0);
     const [readBooks, setReadBooks] = useState<ReadBook[]>([]);
     const [showReadBooksModal, setShowReadBooksModal] = useState(false);
@@ -269,31 +270,81 @@ export default function MyPage() {
         setIsLoading(true);
 
         try {
-            const { data, error } = await supabase.from('children').insert({
-                name: newChildNickname,
-                birthdate: newChildBirthdate,
-                type: newChildType,
-                parent_id: user.id
-            }).select().single();
+            if (editingChild) {
+                const { data, error } = await supabase.from('children').update({
+                    name: newChildNickname,
+                    birthdate: newChildBirthdate,
+                    type: newChildType,
+                }).eq('id', editingChild.id).select().single();
 
-            if (error) {
-                toast.error('아이 프로필 추가 실패: ' + error.message);
+                if (error) {
+                    toast.error('아이 프로필 수정 실패: ' + error.message);
+                } else {
+                    toast.success('아이 프로필이 수정되었습니다.');
+                    setNewChildNickname('');
+                    setNewChildBirthdate('');
+                    setIsAddingChild(false);
+                    setEditingChild(null);
+                    await refreshChildren(); // Refresh global context
+                    
+                    if (data) {
+                        const birthYear = new Date(data.birthdate).getFullYear();
+                        const age = new Date().getFullYear() - birthYear;
+                        setActiveChild({ ...data, age });
+                    }
+                }
             } else {
-                toast.success('아이 프로필이 추가되었습니다.');
-                setNewChildNickname('');
-                setNewChildBirthdate('');
-                setIsAddingChild(false);
-                await refreshChildren(); // Refresh global context
-                
-                if (data) {
-                    const birthYear = new Date(data.birthdate).getFullYear();
-                    const age = new Date().getFullYear() - birthYear;
-                    setActiveChild({ ...data, age });
+                const { data, error } = await supabase.from('children').insert({
+                    name: newChildNickname,
+                    birthdate: newChildBirthdate,
+                    type: newChildType,
+                    parent_id: user.id
+                }).select().single();
+
+                if (error) {
+                    toast.error('아이 프로필 추가 실패: ' + error.message);
+                } else {
+                    toast.success('아이 프로필이 추가되었습니다.');
+                    setNewChildNickname('');
+                    setNewChildBirthdate('');
+                    setIsAddingChild(false);
+                    await refreshChildren(); // Refresh global context
+                    
+                    if (data) {
+                        const birthYear = new Date(data.birthdate).getFullYear();
+                        const age = new Date().getFullYear() - birthYear;
+                        setActiveChild({ ...data, age });
+                    }
                 }
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
             toast.error("오류가 발생했습니다: " + errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleChildDelete = async (childId: string, event: React.MouseEvent) => {
+        event.stopPropagation();
+        if (!confirm("정말 이 아이 프로필을 삭제하시겠습니까? 관련 데이터가 모두 삭제됩니다.")) return;
+
+        setIsLoading(true);
+        try {
+            const { error } = await supabase.from('children').delete().eq('id', childId);
+            if (error) {
+                toast.error('아이 프로필 삭제 실패: ' + error.message);
+            } else {
+                toast.success('아이 프로필이 삭제되었습니다.');
+                await refreshChildren();
+                
+                if (activeChild?.id === childId) {
+                    setActiveChild(null);
+                }
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : "오류";
+            toast.error("삭제 중 오류가 발생했습니다: " + errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -410,10 +461,10 @@ export default function MyPage() {
                                 {/* List of Children */}
                                 <div className="space-y-3 mb-4">
                                     {children.map(child => (
-                                        <button
+                                        <div
                                             key={child.id}
                                             onClick={() => setActiveChild(child)}
-                                            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${activeChild?.id === child.id ? 'bg-green-50 border-2 border-green-100' : 'bg-gray-50 border border-transparent'}`}
+                                            className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all cursor-pointer ${activeChild?.id === child.id ? 'bg-green-50 border-2 border-green-100' : 'bg-gray-50 border border-transparent'}`}
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black shadow-sm ${activeChild?.id === child.id ? 'bg-green-500 text-white' : 'bg-white text-green-600'}`}>
@@ -424,21 +475,58 @@ export default function MyPage() {
                                                     <div className="text-xs text-gray-400">{child.age}세 · {child.type}</div>
                                                 </div>
                                             </div>
-                                            {activeChild?.id === child.id && <div className="text-xs font-bold text-green-600 bg-white px-2 py-1 rounded-lg shadow-sm">선택됨</div>}
-                                        </button>
+                                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                                {activeChild?.id === child.id && (
+                                                    <div className="text-xs font-bold text-green-600 bg-white px-2 py-1 rounded-lg shadow-sm mr-1">선택됨</div>
+                                                )}
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setEditingChild(child);
+                                                        setNewChildNickname(child.name);
+                                                        setNewChildBirthdate(child.birthdate);
+                                                        setNewChildType(child.type);
+                                                        setIsAddingChild(true);
+                                                    }}
+                                                    className="p-1.5 text-gray-400 hover:text-green-600 hover:bg-white rounded-lg transition"
+                                                    title="수정"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={(e) => handleChildDelete(child.id, e)}
+                                                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition"
+                                                    title="삭제"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
                                     ))}
                                 </div>
 
                                 {/* Add Child Button / Form */}
                                 {!isAddingChild ? (
-                                    <button onClick={() => setIsAddingChild(true)} className="w-full py-3 text-center text-sm font-bold text-gray-400 hover:text-green-600 border border-dashed border-gray-200 rounded-xl transition-colors">
+                                    <button onClick={() => {
+                                        setEditingChild(null);
+                                        setNewChildNickname('');
+                                        setNewChildBirthdate('');
+                                        setNewChildType('유아');
+                                        setIsAddingChild(true);
+                                    }} className="w-full py-3 text-center text-sm font-bold text-gray-400 hover:text-green-600 border border-dashed border-gray-200 rounded-xl transition-colors">
                                         + 아이 프로필 추가하기
                                     </button>
                                 ) : (
                                     <div className="bg-gray-50 p-5 rounded-2xl animate-in fade-in">
                                         <div className="flex justify-between items-center mb-4">
-                                            <h4 className="font-bold text-sm">새 프로필 입력</h4>
-                                            <button onClick={() => setIsAddingChild(false)}><X size={16} className="text-gray-400" /></button>
+                                            <h4 className="font-bold text-sm">{editingChild ? '프로필 수정' : '새 프로필 입력'}</h4>
+                                            <button onClick={() => {
+                                                setIsAddingChild(false);
+                                                setEditingChild(null);
+                                                setNewChildNickname('');
+                                                setNewChildBirthdate('');
+                                                setNewChildType('유아');
+                                            }}><X size={16} className="text-gray-400" /></button>
                                         </div>
                                         <div className="space-y-3">
                                             <input type="text" id="childNickname" name="childNickname" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
@@ -457,7 +545,7 @@ export default function MyPage() {
                                                 {isLoading ? (
                                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                 ) : (
-                                                    '등록 완료'
+                                                    editingChild ? '수정 완료' : '등록 완료'
                                                 )}
                                             </button>
                                         </div>

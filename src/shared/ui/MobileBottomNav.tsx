@@ -35,7 +35,7 @@ const LibrarianIcon = () => (
 );
 
 const CommunityIcon = ({ active }: { active: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={`transition-all duration-300 ${active ? 'scale-110' : 'scale-100'}`}>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={`transition-all duration-300 ${active ? 'scale-110' : 'scale-100'}`}>
         <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z" />
     </svg>
 );
@@ -90,27 +90,27 @@ export function MobileBottomNavContent() {
             label: "AI 독서",
             icon: ReaderIcon,
             path: "/solution",
-            isActive: pathname === "/solution"
+            isActive: pathname?.startsWith("/solution")
         },
         {
             label: "AI 사서",
             icon: LibrarianIcon,
             isSpecial: true,
             action: handleLibrarianClick,
-            isActive: pathname === "/chat"
+            isActive: pathname?.startsWith("/chat")
         },
         {
             label: "커뮤니티",
             icon: CommunityIcon,
             path: "/community",
-            isActive: pathname === "/community"
+            isActive: pathname?.startsWith("/community")
         },
         {
             label: "MY",
             icon: ProfileIcon,
             path: user ? "/mypage" : undefined,
             action: authLoading ? undefined : (!user ? openLoginModal : undefined),
-            isActive: pathname === "/mypage"
+            isActive: pathname?.startsWith("/mypage")
         },
     ];
 
