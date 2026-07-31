@@ -24,6 +24,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [keepLoggedIn, setKeepLoggedIn] = useState(true);
+    const [tapCount, setTapCount] = useState(0);
     const { vibrate } = useNativeBridge();
     const { syncUser } = useAuth();
 
@@ -37,11 +38,24 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             setUserId("");
             setPassword("");
             setIsLoading(false);
+            setTapCount(0);
         }
         return () => {
             document.body.style.overflow = "unset";
         };
     }, [isOpen]);
+
+    const handleLogoTap = () => {
+        setTapCount(prev => {
+            const newCount = prev + 1;
+            if (newCount >= 5) {
+                vibrate();
+                setIsEmailMode(true);
+                return 0;
+            }
+            return newCount;
+        });
+    };
 
     const handleOAuthLogin = async (provider: 'google' | 'kakao' | 'apple') => {
         if (provider === 'kakao') {
@@ -179,8 +193,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 {/* Header Section */}
                 <div className="flex flex-col items-center text-center mt-4 mb-5">
                     {/* Brand Logo Container replacing Lucide Icon */}
-                    <div className="relative w-14 h-14 bg-white border border-gray-100 rounded-2xl p-2.5 flex items-center justify-center shadow-md mb-4">
-                        <div className="relative w-full h-full">
+                    <div 
+                        onClick={handleLogoTap}
+                        className="relative w-14 h-14 bg-white border border-gray-100 rounded-2xl p-2.5 flex items-center justify-center shadow-md mb-4 cursor-pointer active:scale-95 transition-transform select-none"
+                    >
+                        <div className="relative w-full h-full pointer-events-none">
                             <Image
                                 src="/images/logo_transparent_v2.png"
                                 alt="Book,ok Logo"
