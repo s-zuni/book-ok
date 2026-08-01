@@ -192,7 +192,7 @@ export default function MyPage() {
             timer = setTimeout(() => {
                 console.log("UserProfile missing after initialization, triggering fallback profile refresh.");
                 refreshProfile?.().catch(console.error);
-            }, 4000);
+            }, 2000);
         }
         return () => {
             if (timer) clearTimeout(timer);

@@ -147,10 +147,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         }
     }, []);
 
-    const syncUserData = useCallback(async (currentSession: Session | null) => {
+    const syncUserData = useCallback(async (currentSession: Session | null, force = false) => {
         const userId = currentSession?.user?.id;
         
-        if (fetchInProgress.current === userId && userId) {
+        // Allow re-entry when forced (e.g., from INITIAL_SESSION or explicit syncUser call)
+        if (!force && fetchInProgress.current === userId && userId) {
             console.log("AuthContext: syncUserData already in progress for user:", userId);
             return;
         }
@@ -360,27 +361,27 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             initSession();
         }
 
-        // Listen for auth changes (INITIAL_SESSION triggers immediately on subscription)
-        let hasInitialized = false;
+        // Listen for auth changes
+        // Skip INITIAL_SESSION to avoid double-sync with initSession above
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             console.log("Auth event received:", event);
             clearTimeout(failsafeTimer);
 
-            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            // Skip INITIAL_SESSION because initSession() already handles it
+            if (event === 'INITIAL_SESSION') {
+                return;
+            }
+
+            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 if (isMounted) {
-                    await syncUserData(currentSession);
-                    if (hasInitialized && event !== 'INITIAL_SESSION') {
-                        router.refresh();
-                    }
-                    hasInitialized = true;
+                    // Use force=true to ensure data is re-fetched after login
+                    await syncUserData(currentSession, true);
+                    router.refresh();
                 }
             } else if (event === 'SIGNED_OUT') {
                 if (isMounted) {
-                    await syncUserData(null);
-                    if (hasInitialized) {
-                        router.refresh();
-                    }
-                    hasInitialized = true;
+                    await syncUserData(null, true);
+                    router.refresh();
                 }
             }
         });
@@ -466,7 +467,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
     const syncUser = useCallback(async (currentSession: Session | null) => {
         setLoading(true);
-        await syncUserData(currentSession);
+        await syncUserData(currentSession, true);
     }, [syncUserData]);
 
     return (

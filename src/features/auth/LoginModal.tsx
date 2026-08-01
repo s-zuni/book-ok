@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@shared/lib/supabase";
 import { toast } from "sonner";
@@ -47,6 +48,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [tapCount, setTapCount] = useState(0);
     const { vibrate } = useNativeBridge();
     const { syncUser } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         if (isOpen) {
@@ -97,12 +99,20 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     const rawNonce = getUrlSafeNonce();
                     const nonceDigest = await sha256Hash(rawNonce);
 
-                    const result = await SignInWithApple.authorize({
-                        clientId: platform === 'ios' ? 'com.bookok.kr' : 'com.bookok.kr.service',
-                        redirectURI: 'com.bookok.kr://auth-callback',
+                    console.log('[Apple Login] Platform:', platform);
+                    console.log('[Apple Login] rawNonce length:', rawNonce.length);
+                    console.log('[Apple Login] nonceDigest length:', nonceDigest.length);
+
+                    const appleOptions = {
+                        clientId: platform === 'ios' ? 'com.bookok.kr' : 'com.bookok.kr.app',
+                        redirectURI: 'https://holaqlorkluptvrcfwtu.supabase.co/auth/v1/callback',
                         scopes: 'email name',
                         nonce: nonceDigest,
-                    });
+                    };
+                    console.log('[Apple Login] Options:', JSON.stringify(appleOptions));
+
+                    const result = await SignInWithApple.authorize(appleOptions);
+                    console.log('[Apple Login] Result received:', !!result.response, 'hasToken:', !!result.response?.identityToken);
 
                     if (result.response && result.response.identityToken) {
                         const { data, error } = await supabase.auth.signInWithIdToken({
@@ -111,19 +121,32 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             nonce: rawNonce,
                         });
                         
-                        if (error) throw error;
+                        if (error) {
+                            console.error('[Apple Login] Supabase signInWithIdToken error:', error.message, error);
+                            throw error;
+                        }
                         
                         if (data.session) {
+                            console.log('[Apple Login] Session obtained, syncing user...');
                             await syncUser(data.session);
                             toast.success("로그인되었습니다.");
                             onClose();
-                            setTimeout(() => window.location.reload(), 100);
+                            router.refresh();
                         }
                         return;
+                    } else {
+                        console.error('[Apple Login] No identityToken in response:', JSON.stringify(result));
+                        toast.error('Apple 로그인 응답에 토큰이 없습니다.');
+                        return;
                     }
-                } catch (err) {
-                    console.error('Native Apple Sign In error:', err);
-                    toast.error('Apple 로그인에 실패했습니다.');
+                } catch (err: any) {
+                    console.error('[Apple Login] Native error:', err?.message || err, JSON.stringify(err));
+                    // User cancelled (error code 1001) - don't show error toast
+                    if (err?.message?.includes('1001') || err?.code === 1001) {
+                        console.log('[Apple Login] User cancelled');
+                        return;
+                    }
+                    toast.error('Apple 로그인에 실패했습니다: ' + (err?.message || '알 수 없는 오류'));
                     return;
                 }
             }
@@ -180,10 +203,8 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 toast.success("로그인되었습니다.");
                 onClose();
                 
-                // Force page reload to ensure Next.js App Router cache is updated
-                setTimeout(() => {
-                    window.location.reload();
-                }, 100);
+                // Use router.refresh() instead of window.location.reload() to prevent race conditions
+                router.refresh();
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";

@@ -17,6 +17,16 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
     // 웹 환경이면 실행하지 않음
     if (!Capacitor.isNativePlatform()) return;
 
+    const platform = Capacitor.getPlatform();
+
+    // iOS: Enable smooth scrolling and rubber-band physics
+    if (platform === 'ios') {
+      document.documentElement.style.setProperty('-webkit-overflow-scrolling', 'touch');
+      document.body.style.setProperty('-webkit-overflow-scrolling', 'touch');
+      // Ensure overscroll behavior allows native gestures
+      document.body.style.overscrollBehaviorX = 'auto';
+    }
+
     // 1. 안드로이드 백 버튼 핸들러
     const backButtonListener = CapacitorApp.addListener("backButton", ({ canGoBack }) => {
       const currentTime = new Date().getTime();
@@ -55,6 +65,16 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
       }
     });
 
+    // 3. iOS: popstate listener to sync Next.js router with WebView back/forward navigation
+    const handlePopState = () => {
+      // When iOS swipe-back fires, the WebView history changes but Next.js router
+      // may not be aware. This ensures the router state stays synchronized.
+      router.refresh();
+    };
+    if (platform === 'ios') {
+      window.addEventListener('popstate', handlePopState);
+    }
+
     // 초기 네트워크 상태 체크 (앱 켤 때 이미 오프라인인 경우)
     const checkInitialNetwork = async () => {
       const status = await Network.getStatus();
@@ -71,6 +91,9 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
     return () => {
       backButtonListener.then((listener) => listener.remove());
       networkListener.then((listener) => listener.remove());
+      if (platform === 'ios') {
+        window.removeEventListener('popstate', handlePopState);
+      }
     };
   }, [pathname, router]);
 

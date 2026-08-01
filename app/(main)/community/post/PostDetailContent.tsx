@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ChevronLeft, MessageSquare, Heart, Eye, Megaphone } from "lucide-react";
-import Header from "@shared/ui/Header";
-import Sidebar from "@shared/ui/Sidebar";
+import { ChevronLeft, MessageSquare, Heart, Eye, Megaphone, MoreVertical } from "lucide-react";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
-import { Child, Post, Comment, MainMenu } from "@shared/types";
+import { Post, Comment } from "@shared/types";
 
 export default function PostDetailPage() {
     const searchParams = useSearchParams();
@@ -18,9 +16,7 @@ export default function PostDetailPage() {
     const [post, setPost] = useState<Post | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [newComment, setNewComment] = useState("");
-    const [activeChild, setActiveChild] = useState<Child | null>(null);
-    const [activeMenu, setActiveMenu] = useState<MainMenu>('comm');
-    const [activeSubMenu, setActiveSubMenu] = useState('');
+    const [showMenu, setShowMenu] = useState(false);
 
     const fetchPost = async () => {
         const { data } = await supabase.from('posts').select('*').eq('id', postId).single();
@@ -47,14 +43,6 @@ export default function PostDetailPage() {
             setComments(filtered);
         }
     };
-
-    useEffect(() => {
-        if (user) {
-            supabase.from('children').select('*').eq('profile_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) setActiveChild(data[0]);
-            });
-        }
-    }, [user]);
 
     useEffect(() => {
         if (postId) {
@@ -162,119 +150,134 @@ export default function PostDetailPage() {
         setComments(prev => prev.filter(c => c.user_id !== targetUserId));
     };
 
-    const dummySetView = () => { };
-
-    if (!post) return <div className="p-20 text-center">Loading...</div>;
+    if (!post) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#FDFDFD]">
+                <div className="w-8 h-8 border-4 border-green-200 border-t-green-600 rounded-full animate-spin"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans">
-            <Header
-                view="main"
-                setView={dummySetView}
-                activeMenu={activeMenu}
-                setActiveMenu={setActiveMenu}
-                setActiveSubMenu={setActiveSubMenu}
-                searchQuery=""
-                setSearchQuery={() => { }}
-                handleSearch={() => { }}
-            />
-
-            <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-12">
-                <Sidebar
-                    activeChild={activeChild}
-                    activeMenu="comm"
-                    activeSubMenu={activeSubMenu}
-                    setActiveSubMenu={setActiveSubMenu}
-                />
-
-                <main className="flex-1 min-h-[600px]">
-                    <button onClick={() => router.back()} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-gray-900 font-bold">
-                        <ChevronLeft size={20} /> 목록으로 돌아가기
+            {/* Simple Navigation Bar */}
+            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+                <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+                    <button onClick={() => router.back()} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors">
+                        <ChevronLeft size={22} />
+                        <span className="font-bold text-sm">목록</span>
                     </button>
-
-                    <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-gray-100 mb-8">
-                        {post.is_notice && (
-                            <div className="flex items-center gap-2 mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-                                <Megaphone className="text-emerald-600" size={20} />
-                                <span className="font-black text-emerald-800 tracking-tight">서비스 공지사항입니다.</span>
-                            </div>
-                        )}
-                        <div className="flex items-center gap-3 mb-4">
-                            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-black">{post.category}</span>
-                            <span className="text-gray-400 text-sm">{new Date(post.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <h1 className="text-3xl font-black mb-6">{post.title}</h1>
-                        <div className="flex items-center justify-between border-b pb-6 mb-8">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-xs font-black">{post.author_nickname[0]}</div>
-                                <span className="font-bold text-gray-700">{post.author_nickname}</span>
-                                {user && post.user_id !== user.id && (
-                                    <div className="flex gap-2 ml-4">
-                                        <button onClick={handleReportPost} className="text-xs text-red-500 hover:text-red-700 font-bold border border-red-200 rounded px-2 py-0.5 transition">신고</button>
-                                        <button onClick={handleBlockPostAuthor} className="text-xs text-gray-500 hover:text-gray-700 font-bold border border-gray-200 rounded px-2 py-0.5 transition">차단</button>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex gap-4 text-gray-400 text-sm font-bold">
-                                <span className="flex items-center gap-1"><Eye size={16} /> {post.views}</span>
-                                <span className="flex items-center gap-1"><Heart size={16} /> {post.likes}</span>
-                            </div>
-                        </div>
-
-                        {post.image_url && (
-                            <div className="mb-10 rounded-2xl overflow-hidden border border-gray-100">
-                                <img src={post.image_url} alt="Post Attachment" className="w-full object-cover" />
-                            </div>
-                        )}
-
-                        <div className="prose prose-lg max-w-none mb-12 text-gray-700 whitespace-pre-wrap">
-                            {post.content}
-                        </div>
-
-                        <div className="flex justify-center">
-                            <button onClick={handleLike} className="flex items-center gap-2 px-6 py-3 rounded-full border-2 border-green-100 text-green-600 font-bold hover:bg-green-50 transition">
-                                <Heart size={20} /> 좋아요 {post.likes}
+                    {/* More Options for report/block */}
+                    {user && post.user_id !== user.id && (
+                        <div className="relative">
+                            <button onClick={() => setShowMenu(!showMenu)} className="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                                <MoreVertical size={20} className="text-gray-500" />
                             </button>
-                        </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-[2.5rem] p-8">
-                        <h3 className="font-black text-xl mb-6 flex items-center gap-2"><MessageSquare size={20} /> 댓글 {comments.length}</h3>
-
-                        <div className="space-y-4 mb-8">
-                            {comments.map(comment => (
-                                <div key={comment.id} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-gray-800">{comment.author_name}</span>
-                                            {user && comment.user_id !== user.id && (
-                                                <div className="flex gap-1.5 ml-3">
-                                                    <button onClick={() => handleReportComment(comment.id)} className="text-[10px] text-red-500 hover:text-red-700 font-bold border border-red-100 rounded px-1.5 py-0.5 transition">신고</button>
-                                                    <button onClick={() => handleBlockUser(comment.user_id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold border border-gray-100 rounded px-1.5 py-0.5 transition">차단</button>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <span className="text-xs text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
-                                    </div>
-                                    <p className="text-gray-600">{comment.content}</p>
+                            {showMenu && (
+                                <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-gray-100 py-1 min-w-[140px] z-50">
+                                    <button onClick={() => { handleReportPost(); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 font-bold transition-colors">게시글 신고</button>
+                                    <button onClick={() => { handleBlockPostAuthor(); setShowMenu(false); }} className="w-full text-left px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 font-bold transition-colors">작성자 차단</button>
                                 </div>
-                            ))}
+                            )}
                         </div>
-
-                        <div className="flex gap-4">
-                            <input
-                                type="text"
-                                value={newComment}
-                                onChange={e => setNewComment(e.target.value)}
-                                placeholder="댓글을 작성하세요..."
-                                className="flex-1 bg-white px-5 py-4 rounded-xl outline-none focus:ring-2 focus:ring-green-200 border border-transparent focus:border-green-500 font-medium"
-                                onKeyDown={e => e.key === 'Enter' && handleAddComment()}
-                            />
-                            <button onClick={handleAddComment} className="bg-gray-900 text-white px-6 py-4 rounded-xl font-black hover:bg-black transition whitespace-nowrap">등록</button>
-                        </div>
-                    </div>
-                </main>
+                    )}
+                </div>
             </div>
+
+            {/* Main Content */}
+            <div className="max-w-2xl mx-auto px-4 py-6">
+                {/* Notice Badge */}
+                {post.is_notice && (
+                    <div className="flex items-center gap-2 mb-4 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                        <Megaphone className="text-emerald-600" size={18} />
+                        <span className="font-black text-sm text-emerald-800 tracking-tight">서비스 공지사항입니다.</span>
+                    </div>
+                )}
+
+                {/* Category & Date */}
+                <div className="flex items-center gap-2.5 mb-3">
+                    <span className="bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full text-xs font-black">{post.category}</span>
+                    <span className="text-gray-400 text-xs">{new Date(post.created_at).toLocaleDateString()}</span>
+                </div>
+
+                {/* Title */}
+                <h1 className="text-2xl font-black mb-4 leading-tight">{post.title}</h1>
+
+                {/* Author + Stats inline */}
+                <div className="flex items-center justify-between pb-4 mb-5 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center text-green-700 text-xs font-black">{post.author_nickname[0]}</div>
+                        <span className="font-bold text-sm text-gray-700">{post.author_nickname}</span>
+                    </div>
+                    <div className="flex gap-3 text-gray-400 text-xs font-bold">
+                        <span className="flex items-center gap-1"><Eye size={14} /> {post.views}</span>
+                        <span className="flex items-center gap-1"><Heart size={14} /> {post.likes}</span>
+                    </div>
+                </div>
+
+                {/* Image */}
+                {post.image_url && (
+                    <div className="mb-6 rounded-2xl overflow-hidden">
+                        <img src={post.image_url} alt="" className="w-full object-cover" />
+                    </div>
+                )}
+
+                {/* Content */}
+                <div className="text-[15px] leading-relaxed text-gray-700 whitespace-pre-wrap mb-8">
+                    {post.content}
+                </div>
+
+                {/* Like Button */}
+                <div className="flex justify-center mb-8">
+                    <button onClick={handleLike} className="flex items-center gap-2 px-5 py-2.5 rounded-full border-2 border-green-100 text-green-600 font-bold text-sm hover:bg-green-50 active:scale-95 transition-all">
+                        <Heart size={18} /> 좋아요 {post.likes}
+                    </button>
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-100 mb-6" />
+
+                {/* Comments Section */}
+                <div>
+                    <h3 className="font-black text-base mb-4 flex items-center gap-2"><MessageSquare size={18} /> 댓글 {comments.length}</h3>
+
+                    <div className="space-y-3 mb-6">
+                        {comments.map(comment => (
+                            <div key={comment.id} className="bg-gray-50 p-4 rounded-2xl">
+                                <div className="flex justify-between items-center mb-1.5">
+                                    <div className="flex items-center gap-2">
+                                        <span className="font-bold text-sm text-gray-800">{comment.author_name}</span>
+                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    {user && comment.user_id !== user.id && (
+                                        <div className="flex gap-1.5">
+                                            <button onClick={() => handleReportComment(comment.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold transition">신고</button>
+                                            <button onClick={() => handleBlockUser(comment.user_id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold transition">차단</button>
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-sm text-gray-600">{comment.content}</p>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Comment Input - sticky at bottom on mobile */}
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newComment}
+                            onChange={e => setNewComment(e.target.value)}
+                            placeholder="댓글을 작성하세요..."
+                            className="flex-1 bg-gray-50 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-green-200 focus:bg-white border border-transparent focus:border-green-400 text-sm font-medium transition-all"
+                            onKeyDown={e => e.key === 'Enter' && handleAddComment()}
+                        />
+                        <button onClick={handleAddComment} className="bg-gray-900 text-white px-4 py-3 rounded-xl font-black text-sm hover:bg-black active:scale-95 transition-all whitespace-nowrap">등록</button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Click outside to close menu */}
+            {showMenu && <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />}
         </div>
     );
 }
