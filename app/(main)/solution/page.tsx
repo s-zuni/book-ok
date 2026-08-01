@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@shared/ui/Header";
-import { apiUrl } from "@shared/lib/api";
+import { apiUrl, safeFetch } from "@shared/lib/api";
 import { useAuth } from "@features/auth/AuthContext";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { Child, Book, MainMenu } from "@shared/types";
 import { Star, Send, Sparkles } from "lucide-react";
 import Image from "next/image";
@@ -277,11 +277,11 @@ export function SolutionPageContent() {
                  [RECOMMENDED_BOOKS: 무지개 물고기, 언제나 사랑해]
             `;
 
-            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                    'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({ prompt, mode: 'expert' })
             });
@@ -391,11 +391,11 @@ export function SolutionPageContent() {
             }
             `;
 
-            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                    'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({ prompt, mode: 'expert' })
             });
@@ -765,11 +765,11 @@ export function SolutionPageContent() {
         }
       `;
 
-            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                    'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({ prompt, mode: 'expert' })
             });
@@ -833,11 +833,11 @@ export function SolutionPageContent() {
           5. **마무리**: 긍정적인 격려의 말로 마무리하세요.
         `;
 
-            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                    'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({ prompt, mode: 'expert' })
             });

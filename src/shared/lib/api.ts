@@ -32,3 +32,32 @@ export function apiUrl(path: string): string {
   const queryString = search ? `?${search}` : '';
   return `${API_BASE_URL}${normalizedPath}${queryString}`;
 }
+
+/**
+ * CORS-safe fetch helper that transparently uses CapacitorHttp for Native Mobile,
+ * and standard fetch for Web Browsers.
+ */
+export async function safeFetch(url: string, options: { method?: string; headers?: Record<string, string>; body?: string } = {}) {
+  if (Capacitor.isNativePlatform()) {
+    try {
+      const { CapacitorHttp } = await import('@capacitor/core');
+      
+      const response = await CapacitorHttp.request({
+        url: url,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+        data: options.body ? JSON.parse(options.body) : undefined,
+      });
+
+      return {
+        ok: response.status >= 200 && response.status < 300,
+        status: response.status,
+        json: async () => response.data,
+      };
+    } catch (err) {
+      console.warn("CapacitorHttp failed, falling back to standard fetch:", err);
+    }
+  }
+
+  return fetch(url, options);
+}

@@ -8,7 +8,8 @@ import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from 'marked';
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Capacitor } from "@capacitor/core";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
+import { safeFetch } from "@shared/lib/api";
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -37,21 +38,44 @@ export default function AIChatbot() {
     // C4: Handle mobile keyboard visibility
     useEffect(() => {
         if (!isChatOpen || typeof window === 'undefined') return;
-        const vv = window.visualViewport;
-        if (!vv) return;
 
-        const handleResize = () => {
-            const offset = window.innerHeight - vv.height;
-            setKeyboardOffset(offset > 0 ? offset : 0);
-            // Scroll to bottom when keyboard opens
-            setTimeout(scrollToBottom, 100);
-        };
+        let active = true;
+        let showListener: any = null;
+        let hideListener: any = null;
 
-        vv.addEventListener('resize', handleResize);
-        vv.addEventListener('scroll', handleResize);
+        if (Capacitor.isNativePlatform()) {
+            import('@capacitor/keyboard').then(({ Keyboard }) => {
+                if (!active) return;
+                showListener = Keyboard.addListener('keyboardDidShow', (info) => {
+                    setKeyboardOffset(info.keyboardHeight);
+                    setTimeout(scrollToBottom, 100);
+                });
+                hideListener = Keyboard.addListener('keyboardDidHide', () => {
+                    setKeyboardOffset(0);
+                });
+            }).catch(err => console.warn("Failed to load Capacitor Keyboard:", err));
+        } else {
+            const vv = window.visualViewport;
+            if (vv) {
+                const handleResize = () => {
+                    const offset = window.innerHeight - vv.height;
+                    setKeyboardOffset(offset > 0 ? offset : 0);
+                    setTimeout(scrollToBottom, 100);
+                };
+                vv.addEventListener('resize', handleResize);
+                vv.addEventListener('scroll', handleResize);
+                return () => {
+                    active = false;
+                    vv.removeEventListener('resize', handleResize);
+                    vv.removeEventListener('scroll', handleResize);
+                };
+            }
+        }
+
         return () => {
-            vv.removeEventListener('resize', handleResize);
-            vv.removeEventListener('scroll', handleResize);
+            active = false;
+            if (showListener) showListener.then((l: any) => l.remove());
+            if (hideListener) hideListener.then((l: any) => l.remove());
         };
     }, [isChatOpen]);
 
@@ -68,11 +92,11 @@ export default function AIChatbot() {
         setIsLoading(true);
 
         try {
-            const response = await fetch('https://holaqlorkluptvrcfwtu.supabase.co/functions/v1/chat', {
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+                    'apikey': supabaseAnonKey
                 },
                 body: JSON.stringify({ messages: [...messages, userMessage] })
             });
@@ -189,7 +213,7 @@ export default function AIChatbot() {
                                 onChange={(e) => setInput(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                                 placeholder="궁금한 책 이야기를 해보세요..."
-                                className="flex-1 bg-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 text-sm font-medium text-gray-900 transition-all"
+                                className="flex-1 bg-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-green-500 text-base font-medium text-gray-900 transition-all"
                                 enterKeyHint="send"
                             />
                             <button

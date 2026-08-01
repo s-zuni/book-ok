@@ -307,6 +307,19 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             setIsInitialized(true);
         }, 5000);
 
+        let isMounted = true;
+
+        const initSession = async () => {
+            try {
+                const { data: { session: initialSession } } = await supabase.auth.getSession();
+                if (isMounted) {
+                    await syncUserData(initialSession);
+                }
+            } catch (err) {
+                console.error("Initial session fetch error:", err);
+            }
+        };
+
         // Initial session check
         if (typeof window !== 'undefined') {
             const sessionActive = sessionStorage.getItem('bookok_session_active');
@@ -341,7 +354,10 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 sessionStorage.setItem('bookok_session_active', 'true');
             } else {
                 sessionStorage.setItem('bookok_session_active', 'true');
+                initSession();
             }
+        } else {
+            initSession();
         }
 
         // Listen for auth changes (INITIAL_SESSION triggers immediately on subscription)
@@ -351,17 +367,21 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             clearTimeout(failsafeTimer);
 
             if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                await syncUserData(currentSession);
-                if (hasInitialized && event !== 'INITIAL_SESSION') {
-                    router.refresh();
+                if (isMounted) {
+                    await syncUserData(currentSession);
+                    if (hasInitialized && event !== 'INITIAL_SESSION') {
+                        router.refresh();
+                    }
+                    hasInitialized = true;
                 }
-                hasInitialized = true;
             } else if (event === 'SIGNED_OUT') {
-                await syncUserData(null);
-                if (hasInitialized) {
-                    router.refresh();
+                if (isMounted) {
+                    await syncUserData(null);
+                    if (hasInitialized) {
+                        router.refresh();
+                    }
+                    hasInitialized = true;
                 }
-                hasInitialized = true;
             }
         });
 
@@ -427,6 +447,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         }
 
         return () => {
+            isMounted = false;
             authListener.subscription.unsubscribe();
             if (deepLinkSub) {
                 deepLinkSub.then((s) => s.remove());

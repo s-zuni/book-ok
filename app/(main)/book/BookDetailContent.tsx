@@ -11,7 +11,7 @@ import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import ChildSelectionModal from "@features/children/ChildSelectionModal";
 import { toast } from "sonner";
-import { apiUrl } from "@shared/lib/api";
+import { apiUrl, safeFetch } from "@shared/lib/api";
 import { getOptimizedImageUrl } from "@shared/lib/image-utils";
 
 interface HoldingResult {
@@ -84,7 +84,7 @@ export default function BookDetailContent() {
             if (!success) {
                 // 2. Try Aladin via Edge Function fallback if not found in Supabase
                 try {
-                    const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                    const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -179,7 +179,7 @@ export default function BookDetailContent() {
                 const libCodes = favoriteLibs.map(l => l.libCode).join(',');
                 const isbn = book.id || book.bookid || bookId;
                 
-                const response = await fetch(`${supabaseUrl}/functions/v1/library`, {
+                const response = await safeFetch(`${supabaseUrl}/functions/v1/library`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

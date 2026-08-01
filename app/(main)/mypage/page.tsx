@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import EmptyState from "@shared/ui/EmptyState";
 import { toast } from "sonner";
+import { safeFetch } from "@shared/lib/api";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 
@@ -77,7 +78,7 @@ export default function MyPage() {
             }
             setIsSearchingLibraries(true);
             try {
-                const response = await fetch(`${supabaseUrl}/functions/v1/library`, {
+                const response = await safeFetch(`${supabaseUrl}/functions/v1/library`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ import { Book } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import { Sparkles, TrendingUp, AlertCircle, BarChart3 } from "lucide-react";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
+import { safeFetch } from "@shared/lib/api";
 
 interface AIRecommendationListProps {
     keywords: string[];
@@ -91,7 +92,7 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
 
                 // 2. 선호 장르 기반 추천 (기존 키워드 + 선호 장르)
                 const query = keywords.slice(0, 2).join(' ');
-                const preferredResponse = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                const preferredResponse = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -143,7 +144,7 @@ interface AladinItem {
                         const config = GENRE_CATEGORIES[genre];
                         if (!config) continue;
 
-                        const balancedResponse = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                        const balancedResponse = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { RECOMMENDATION_TABS } from "@shared/lib/constants";
 import EmptyState from "@shared/ui/EmptyState";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
+import { safeFetch } from "@shared/lib/api";
 
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 
@@ -71,7 +72,7 @@ interface AladinRecommendItem {
                 let items: AladinRecommendItem[] = [];
  
                 // Invoke Supabase Edge Function recommendations
-                const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

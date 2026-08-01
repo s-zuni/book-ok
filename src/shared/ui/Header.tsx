@@ -39,6 +39,24 @@ export default function Header({
     const { isApp, notifyLogout } = useNativeBridge();
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [logoTapCount, setLogoTapCount] = useState(0);
+
+    const handleLogoClick = () => {
+        setLogoTapCount(prev => {
+            const next = prev + 1;
+            if (next >= 5) {
+                router.push('/admin/login');
+                return 0;
+            }
+            return next;
+        });
+        
+        setTimeout(() => {
+            setLogoTapCount(0);
+        }, 2000);
+
+        router.push('/');
+    };
 
     const onSearchSubmit = () => {
         if (searchQuery.trim()) {
@@ -64,7 +82,7 @@ export default function Header({
                 {/* Logo */}
                 <div
                     className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => router.push('/')}
+                    onClick={handleLogoClick}
                 >
                     <div className="relative w-8 h-8 lg:w-10 lg:h-10 bg-white border border-gray-100 rounded-xl p-1.5 flex items-center justify-center shadow-sm">
                         <div className="relative w-full h-full">
@@ -201,7 +219,7 @@ export default function Header({
                         <input
                             type="text"
                             placeholder="도서 검색..."
-                            className="w-full bg-gray-50 rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-green-500 font-medium"
+                            className="w-full bg-gray-50 rounded-xl py-3 pl-12 pr-4 outline-none focus:ring-2 focus:ring-green-500 font-medium text-base md:text-sm"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && onSearchSubmit()}

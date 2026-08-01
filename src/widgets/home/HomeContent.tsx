@@ -14,7 +14,7 @@ import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { toast } from "sonner";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
-import { apiUrl } from "@shared/lib/api";
+import { apiUrl, safeFetch } from "@shared/lib/api";
 
 interface AladinRecommendItem {
     isbn13?: string;
@@ -255,7 +255,7 @@ export default function HomeContent() {
         const fetchLibrarianPicks = async () => {
             setLibrarianLoading(true);
             try {
-                const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -308,7 +308,7 @@ export default function HomeContent() {
             setAwardLoading(true);
             try {
                 const sortType = awardSort === 'popular' ? 'SalesPoint' : 'PublishTime';
-                const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

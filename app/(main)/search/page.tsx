@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { safeFetch } from "@shared/lib/api";
 import { Book, Child, MainMenu } from "@shared/types";
 import BookGrid from "@features/books/BookGrid";
 import BookList from "@features/books/BookList";
@@ -78,7 +79,7 @@ function SearchContent() {
         setLoading(true);
         setCurrentPage(page);
         try {
-            const response = await fetch(`${supabaseUrl}/functions/v1/recommendations`, {
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
