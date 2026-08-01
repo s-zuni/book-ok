@@ -43,6 +43,29 @@ try {
     execSync('npx cross-env NEXT_DISABLE_TURBOPACK=1 BUILD_TARGET=capacitor next build', { stdio: 'inherit' });
     console.log('Next build completed successfully!');
 
+    // Run npx cap sync automatically in the pipeline
+    console.log('Running npx cap sync...');
+    execSync('npx cap sync', { stdio: 'inherit' });
+    console.log('Capacitor sync completed successfully!');
+
+    // Fix Windows path separator issue in Package.swift (invalid escape sequences on macOS builds)
+    try {
+        const packageSwiftPath = path.join(__dirname, '../ios/App/CapApp-SPM/Package.swift');
+        if (fs.existsSync(packageSwiftPath)) {
+            console.log('Fixing package path slashes in Package.swift for macOS compile safety...');
+            let content = fs.readFileSync(packageSwiftPath, 'utf8');
+            if (content.includes('\\')) {
+                content = content.replace(/path:\s*"([^"]+)"/g, (match, p1) => {
+                    return `path: "${p1.replace(/\\/g, '/')}"`;
+                });
+                fs.writeFileSync(packageSwiftPath, content, 'utf8');
+                console.log('Package.swift path separators fixed successfully!');
+            }
+        }
+    } catch (err) {
+        console.warn('Could not auto-fix Package.swift paths:', err);
+    }
+
 } catch (error) {
     console.error('Build failed:', error);
     process.exitCode = 1;

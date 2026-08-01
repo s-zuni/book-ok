@@ -21,6 +21,9 @@ const config: any = {
   },
   ios: {
     backForwardNavigationGestures: true
+  },
+  hooks: {
+    postSync: "node scripts/fix-spm-path.js"
   }
 } as any;
 
