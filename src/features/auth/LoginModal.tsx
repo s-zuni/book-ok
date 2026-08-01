@@ -180,6 +180,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     <X size={24} />
                 </button>
 
+                {/* Admin Mode Toggle Link at Top-Left */}
+                {!isEmailMode && (
+                    <button
+                        onClick={() => setIsEmailMode(true)}
+                        className="absolute top-5 left-5 text-[11px] font-black text-gray-300 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg px-2.5 py-1 transition-all select-none"
+                    >
+                        관리자
+                    </button>
+                )}
+
                 {/* Back Button for Email Mode */}
                 {isEmailMode && (
                     <button
