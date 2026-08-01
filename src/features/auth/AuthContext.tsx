@@ -447,6 +447,16 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             };
 
             deepLinkSub = App.addListener('appUrlOpen', handleDeepLink);
+
+            // 3. Check for initial launch URL if the app was completely closed/cold-started via deep link
+            App.getLaunchUrl().then(async (launchUrlObj) => {
+                if (launchUrlObj?.url) {
+                    console.log("App cold-launched with URL:", launchUrlObj.url);
+                    await handleDeepLink({ url: launchUrlObj.url });
+                }
+            }).catch(err => {
+                console.error("Failed to check launch URL:", err);
+            });
         }
 
         return () => {

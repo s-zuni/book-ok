@@ -21,7 +21,7 @@ interface Message {
 
 export default function ChatPage() {
     const router = useRouter();
-    const { user, userProfile, children, isInitialized } = useAuth();
+    const { user, userProfile, children, isInitialized, loading: authLoading } = useAuth();
     const { openLoginModal } = useLoginModal();
 
     // Personalize welcome greeting with user name and child name dynamically
@@ -55,7 +55,7 @@ export default function ChatPage() {
                 }
                 return newMsgs;
             });
-        } else if (isInitialized && !user) {
+        } else if (isInitialized && !user && !authLoading) {
             setMessages(prev => {
                 const newMsgs = [...prev];
                 if (newMsgs[0]) {
@@ -67,7 +67,7 @@ export default function ChatPage() {
                 return newMsgs;
             });
         }
-    }, [user, userProfile, children, isInitialized]);
+    }, [user, userProfile, children, isInitialized, authLoading]);
 
     const [messages, setMessages] = useState<Message[]>([
         {
@@ -119,11 +119,11 @@ export default function ChatPage() {
 
     // Handle authentication redirect if accessed directly
     useEffect(() => {
-        if (isInitialized && !user) {
+        if (isInitialized && !user && !authLoading) {
             openLoginModal();
             router.push("/");
         }
-    }, [user, isInitialized, router, openLoginModal]);
+    }, [user, isInitialized, authLoading, router, openLoginModal]);
 
     // Handle mobile viewport height dynamically using VisualViewport API & Capacitor Keyboard
     useEffect(() => {
@@ -144,20 +144,17 @@ export default function ChatPage() {
         let hideSub: Promise<PluginListenerHandle> | null = null;
 
         if (Capacitor.isNativePlatform()) {
-            showSub = Keyboard.addListener('keyboardWillShow', () => {
+            showSub = Keyboard.addListener('keyboardWillShow', (info) => {
                 setIsKeyboardActive(true);
-                setTimeout(() => {
-                    updateViewportHeight();
-                    scrollToBottom();
-                }, 100);
+                const calculatedHeight = window.innerHeight - info.keyboardHeight;
+                setViewportHeight(`${calculatedHeight}px`);
+                setTimeout(scrollToBottom, 150);
             });
 
             hideSub = Keyboard.addListener('keyboardWillHide', () => {
                 setIsKeyboardActive(false);
-                setTimeout(() => {
-                    updateViewportHeight();
-                    scrollToBottom();
-                }, 100);
+                setViewportHeight("100dvh");
+                setTimeout(scrollToBottom, 150);
             });
         } else {
             const handleResize = () => {

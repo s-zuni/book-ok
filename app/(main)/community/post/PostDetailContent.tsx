@@ -161,7 +161,7 @@ export default function PostDetailPage() {
     return (
         <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans">
             {/* Simple Navigation Bar */}
-            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100 pt-[env(safe-area-inset-top,0px)]">
                 <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
                     <button onClick={() => router.back()} className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors">
                         <ChevronLeft size={22} />

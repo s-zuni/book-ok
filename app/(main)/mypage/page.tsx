@@ -180,10 +180,10 @@ export default function MyPage() {
     }, [isInitialized, children, activeChild]);
 
     useEffect(() => {
-        if (isInitialized && !user) {
+        if (isInitialized && !user && !authLoading) {
             router.push('/?login=true');
         }
-    }, [isInitialized, user, router]);
+    }, [isInitialized, user, authLoading, router]);
 
     // Fallback automatic recovery timer to trigger profile refresh if it stays missing for too long
     useEffect(() => {
