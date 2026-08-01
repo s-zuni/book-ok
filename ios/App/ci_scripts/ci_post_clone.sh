@@ -6,7 +6,14 @@ set -e
 # Export environment variables for Homebrew
 export HOMEBREW_NO_INSTALL_CLEANUP=TRUE
 
-# Move to the project root directory
+echo "Installing Node.js via Homebrew..."
+brew install node
+
+echo "Verifying Node.js and npm versions..."
+node -v
+npm -v
+
+# Move to the project root directory (ci_post_clone.sh runs inside ios/App/ci_scripts)
 cd ../../..
 
 echo "Installing project dependencies..."
