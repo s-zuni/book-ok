@@ -406,7 +406,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                                 const { data, error } = await supabase.auth.exchangeCodeForSession(code);
                                 if (!error && data.session) {
                                     console.log("PKCE Session exchange successful!");
-                                    await syncUserData(data.session);
+                                    // Use force=true to bypass fetchInProgress lock
+                                    await syncUserData(data.session, true);
                                     router.refresh();
                                 } else {
                                     console.error("PKCE Session exchange error:", error);
@@ -433,7 +434,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                                 refresh_token: refreshToken
                             });
                             if (!error && data.session) {
-                                await syncUserData(data.session);
+                                // Use force=true to bypass fetchInProgress lock
+                                await syncUserData(data.session, true);
                                 router.refresh();
                             } else {
                                 console.error("Failed to set session from deep link:", error);
