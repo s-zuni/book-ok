@@ -22,7 +22,4 @@ npm ci
 echo "Running Capacitor app build pipeline..."
 npm run build:app
 
-echo "Resolving Xcode Swift Package dependencies in-place..."
-xcodebuild -resolvePackageDependencies -project ios/App/App.xcodeproj
-
 echo "Xcode Cloud post-clone setup completed successfully!"
