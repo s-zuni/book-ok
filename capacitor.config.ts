@@ -19,8 +19,8 @@ const config: any = {
       resizeOnFullScreen: true
     }
   },
-  server: {
-    iosSwipeBack: true
+  ios: {
+    backForwardNavigationGestures: true
   }
 } as any;
 

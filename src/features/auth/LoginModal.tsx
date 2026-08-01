@@ -12,6 +12,26 @@ import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
 
+function getUrlSafeNonce(): string {
+    if (typeof window === 'undefined' || !window.crypto) {
+        return Math.random().toString(36).substring(2, 15);
+    }
+    const array = new Uint8Array(32);
+    window.crypto.getRandomValues(array);
+    return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function sha256Hash(message: string): Promise<string> {
+    if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
+        return message;
+    }
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 interface LoginModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -73,16 +93,22 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
             if (provider === 'apple' && isNative) {
                 try {
+                    const platform = Capacitor.getPlatform();
+                    const rawNonce = getUrlSafeNonce();
+                    const nonceDigest = await sha256Hash(rawNonce);
+
                     const result = await SignInWithApple.authorize({
-                        clientId: 'com.bookok.kr.service',
+                        clientId: platform === 'ios' ? 'com.bookok.kr' : 'com.bookok.kr.service',
                         redirectURI: 'com.bookok.kr://auth-callback',
                         scopes: 'email name',
+                        nonce: nonceDigest,
                     });
 
                     if (result.response && result.response.identityToken) {
                         const { data, error } = await supabase.auth.signInWithIdToken({
                             provider: 'apple',
                             token: result.response.identityToken,
+                            nonce: rawNonce,
                         });
                         
                         if (error) throw error;
