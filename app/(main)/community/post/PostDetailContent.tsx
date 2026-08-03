@@ -9,7 +9,8 @@ import { Post, Comment } from "@shared/types";
 
 export default function PostDetailPage() {
     const searchParams = useSearchParams();
-    const postId = searchParams.get('id') as string;
+    // Static export fallback: useSearchParams may be empty on initial hydration in Capacitor WebView
+    const postId = (searchParams.get('id') || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null)) as string;
     const router = useRouter();
     const { user, userProfile } = useAuth();
 
@@ -19,28 +20,44 @@ export default function PostDetailPage() {
     const [showMenu, setShowMenu] = useState(false);
 
     const fetchPost = async () => {
-        const { data } = await supabase.from('posts').select('*').eq('id', postId).single();
-        if (data) {
-            if (data.is_deleted && !userProfile?.is_admin) {
-                alert('삭제된 게시글입니다.');
-                router.push('/community');
+        try {
+            const { data, error } = await supabase.from('posts').select('*').eq('id', postId).single();
+            if (error) {
+                console.error("Error fetching post:", error);
                 return;
             }
-            setPost(data);
-            supabase.from('posts').update({ views: data.views + 1 }).eq('id', postId).then(() => { });
+            if (data) {
+                if (data.is_deleted && !userProfile?.is_admin) {
+                    alert('삭제된 게시글입니다.');
+                    router.push('/community');
+                    return;
+                }
+                setPost(data);
+                supabase.from('posts').update({ views: data.views + 1 }).eq('id', postId).then(() => { });
+            }
+        } catch (err) {
+            console.error("Unexpected error fetching post:", err);
         }
     };
 
     const fetchComments = async () => {
-        const { data } = await supabase.from('comments')
-            .select('*')
-            .eq('post_id', postId)
-            .eq('is_deleted', false)
-            .order('created_at', { ascending: true });
-        if (data) {
-            const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
-            const filtered = data.filter(comment => !blockedUsers.includes(comment.user_id));
-            setComments(filtered);
+        try {
+            const { data, error } = await supabase.from('comments')
+                .select('*')
+                .eq('post_id', postId)
+                .eq('is_deleted', false)
+                .order('created_at', { ascending: true });
+            if (error) {
+                console.error("Error fetching comments:", error);
+                return;
+            }
+            if (data) {
+                const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
+                const filtered = data.filter(comment => !blockedUsers.includes(comment.user_id));
+                setComments(filtered);
+            }
+        } catch (err) {
+            console.error("Unexpected error fetching comments:", err);
         }
     };
 

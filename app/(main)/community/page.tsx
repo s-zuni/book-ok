@@ -65,11 +65,55 @@ export default function CommunityPage() {
 
     // Reset posts when sub-menu (category) changes
     useEffect(() => {
+        let cancelled = false;
         setPosts([]);
         setPage(0);
         setHasMore(true);
-        fetchPosts(activeSubMenu, 0, true);
         setIsDrawerOpen(false);
+
+        const loadPosts = async () => {
+            setLoading(true);
+            try {
+                let query = supabase.from('posts').select('*, comments(count)', { count: 'exact' });
+                query = query.eq('is_deleted', false);
+
+                if (activeSubMenu === '인기 게시판') {
+                    query = query.order('is_notice', { ascending: false }).order('views', { ascending: false });
+                } else if (activeSubMenu && activeSubMenu !== '전체 게시글') {
+                    query = query.eq('category', activeSubMenu).order('is_notice', { ascending: false }).order('created_at', { ascending: false });
+                } else {
+                    query = query.order('is_notice', { ascending: false }).order('created_at', { ascending: false });
+                }
+
+                const { data, error, count } = await query.range(0, POSTS_PER_PAGE - 1);
+
+                if (cancelled) return;
+
+                if (error) throw error;
+
+                if (data) {
+                    const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
+                    const filteredData = data.filter((post: { user_id: string }) => !blockedUsers.includes(post.user_id));
+                    setPosts(filteredData);
+
+                    if (count !== null && data.length >= count) {
+                        setHasMore(false);
+                    } else if (data.length < POSTS_PER_PAGE) {
+                        setHasMore(false);
+                    }
+                }
+            } catch (err) {
+                if (!cancelled) {
+                    console.error("Error fetching posts:", err);
+                    toast.error("게시글을 불러오는데 실패했습니다.");
+                }
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        loadPosts();
+        return () => { cancelled = true; };
     }, [activeSubMenu]);
 
     const fetchPosts = async (filterCategory: string, pageNum: number, isInitial: boolean = false) => {

@@ -312,12 +312,30 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
         const initSession = async () => {
             try {
-                const { data: { session: initialSession } } = await supabase.auth.getSession();
+                let initialSession = null;
+                const maxRetries = Capacitor.isNativePlatform() ? 3 : 1;
+                
+                for (let i = 0; i < maxRetries; i++) {
+                    const { data } = await supabase.auth.getSession();
+                    initialSession = data.session;
+                    if (initialSession) break;
+                    
+                    // Native: CapacitorStorage(Preferences) may not have loaded the token yet
+                    if (i < maxRetries - 1) {
+                        console.log(`AuthContext: Session null on attempt ${i + 1}, retrying in ${500 * (i + 1)}ms...`);
+                        await new Promise(r => setTimeout(r, 500 * (i + 1)));
+                    }
+                }
+                
                 if (isMounted) {
                     await syncUserData(initialSession);
                 }
             } catch (err) {
                 console.error("Initial session fetch error:", err);
+                if (isMounted) {
+                    setLoading(false);
+                    setIsInitialized(true);
+                }
             }
         };
 

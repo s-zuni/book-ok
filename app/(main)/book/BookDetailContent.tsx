@@ -23,7 +23,8 @@ interface HoldingResult {
 export default function BookDetailContent() {
     const params = useParams();
     const searchParams = useSearchParams();
-    const bookId = (params?.id || searchParams?.get('id')) as string;
+    // Static export fallback: useSearchParams may be empty on initial hydration in Capacitor WebView
+    const bookId = (params?.id || searchParams?.get('id') || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null)) as string;
     const router = useRouter();
 
     const [book, setBook] = useState<Book | null>(null);
@@ -62,18 +63,38 @@ export default function BookDetailContent() {
 
 
     useEffect(() => {
+        let cancelled = false;
+
         const fetchBook = async () => {
+            if (!bookId || bookId === 'placeholder') {
+                setLoading(false);
+                return;
+            }
+
             setLoading(true);
             let success = false;
 
             try {
-                if (bookId && bookId !== 'placeholder' && /^\d+$/.test(bookId)) {
-                    // 1. Try Supabase first
-                    const { data: sbBook, error: sbError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
-                    if (sbBook && !sbError) {
-                        setBook(sbBook);
+                // 1. Try Supabase — first by bookid (ISBN text), then by id (bigint PK)
+                const { data: sbBookByIsbn, error: isbnError } = await supabase.from('books').select('*').eq('bookid', bookId).maybeSingle();
+                if (sbBookByIsbn && !isbnError) {
+                    if (!cancelled) {
+                        setBook(sbBookByIsbn);
                         setIsApiBook(false);
                         setLoading(false);
+                    }
+                    success = true;
+                }
+
+                if (!success && /^\d+$/.test(bookId)) {
+                    // Fallback: try matching by numeric PK id
+                    const { data: sbBookById, error: idError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
+                    if (sbBookById && !idError) {
+                        if (!cancelled) {
+                            setBook(sbBookById);
+                            setIsApiBook(false);
+                            setLoading(false);
+                        }
                         success = true;
                     }
                 }
@@ -96,7 +117,7 @@ export default function BookDetailContent() {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
                     const data = await response.json();
-                    if (data && data.item) {
+                    if (!cancelled && data && data.item) {
                         const rawItem = data.item;
                         // Format raw Aladin item to match Book type
                         const formattedBook: Book = {
@@ -112,14 +133,14 @@ export default function BookDetailContent() {
                         };
                         setBook(formattedBook);
                         setIsApiBook(true);
-                    } else {
+                    } else if (!cancelled) {
                         setBook(null);
                     }
                 } catch (err) {
                     console.error("Error fetching fallback book from API:", err);
-                    setBook(null);
+                    if (!cancelled) setBook(null);
                 } finally {
-                    setLoading(false);
+                    if (!cancelled) setLoading(false);
                 }
             }
         };
@@ -226,15 +247,28 @@ export default function BookDetailContent() {
     // Helper to ensure book exists in DB before linking actions
     const ensureBookInDB = async () => {
         if (isApiBook && book) {
-            const { error: insertError } = await supabase.from('books').upsert({
-                id: book.id,
-                bookid: book.bookid || book.id, // Ensure bookid is present
+            // First check if book already exists by bookid (ISBN)
+            const bookIsbn = book.bookid || book.id;
+            const { data: existingBook } = await supabase.from('books')
+                .select('id').eq('bookid', String(bookIsbn)).maybeSingle();
+            
+            if (existingBook) {
+                // Book already exists, no need to insert
+                setIsApiBook(false);
+                return true;
+            }
+
+            // Insert new book — only include columns that exist in the DB schema
+            const { error: insertError } = await supabase.from('books').insert({
+                bookid: String(bookIsbn),
                 title: book.title,
                 author: book.author,
                 imgsrc: book.imgsrc,
                 category: book.category,
                 description: book.description,
-            }, { onConflict: 'id' });
+                pubDate: book.pubDate || null,
+                publisher: book.publisher || null,
+            });
 
             if (insertError) {
                 toast.error("도서 저장 실패: " + insertError.message);
