@@ -185,20 +185,6 @@ export default function MyPage() {
         }
     }, [isInitialized, user, router]);
 
-    // Fallback automatic recovery timer to trigger profile refresh if it stays missing for too long
-    useEffect(() => {
-        let timer: NodeJS.Timeout;
-        if (isInitialized && user && !userProfile && !authLoading) {
-            timer = setTimeout(() => {
-                console.log("UserProfile missing after initialization, triggering fallback profile refresh.");
-                refreshProfile?.().catch(console.error);
-            }, 2000);
-        }
-        return () => {
-            if (timer) clearTimeout(timer);
-        };
-    }, [isInitialized, user, userProfile, authLoading, refreshProfile]);
-
     // Removed local fetchChildren logic to avoid race conditions with AuthContext
 
     useEffect(() => {
@@ -400,7 +386,11 @@ export default function MyPage() {
 
 
             <div className="max-w-xl mx-auto px-6 py-8">
-                {!isInitialized || authLoading || (user && !userProfile) ? (
+                {/*
+                  핵심 로딩 조건입니다. userProfile 뿐만 아니라 children 데이터까지 모두 로드되었는지 확인합니다.
+                  이를 위해 AuthContext에서 children 데이터 로딩 중에는 값을 null로, 로딩 완료 후에는 배열(빈 배열 포함)로 관리해야 합니다.
+                */}
+                {!isInitialized || authLoading || (user && (!userProfile || children === null)) ? (
                     // Loading Skeleton
                     <div className="space-y-8 animate-pulse">
                         <div className="flex items-center gap-5 mb-10">
