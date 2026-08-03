@@ -87,10 +87,13 @@ export default function PostDetailPage() {
             return;
         }
 
-        const { error } = await supabase.from('community_reports').insert({
-            reporter_id: user.id,
-            post_id: String(postId),
-            reason: reason,
+        const { error } = await supabase.from('reports').insert({
+            user_id: user.id,
+            type: 'report',
+            title: '게시글 신고',
+            content: reason,
+            target_type: 'post',
+            target_id: String(postId),
             status: 'pending'
         });
 
@@ -101,9 +104,20 @@ export default function PostDetailPage() {
         }
     };
 
-    const handleBlockPostAuthor = () => {
+    const handleBlockPostAuthor = async () => {
         if (!post || !user) return;
         if (!confirm("이 사용자를 차단하시겠습니까? 차단하면 이 사용자의 모든 글과 댓글이 숨겨집니다.")) return;
+
+        // Auto-report the objectionable content to developer
+        await supabase.from('reports').insert({
+            user_id: user.id,
+            type: 'report',
+            title: '사용자 차단으로 인한 자동 신고',
+            content: `게시글 작성자(ID: ${post.user_id}) 차단에 따른 자동 신고 접수. 관련 게시글 ID: ${postId}`,
+            target_type: 'post',
+            target_id: String(postId),
+            status: 'pending'
+        });
 
         const blockedUsers = JSON.parse(localStorage.getItem('blocked_users') || '[]');
         if (!blockedUsers.includes(post.user_id)) {
@@ -123,10 +137,13 @@ export default function PostDetailPage() {
             return;
         }
 
-        const { error } = await supabase.from('community_reports').insert({
-            reporter_id: user.id,
-            comment_id: String(commentId),
-            reason: reason,
+        const { error } = await supabase.from('reports').insert({
+            user_id: user.id,
+            type: 'report',
+            title: '댓글 신고',
+            content: reason,
+            target_type: 'comment',
+            target_id: String(commentId),
             status: 'pending'
         });
 
@@ -137,9 +154,20 @@ export default function PostDetailPage() {
         }
     };
 
-    const handleBlockUser = (targetUserId: string) => {
+    const handleBlockUser = async (targetUserId: string, commentId?: number | string) => {
         if (!user) return;
         if (!confirm("이 사용자를 차단하시겠습니까? 차단하면 이 사용자의 모든 글과 댓글이 숨겨집니다.")) return;
+
+        // Auto-report the objectionable content to developer
+        await supabase.from('reports').insert({
+            user_id: user.id,
+            type: 'report',
+            title: '사용자 차단으로 인한 자동 신고',
+            content: `댓글 작성자(ID: ${targetUserId}) 차단에 따른 자동 신고 접수.`,
+            target_type: 'comment',
+            target_id: commentId ? String(commentId) : 'unknown',
+            status: 'pending'
+        });
 
         const blockedUsers = JSON.parse(localStorage.getItem('blocked_users') || '[]');
         if (!blockedUsers.includes(targetUserId)) {
@@ -252,7 +280,7 @@ export default function PostDetailPage() {
                                     {user && comment.user_id !== user.id && (
                                         <div className="flex gap-1.5">
                                             <button onClick={() => handleReportComment(comment.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold transition">신고</button>
-                                            <button onClick={() => handleBlockUser(comment.user_id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold transition">차단</button>
+                                            <button onClick={() => handleBlockUser(comment.user_id, comment.id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold transition">차단</button>
                                         </div>
                                     )}
                                 </div>

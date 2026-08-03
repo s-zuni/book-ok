@@ -22,6 +22,7 @@ export default function AuthPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [agreeTerms, setAgreeTerms] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -38,6 +39,7 @@ export default function AuthPage() {
         setShowPassword(false);
         setShowNewPassword(false);
         setShowConfirmPassword(false);
+        setAgreeTerms(false);
         setAuthMode(mode);
     };
 
@@ -131,6 +133,10 @@ export default function AuthPage() {
         }
         if (!trimmedNickname || !trimmedPhone) {
             setAuthError('이름과 핸드폰 번호를 모두 입력해주세요.');
+            return;
+        }
+        if (!agreeTerms) {
+            setAuthError('서비스 이용약관(EULA) 및 개인정보 처리방침에 동의해주세요.');
             return;
         }
 
@@ -407,6 +413,19 @@ export default function AuthPage() {
                                         disabled={isLoading}
                                     />
                                 </div>
+                            </div>
+                            <div className="flex items-start gap-2.5 mt-4 mb-2 ml-1">
+                                <input
+                                    type="checkbox"
+                                    id="agreeTerms"
+                                    checked={agreeTerms}
+                                    onChange={(e) => setAgreeTerms(e.target.checked)}
+                                    className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 mt-0.5 cursor-pointer"
+                                    disabled={isLoading}
+                                />
+                                <label htmlFor="agreeTerms" className="text-xs font-bold text-gray-500 leading-normal cursor-pointer select-none">
+                                    북콕의 <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-green-600 underline hover:text-green-700">서비스 이용약관 (EULA)</a> 및 <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-green-600 underline hover:text-green-700">개인정보 처리방침</a>에 동의합니다. <span className="text-red-500">(필수)</span>
+                                </label>
                             </div>
                         </>
                     )}

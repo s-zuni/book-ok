@@ -35,6 +35,7 @@ export default function CommunityPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [showEulaModal, setShowEulaModal] = useState(false);
 
     const router = useRouter();
     const { user, userProfile, children } = useAuth();
@@ -42,6 +43,15 @@ export default function CommunityPage() {
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const POSTS_PER_PAGE = 10;
+
+    useEffect(() => {
+        if (user) {
+            const hasAgreed = localStorage.getItem(`bookok_eula_agreed_${user.id}`);
+            if (!hasAgreed) {
+                setShowEulaModal(true);
+            }
+        }
+    }, [user]);
 
     useEffect(() => {
         if (children && children.length > 0) {
@@ -383,6 +393,52 @@ export default function CommunityPage() {
                     )}
                 </div>
             </div>
+
+            {/* EULA Agreement Modal */}
+            {showEulaModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] p-8 max-w-md w-full shadow-2xl animate-in zoom-in-95 duration-200">
+                        <h3 className="text-xl font-black text-gray-900 mb-3 flex items-center gap-2">
+                            <span>📜</span> 커뮤니티 이용 규약 동의 (EULA)
+                        </h3>
+                        <p className="text-xs text-gray-500 font-medium mb-4 leading-relaxed">
+                            북콕 커뮤니티는 청정하고 건강한 교육·독서 정보 교류를 지향합니다. 깨끗한 서비스 이용을 위해 다음 이용 규약(EULA) 동의가 필요합니다.
+                        </p>
+                        
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-[11px] text-gray-600 space-y-2 max-h-[160px] overflow-y-auto mb-5 scrollbar-thin">
+                            <p className="font-extrabold text-green-700 text-xs mb-1">⚠️ 커뮤니티 가이드라인 및 무관용 정책</p>
+                            <p>1. 타인에 대한 비방, 욕설, 인신공격, 모욕적인 발언 또는 허위 사실 유포를 엄격히 금지합니다.</p>
+                            <p>2. 음란물, 선정적인 이미지, 도박, 불법 홍보물 등 유해 콘텐츠를 게시할 수 없습니다.</p>
+                            <p>3. <strong>무관용 원칙 (No Tolerance Policy):</strong> 유해 콘텐츠 및 악성 사용자는 다른 회원의 신고/차단에 따라 접수 후 24시간 이내에 관리자 검토를 통해 즉시 삭제 및 차단 조치됩니다.</p>
+                            <p>4. 규정을 위반한 사용자는 사전 경고 없이 계정 정지 및 영구 제재(추방)를 받게 됩니다.</p>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    toast.error("이용 규약에 동의하셔야 커뮤니티를 이용하실 수 있습니다.");
+                                    router.push('/');
+                                }}
+                                className="flex-1 py-3 bg-gray-100 text-gray-500 font-bold rounded-xl text-sm hover:bg-gray-200 active:scale-95 transition-all"
+                            >
+                                동의 안 함 (나가기)
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (user) {
+                                        localStorage.setItem(`bookok_eula_agreed_${user.id}`, "true");
+                                    }
+                                    setShowEulaModal(false);
+                                    toast.success("이용 규약에 동의하셨습니다. 환영합니다! 🎉");
+                                }}
+                                className="flex-1 py-3 bg-gray-900 text-white font-black rounded-xl text-sm hover:bg-black active:scale-95 transition-all"
+                            >
+                                동의하고 계속하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

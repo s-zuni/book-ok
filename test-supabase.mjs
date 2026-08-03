@@ -17,6 +17,12 @@ async function test() {
     console.log("Testing posts...");
     const { data: postData, error: postError } = await supabase.from('posts').select('*').limit(1);
     console.log("Posts:", postData, postError);
+
+    console.log("Testing reports...");
+    const { data: reportData, error: reportError } = await supabase.from('reports').select('*').limit(1);
+    console.log("Reports:", reportData, reportError);
 }
 
 test();
+
+
