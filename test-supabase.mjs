@@ -21,6 +21,44 @@ async function test() {
     console.log("Testing reports...");
     const { data: reportData, error: reportError } = await supabase.from('reports').select('*').limit(1);
     console.log("Reports:", reportData, reportError);
+
+    console.log("Testing library edge function...");
+    try {
+        const { data: libData, error: libError } = await supabase.functions.invoke('library', {
+            method: 'POST',
+            body: { apiType: 'search', region: '11', dtl_region: '11230' }
+        });
+        console.log("Library Edge Function Response:", libData, libError);
+    } catch (e) {
+        console.error("Library Edge Function Invoke Exception:", e);
+    }
+
+    console.log("Testing direct data4library.kr API fetch (WITHOUT encoding)...");
+    try {
+        const API_KEY = "c0bde3ba4483595bfd280c80c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+        const fetchUrl1 = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150&region=11&dtl_region=11230`;
+        const res1 = await fetch(fetchUrl1);
+        const data1 = await res1.json();
+        console.log("Direct Fetch (WITHOUT encoding) result count:", data1?.response?.libs?.length, data1?.response?.error);
+    } catch (e) {
+        console.error("Direct Fetch (WITHOUT encoding) Exception:", e);
+    }
+
+    console.log("Testing direct data4library.kr API fetch (WITH encoding)...");
+    try {
+        const API_KEY = "c0bde3ba4483595bfd280c80c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+        const r = encodeURIComponent('11');
+        const dr = encodeURIComponent('11230');
+        const fetchUrl2 = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150&region=${r}&dtl_region=${dr}`;
+        const res2 = await fetch(fetchUrl2);
+        const data2 = await res2.json();
+        console.log("Direct Fetch (WITH encoding) result count:", data2?.response?.libs?.length, data2?.response?.error);
+        if (data2?.response?.libs) {
+            console.log("First lib:", JSON.stringify(data2?.response?.libs[0]));
+        }
+    } catch (e) {
+        console.error("Direct Fetch (WITH encoding) Exception:", e);
+    }
 }
 
 test();

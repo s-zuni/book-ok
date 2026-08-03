@@ -43,7 +43,7 @@ serve(async (req) => {
 
     let API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key");
     if (!API_KEY) {
-      API_KEY = "6be31d996e38b30fa59d6be40c0f4f9f257a4192b0c36f54c935400ad6b85cc1";
+      API_KEY = "c0bde3ba4483595bfd280c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
     }
 
     if (apiType === "book-status" || isbn) {
