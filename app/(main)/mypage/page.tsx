@@ -82,7 +82,8 @@ export default function MyPage() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': supabaseAnonKey
+                        'apikey': supabaseAnonKey,
+                        'Authorization': `Bearer ${supabaseAnonKey}`
                     },
                     body: JSON.stringify({ apiType: 'search', region: selectedRegion, dtl_region: selectedSubRegion })
                 });

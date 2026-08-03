@@ -184,7 +184,7 @@ export function SolutionPageContent() {
     const [aiCoachMent, setAiCoachMent] = useState("다양한 자연 현상과 과학에 흥미를 가질 만한 책을 함께 읽어보세요!");
     const [selectedCoachCategory, setSelectedCoachCategory] = useState<string | null>(null);
 
-    const { user, children, userProfile } = useAuth();
+    const { user, children, userProfile, isInitialized, loading: authLoading } = useAuth();
 
     const childName = activeChild ? activeChild.name : (userProfile?.nickname ? `${userProfile.nickname} 부모님` : "부모님");
 
@@ -428,26 +428,27 @@ export function SolutionPageContent() {
     const [aiSolutionLoading, setAiSolutionLoading] = useState(false);
 
     useEffect(() => {
-        // Sync activeChild with global children list
-        if (!activeChild && children.length > 0) {
-            setActiveChild(children[0]);
+        // Sync activeChild with global children list once initialized
+        if (isInitialized && children.length > 0) {
+            if (!activeChild || !children.some(c => c.id === activeChild.id)) {
+                setActiveChild(children[0]);
+            }
         }
-    }, [children, activeChild]);
+    }, [isInitialized, children, activeChild]);
 
-    // Fetch read books when tab changes or active child changes
+    // Fetch read books when tab changes, active child changes, or auth initializes
     useEffect(() => {
-        if (user) {
+        if (isInitialized && user) {
             fetchUserReadBooks();
         }
-    }, [activeSubMenu, user, activeChild, mobileTab]);
+    }, [isInitialized, user, activeChild?.id, activeSubMenu, mobileTab]);
 
     const fetchUserReadBooks = async () => {
         if (!user) return;
 
-        // If no registered child, we cannot query by child_id
+        // If no registered child, initialize default stats
         if (!activeChild) {
             setUserReadBooks([]);
-            // Initialize default stats
             setThisMonthCount(0);
             setTotalReadCount(0);
             setPreferredGenres([
@@ -456,23 +457,40 @@ export function SolutionPageContent() {
             return;
         }
 
-        const { data: readBooksData } = await supabase
-            .from('read_books')
-            .select('book_id, read_date, observation_data, books(*)') // Fetch read_date too
-            .eq('child_id', activeChild.id)
-            .order('read_date', { ascending: false });
+        try {
+            const { data: readBooksData, error } = await supabase
+                .from('read_books')
+                .select('book_id, read_date, observation_data, books(*)')
+                .eq('child_id', activeChild.id)
+                .order('read_date', { ascending: false });
 
-        if (readBooksData) {
-            // Map books and attach their specific observation
-            const booksWithObs = readBooksData.map((r: SupabaseReadBook) => {
-                const bookData = Array.isArray(r.books) ? r.books[0] : r.books;
-                if (!bookData) return null;
-                const mapped: BookWithObservation = {
-                    ...bookData,
-                    _observation: r.observation_data
-                };
-                return mapped;
-            }).filter((b) => b !== null) as BookWithObservation[];
+            if (error) {
+                console.error("Error fetching read books:", error);
+                return;
+            }
+
+            if (readBooksData) {
+                // Map books and attach their specific observation
+                const booksWithObs = readBooksData.map((r: SupabaseReadBook) => {
+                    const bookData = Array.isArray(r.books) ? r.books[0] : r.books;
+                    if (!bookData) {
+                        // Fallback if books join returns null
+                        return {
+                            id: r.book_id,
+                            bookid: r.book_id,
+                            title: '기록된 도서',
+                            author: '저자 미상',
+                            category: '기타',
+                            imgsrc: '',
+                            _observation: r.observation_data
+                        } as BookWithObservation;
+                    }
+                    const mapped: BookWithObservation = {
+                        ...bookData,
+                        _observation: r.observation_data
+                    };
+                    return mapped;
+                });
 
             // Deduplicate (Keep most recent if duplicate)
             const uniqueBooks = Array.from(new Map(booksWithObs.map((b) => [b.id, b])).values());
@@ -613,6 +631,9 @@ export function SolutionPageContent() {
             const topGenre = sortedGenres.length > 0 ? sortedGenres[0].label : "그림책";
             const topCatId = categoryGenreMap[topGenre] || "1108";
             loadAnalysisBooks(topCatId, topGenre);
+        }
+        } catch (err) {
+            console.error("fetchUserReadBooks error:", err);
         }
     };
 

@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { supabaseAnonKey } from './supabase';
 
 /**
  * API Base URL for native/web environments.
@@ -35,9 +36,22 @@ export function apiUrl(path: string): string {
 
 /**
  * CORS-safe fetch helper that transparently uses CapacitorHttp for Native Mobile,
- * and standard fetch for Web Browsers.
+ * and standard fetch for Web Browsers. Automatically injects required Supabase
+ * authorization headers for Edge Function calls to prevent 401 Unauthorized errors.
  */
 export async function safeFetch(url: string, options: { method?: string; headers?: Record<string, string>; body?: string } = {}) {
+  const headers = { ...(options.headers || {}) };
+
+  // If calling Supabase Edge Functions, automatically ensure Authorization and apikey headers are present
+  if (url.includes('/functions/v1/')) {
+    if (!headers['apikey']) {
+      headers['apikey'] = supabaseAnonKey;
+    }
+    if (!headers['Authorization'] && !headers['authorization']) {
+      headers['Authorization'] = `Bearer ${supabaseAnonKey}`;
+    }
+  }
+
   if (Capacitor.isNativePlatform()) {
     try {
       const { CapacitorHttp } = await import('@capacitor/core');
@@ -45,7 +59,7 @@ export async function safeFetch(url: string, options: { method?: string; headers
       const response = await CapacitorHttp.request({
         url: url,
         method: options.method || 'GET',
-        headers: options.headers || {},
+        headers: headers,
         data: options.body ? JSON.parse(options.body) : undefined,
       });
 
@@ -59,5 +73,5 @@ export async function safeFetch(url: string, options: { method?: string; headers
     }
   }
 
-  return fetch(url, options);
+  return fetch(url, { ...options, headers });
 }

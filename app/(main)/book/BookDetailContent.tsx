@@ -207,7 +207,8 @@ export default function BookDetailContent() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'apikey': supabaseAnonKey
+                        'apikey': supabaseAnonKey,
+                        'Authorization': `Bearer ${supabaseAnonKey}`
                     },
                     body: JSON.stringify({ apiType: 'book-status', isbn: isbn, libCodes: libCodes })
                 });
