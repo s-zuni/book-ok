@@ -74,52 +74,21 @@ export default function BookDetailContent() {
             setLoading(true);
             let success = false;
 
+            // 1. Primary: Fetch accurate & rich details from Aladin API via Edge Function
             try {
-                // 1. Try Supabase — first by bookid (ISBN text), then by id (bigint PK)
-                const { data: sbBookByIsbn, error: isbnError } = await supabase.from('books').select('*').eq('bookid', bookId).maybeSingle();
-                if (sbBookByIsbn && !isbnError) {
-                    if (!cancelled) {
-                        setBook(sbBookByIsbn);
-                        setIsApiBook(false);
-                        setLoading(false);
-                    }
-                    success = true;
-                }
+                const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey
+                    },
+                    body: JSON.stringify({ itemId: bookId, apiType: 'ItemLookUp' })
+                });
 
-                if (!success && /^\d+$/.test(bookId)) {
-                    // Fallback: try matching by numeric PK id
-                    const { data: sbBookById, error: idError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
-                    if (sbBookById && !idError) {
-                        if (!cancelled) {
-                            setBook(sbBookById);
-                            setIsApiBook(false);
-                            setLoading(false);
-                        }
-                        success = true;
-                    }
-                }
-            } catch (dbErr) {
-                console.warn("Supabase fetch book error, trying fallback:", dbErr);
-            }
-
-            if (!success) {
-                // 2. Try Aladin via Edge Function fallback if not found in Supabase
-                try {
-                    const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': supabaseAnonKey
-                        },
-                        body: JSON.stringify({ itemId: bookId, apiType: 'ItemLookUp' })
-                    });
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                if (response.ok) {
                     const data = await response.json();
-                    if (!cancelled && data && data.item) {
+                    if (data && data.item) {
                         const rawItem = data.item;
-                        // Format raw Aladin item to match Book type
                         const formattedBook: Book = {
                             id: rawItem.isbn13 || rawItem.isbn || bookId,
                             bookid: rawItem.isbn13 || rawItem.isbn || bookId,
@@ -131,16 +100,50 @@ export default function BookDetailContent() {
                             pubDate: rawItem.pubDate || '',
                             publisher: rawItem.publisher || '',
                         };
-                        setBook(formattedBook);
-                        setIsApiBook(true);
-                    } else if (!cancelled) {
-                        setBook(null);
+
+                        if (!cancelled) {
+                            setBook(formattedBook);
+                            setIsApiBook(true);
+                            setLoading(false);
+                        }
+                        success = true;
                     }
-                } catch (err) {
-                    console.error("Error fetching fallback book from API:", err);
-                    if (!cancelled) setBook(null);
+                }
+            } catch (err) {
+                console.warn("Aladin API fetch failed, trying Supabase fallback:", err);
+            }
+
+            // 2. Fallback: Query Supabase DB if Aladin API is unavailable or returns no item
+            if (!success) {
+                try {
+                    const { data: sbBookByIsbn, error: isbnError } = await supabase.from('books').select('*').eq('bookid', bookId).maybeSingle();
+                    if (sbBookByIsbn && !isbnError) {
+                        if (!cancelled) {
+                            setBook(sbBookByIsbn);
+                            setIsApiBook(false);
+                            setLoading(false);
+                        }
+                        success = true;
+                    }
+
+                    if (!success && /^\d+$/.test(bookId)) {
+                        const { data: sbBookById, error: idError } = await supabase.from('books').select('*').eq('id', bookId).maybeSingle();
+                        if (sbBookById && !idError) {
+                            if (!cancelled) {
+                                setBook(sbBookById);
+                                setIsApiBook(false);
+                                setLoading(false);
+                            }
+                            success = true;
+                        }
+                    }
+                } catch (dbErr) {
+                    console.error("Supabase fallback fetch book error:", dbErr);
                 } finally {
-                    if (!cancelled) setLoading(false);
+                    if (!cancelled) {
+                        if (!success) setBook(null);
+                        setLoading(false);
+                    }
                 }
             }
         };
