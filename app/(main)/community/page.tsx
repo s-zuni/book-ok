@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import { toast } from "sonner";
+import ChildSafetyBanner from "@shared/ui/ChildSafetyBanner";
 
 const getRelativeTime = (dateStr: string) => {
     const now = new Date();
@@ -91,7 +92,12 @@ export default function CommunityPage() {
             if (error) throw error;
 
             if (data) {
-                const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
+                let blockedUsers: string[] = [];
+                try {
+                    blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
+                } catch (e) {
+                    console.warn("Failed to parse blocked_users:", e);
+                }
                 const filteredData = data.filter((post: { user_id: string }) => !blockedUsers.includes(post.user_id));
 
                 if (isInitial) {
@@ -113,7 +119,7 @@ export default function CommunityPage() {
                 toast.error("게시글을 불러오는데 실패했습니다.");
             }
         } finally {
-            if (isInitial && (!cancelledCheck || !cancelledCheck())) {
+            if (isInitial) {
                 setLoading(false);
             }
         }
@@ -414,12 +420,12 @@ export default function CommunityPage() {
                             북콕 커뮤니티는 청정하고 건강한 교육·독서 정보 교류를 지향합니다. 깨끗한 서비스 이용을 위해 다음 이용 규약(EULA) 동의가 필요합니다.
                         </p>
                         
-                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-[11px] text-gray-600 space-y-2 max-h-[160px] overflow-y-auto mb-5 scrollbar-thin">
-                            <p className="font-extrabold text-green-700 text-xs mb-1">⚠️ 커뮤니티 가이드라인 및 무관용 정책</p>
-                            <p>1. 타인에 대한 비방, 욕설, 인신공격, 모욕적인 발언 또는 허위 사실 유포를 엄격히 금지합니다.</p>
-                            <p>2. 음란물, 선정적인 이미지, 도박, 불법 홍보물 등 유해 콘텐츠를 게시할 수 없습니다.</p>
-                            <p>3. <strong>무관용 원칙 (No Tolerance Policy):</strong> 유해 콘텐츠 및 악성 사용자는 다른 회원의 신고/차단에 따라 접수 후 24시간 이내에 관리자 검토를 통해 즉시 삭제 및 차단 조치됩니다.</p>
-                            <p>4. 규정을 위반한 사용자는 사전 경고 없이 계정 정지 및 영구 제재(추방)를 받게 됩니다.</p>
+                        <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 text-[11px] text-gray-600 space-y-2.5 max-h-[200px] overflow-y-auto mb-5 scrollbar-thin">
+                            <p className="font-extrabold text-amber-700 text-xs mb-1">🛡️ 커뮤니티 아동 안전 및 이용 가이드라인 (Google Play 규정)</p>
+                            <p>1. <strong>아동 온라인 안전 지침:</strong> 게시글 작성 시 실명, 전화번호, 주소, 학교 등 개인 식별 정보를 절대로 공유하지 마세요. 온라인 낯선 사람과의 오프라인 만남은 심각한 위험을 초래할 수 있습니다.</p>
+                            <p>2. <strong>1:1 개인 메시지(DM) 미제공:</strong> 본 서비스는 모든 사용자가 함께 이용하는 <strong>전체 공개 게시판</strong>입니다. 알 수 없는 사용자와의 1:1 비공개 대화 기능은 제공되지 않습니다.</p>
+                            <p>3. <strong>유해 콘텐츠 게시 금지:</strong> 타인에 대한 비방, 욕설, 음란물, 불법 홍보물 등 유해 콘텐츠를 금지합니다.</p>
+                            <p>4. <strong>무관용 원칙 (No Tolerance Policy):</strong> 부적절한 게시글은 회원 신고 시 24시간 이내 즉시 삭제 처리되며 해당 계정은 경고 없이 영구 제재(추방)됩니다.</p>
                         </div>
                         
                         <div className="flex gap-3">

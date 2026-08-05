@@ -11,7 +11,8 @@ import { Book } from "@shared/types";
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
+import { safeFetch } from "@shared/lib/api";
 
 interface Message {
     role: "user" | "assistant" | "system";
@@ -89,12 +90,19 @@ export default function ChatPage() {
     // Helper to fetch and format book details from Aladin API
     const fetchAladinBook = async (title: string): Promise<Book | null> => {
         try {
-            // Fetch with query parameters in path:
-            const { data: bookData, error: bookError } = await supabase.functions.invoke(
-                `recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`
+            const response = await safeFetch(
+                `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey,
+                        'Authorization': `Bearer ${supabaseAnonKey}`
+                    }
+                }
             );
-
-            if (bookError) throw bookError;
+            if (!response.ok) return null;
+            const bookData = await response.json();
             const item = bookData?.item?.[0];
             if (!item) return null;
             return {
@@ -223,11 +231,21 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const { data, error } = await supabase.functions.invoke("chat", {
-                body: { messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage] }
+            const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseAnonKey
+                },
+                body: JSON.stringify({ messages: [...messages.map(m => ({ role: m.role, content: m.content })), userMessage] })
             });
 
-            if (error) throw error;
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.error || `HTTP Error ${response.status}`);
+            }
+
+            const data = await response.json();
             const botMessage = data.result;
             let content = botMessage.content;
             

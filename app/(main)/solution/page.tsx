@@ -131,10 +131,19 @@ export function SolutionPageContent() {
     // Helper to fetch and format book details from Aladin API
     const fetchAladinBook = async (title: string): Promise<RecommendedBook | null> => {
         try {
-            const { data, error } = await supabase.functions.invoke(
-                `recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`
+            const response = await safeFetch(
+                `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey,
+                        'Authorization': `Bearer ${supabaseAnonKey}`
+                    }
+                }
             );
-            if (error) throw error;
+            if (!response.ok) return null;
+            const data = await response.json();
             const item = data.item?.[0];
             if (!item) return null;
             return {
@@ -216,10 +225,19 @@ export function SolutionPageContent() {
     // Load custom recommended books on demand
     const loadAnalysisBooks = async (categoryId: string = "1108", query: string = "추천도서") => {
         try {
-            const { data, error } = await supabase.functions.invoke(
-                `recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`
+            const response = await safeFetch(
+                `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseAnonKey,
+                        'Authorization': `Bearer ${supabaseAnonKey}`
+                    }
+                }
             );
-            if (!error && data) {
+            if (response.ok) {
+                const data = await response.json();
                 const items = data.item?.slice(0, 5) || [];
                 const parsed = items.map((item: AladinRecommendItem) => ({
                     id: item.itemId,
@@ -317,10 +335,19 @@ export function SolutionPageContent() {
                 }
 
                 // Fetch matching recommendation books from Aladin
-                const { data: searchData, error: searchError } = await supabase.functions.invoke(
-                    `recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`
+                const searchResponse = await safeFetch(
+                    `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': supabaseAnonKey,
+                            'Authorization': `Bearer ${supabaseAnonKey}`
+                        }
+                    }
                 );
-                if (!searchError && searchData) {
+                if (searchResponse.ok) {
+                    const searchData = await searchResponse.json();
                     const items = searchData.item?.slice(0, 3) || [];
                     for (const item of items) {
                         loadedBooks.push({
@@ -661,10 +688,20 @@ export function SolutionPageContent() {
             const recentBooks = userReadBooks.slice(0, 5);
             const enrichedBooks = await Promise.all(recentBooks.map(async (book: BookWithObservation) => {
                 try {
-                    const { data: details, error } = await supabase.functions.invoke(
-                        `recommendations?itemId=${book.bookid}&apiType=ItemLookUp`
+                    const response = await safeFetch(
+                        `${supabaseUrl}/functions/v1/recommendations?itemId=${book.bookid}&apiType=ItemLookUp`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': supabaseAnonKey,
+                                'Authorization': `Bearer ${supabaseAnonKey}`
+                            }
+                        }
                     );
-                    if (error || !details) return book;
+                    if (!response.ok) return book;
+                    const details = await response.json();
+                    if (!details) return book;
                     return { ...book, description: details.description, toc: details.toc };
                 } catch (e) {
                     console.error("Failed to fetch details for", book.title);

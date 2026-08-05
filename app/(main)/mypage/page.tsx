@@ -5,7 +5,7 @@ import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { Child, MainMenu, ReadBook } from "@shared/types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building, Trash2 } from "lucide-react";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building, Trash2, ShieldCheck, Lock } from "lucide-react";
 import { REGIONS, SUB_REGIONS } from "@shared/lib/regions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { safeFetch } from "@shared/lib/api";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
+import ParentalGateModal from "@shared/ui/ParentalGateModal";
 
 
 export default function MyPage() {
@@ -69,6 +70,68 @@ export default function MyPage() {
     const [foundLibraries, setFoundLibraries] = useState<Array<{ libCode: string; libName: string; address: string }>>([]);
     const [isSearchingLibraries, setIsSearchingLibraries] = useState(false);
     const [isSavingLibrary, setIsSavingLibrary] = useState(false);
+
+    // Parental Control State (Google Play Families Policy Compliance)
+    const [isSocialEnabled, setIsSocialEnabled] = useState(true);
+    const [showParentalGate, setShowParentalGate] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('bookok_parental_social_enabled');
+            if (saved !== null) {
+                setIsSocialEnabled(saved === 'true');
+            }
+        }
+        if (user?.user_metadata) {
+            if (user.user_metadata.parental_pin) {
+                localStorage.setItem('bookok_parental_pin', user.user_metadata.parental_pin);
+            }
+            if (typeof user.user_metadata.is_social_enabled === 'boolean') {
+                setIsSocialEnabled(user.user_metadata.is_social_enabled);
+                localStorage.setItem('bookok_parental_social_enabled', String(user.user_metadata.is_social_enabled));
+            }
+        }
+    }, [user]);
+
+    const handleToggleSocialSetting = () => {
+        setShowParentalGate(true);
+    };
+
+    const handleParentalGateSuccess = async () => {
+        const nextValue = !isSocialEnabled;
+        setIsSocialEnabled(nextValue);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('bookok_parental_social_enabled', String(nextValue));
+        }
+        if (user) {
+            await supabase.auth.updateUser({
+                data: { is_social_enabled: nextValue }
+            }).catch(e => console.warn("Supabase user_metadata sync error:", e));
+        }
+        toast.success(nextValue ? "자녀의 커뮤니티 소셜 기능이 활성화되었습니다." : "자녀의 커뮤니티 소셜 기능이 제한(차단)되었습니다.");
+    };
+
+    const [showPinChangeModal, setShowPinChangeModal] = useState(false);
+    const [newPinInput, setNewPinInput] = useState("");
+
+    const handleSaveNewPin = async () => {
+        if (!newPinInput.trim() || newPinInput.trim().length < 4) {
+            toast.error("비밀번호는 최소 4자리 이상 입력해주세요.");
+            return;
+        }
+        const pin = newPinInput.trim();
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('bookok_parental_pin', pin);
+        }
+        if (user) {
+            await supabase.auth.updateUser({
+                data: { parental_pin: pin }
+            }).catch(e => console.warn("Supabase user_metadata sync error:", e));
+        }
+        toast.success("보호자 비밀번호가 Supabase 계정에 저장되었습니다.");
+        setShowPinChangeModal(false);
+        setNewPinInput("");
+    };
 
     useEffect(() => {
         const fetchLibraries = async () => {
@@ -706,6 +769,69 @@ export default function MyPage() {
                                 )}
                             </div>
 
+                            {/* 자녀 보호 기능 설정 (Google Play Families Policy Compliance) */}
+                            <div className="bg-white rounded-4xl p-6 shadow-sm border border-gray-100 animate-in fade-in">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2.5 bg-indigo-100 text-indigo-600 rounded-xl">
+                                            <ShieldCheck size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-gray-900">자녀 보호 기능 설정</h3>
+                                            <p className="text-xs text-gray-400">Google Play 가족 정책 준수 - 소셜 기능 제어</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-xs font-black px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100">
+                                        Parental Controls
+                                    </span>
+                                </div>
+
+                                <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 flex items-center justify-between mb-3">
+                                    <div>
+                                        <div className="font-extrabold text-sm text-gray-900 flex items-center gap-1.5">
+                                            <span>커뮤니티 소셜 기능 허용</span>
+                                            {isSocialEnabled ? (
+                                                <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md border border-green-200">사용 중</span>
+                                            ) : (
+                                                <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md border border-red-200">차단됨</span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                            비활성화 시 자녀의 게시글/댓글 작성이 제한됩니다. (성인 확인 필요)
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={handleToggleSocialSetting}
+                                        className={`w-14 h-8 flex items-center rounded-full p-1 transition-colors cursor-pointer ${
+                                            isSocialEnabled ? 'bg-indigo-600 justify-end' : 'bg-gray-300 justify-start'
+                                        }`}
+                                    >
+                                        <div className="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center font-bold text-[10px] text-gray-700">
+                                            {isSocialEnabled ? 'ON' : 'OFF'}
+                                        </div>
+                                    </button>
+                                </div>
+
+                                <div className="bg-indigo-50/60 border border-indigo-100 rounded-2xl p-4 flex items-center justify-between">
+                                    <div>
+                                        <div className="font-extrabold text-sm text-indigo-950 flex items-center gap-1.5">
+                                            <span>🔑 보호자 비밀번호(PIN) 설정</span>
+                                        </div>
+                                        <p className="text-xs text-indigo-700/80 mt-1 leading-relaxed">
+                                            아동 보호 성인 인증 및 커뮤니티 진입 시 사용할 4자리 비밀번호를 설정합니다.
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={() => setShowPinChangeModal(true)}
+                                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0"
+                                    >
+                                        비밀번호 변경
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Menu Items */}
                             <button
                                 onClick={() => setShowReadBooksModal(true)}
@@ -946,6 +1072,75 @@ export default function MyPage() {
                             >
                                 취소
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Parental Gate Modal */}
+            <ParentalGateModal
+                isOpen={showParentalGate}
+                onClose={() => setShowParentalGate(false)}
+                onSuccess={handleParentalGateSuccess}
+                title="보호자(성인) 확인"
+                description="자녀 보호 기능 설정(소셜 기능 사용 토글)을 변경하기 위해 성인 확인을 진행합니다."
+            />
+
+            {/* PIN Change Modal */}
+            {showPinChangeModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2rem] p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
+                        <button
+                            onClick={() => setShowPinChangeModal(false)}
+                            className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
+                                <Lock size={22} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-gray-900">보호자 비밀번호(PIN) 설정</h3>
+                                <span className="text-[10px] font-extrabold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-md">Parental PIN</span>
+                            </div>
+                        </div>
+
+                        <p className="text-xs text-gray-500 font-medium mb-5 leading-relaxed">
+                            자녀가 커뮤니티에 작성 및 접근하거나 보호자 설정을 변경할 때 사용할 4자리 이상의 비밀번호를 입력해주세요.
+                        </p>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 mb-2">새 보호자 비밀번호 (숫자/문자 4자리 이상)</label>
+                                <input
+                                    type="password"
+                                    maxLength={8}
+                                    value={newPinInput}
+                                    onChange={(e) => setNewPinInput(e.target.value)}
+                                    placeholder="예: 1234"
+                                    autoFocus
+                                    className="w-full text-center py-3.5 px-4 bg-gray-50 border border-gray-200 rounded-xl font-black text-xl tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                                />
+                            </div>
+
+                            <div className="flex gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPinChangeModal(false)}
+                                    className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl text-sm hover:bg-gray-200 transition-colors"
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveNewPin}
+                                    className="flex-1 py-3 bg-indigo-600 text-white font-black rounded-xl text-sm hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100"
+                                >
+                                    저장 완료
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

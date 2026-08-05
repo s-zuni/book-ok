@@ -237,6 +237,16 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 sessionStorage.removeItem(key);
             });
 
+            // Clear native Capacitor Preferences if on native platform
+            if (Capacitor.isNativePlatform()) {
+                try {
+                    const { Preferences } = await import('@capacitor/preferences');
+                    await Preferences.clear();
+                } catch (prefErr) {
+                    console.warn("Preferences clear error:", prefErr);
+                }
+            }
+
             // Cookies: SSR using @supabase/ssr often relies on cookies.
             // We clear them explicitly to prevent the middleware or server components 
             // from restoring the session.
@@ -344,8 +354,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             const sessionActive = sessionStorage.getItem('bookok_session_active');
             const keepLoggedIn = localStorage.getItem('bookok_keep_logged_in');
             
-            if (!sessionActive && keepLoggedIn === 'false') {
-                console.log("AuthContext: Session ended (keepLoggedIn is false). Force sign out.");
+            // On native mobile apps, users expect persistent login.
+            // Force sign-out on cold start if keepLoggedIn === 'false' should ONLY apply to web browsers.
+            const isNative = Capacitor.isNativePlatform();
+            if (!isNative && !sessionActive && keepLoggedIn === 'false') {
+                console.log("AuthContext: Session ended (keepLoggedIn is false on Web). Force sign out.");
                 
                 // Clean all auth storage keys immediately
                 const keysToRemove = ['bookok-auth-token', 'supabase.auth.token'];
