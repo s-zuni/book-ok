@@ -36,7 +36,7 @@ const baseConfig: NextConfig = {
 
 const nextConfig: NextConfig = {
   ...baseConfig,
-  output: 'export',
+  ...(isCapacitorBuild ? { output: 'export' } : {}),
 };
 
 export default nextConfig;

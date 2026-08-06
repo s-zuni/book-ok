@@ -150,15 +150,15 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     return;
                 }
             }
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
             const callbackUrl = isNative
-                ? 'com.bookok.kr://auth-callback'
-                : `${window.location.origin}/auth/callback`;
-            const currentPath = window.location.pathname + window.location.search;
+                ? 'https://bookok.kr/auth/callback?native=true'
+                : `${window.location.origin}/auth/callback?next=${encodeURIComponent(currentPath)}`;
             
             const { data, error } = await supabase.auth.signInWithOAuth({
                 provider,
                 options: {
-                    redirectTo: isNative ? callbackUrl : `${callbackUrl}?next=${encodeURIComponent(currentPath)}`,
+                    redirectTo: callbackUrl,
                     skipBrowserRedirect: isNative,
                 },
             });

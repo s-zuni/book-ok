@@ -417,8 +417,10 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             }
         });
 
-        // Listen for deep link events on native platform
+        // Listen for deep link events & App State changes on native platform
         let deepLinkSub: Promise<PluginListenerHandle> | null = null;
+        let appStateSub: Promise<PluginListenerHandle> | null = null;
+
         if (Capacitor.isNativePlatform()) {
             const handleDeepLink = async (event: { url: string }) => {
                 console.log("App opened with URL:", event.url);
@@ -437,6 +439,11 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                                 const { data, error } = await supabase.auth.exchangeCodeForSession(code);
                                 if (!error && data.session) {
                                     console.log("PKCE Session exchange successful!");
+                                    // Force setSession to synchronize internal Authorization Bearer headers in WebView
+                                    await supabase.auth.setSession({
+                                        access_token: data.session.access_token,
+                                        refresh_token: data.session.refresh_token,
+                                    });
                                     // Use force=true to bypass fetchInProgress lock
                                     await syncUserData(data.session, true);
                                     router.refresh();
@@ -479,7 +486,24 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
             deepLinkSub = App.addListener('appUrlOpen', handleDeepLink);
 
-            // 3. Check for initial launch URL if the app was completely closed/cold-started via deep link
+            // 3. Handle App Resume (Background to Foreground) to refresh expired tokens
+            const handleAppStateChange = async (state: { isActive: boolean }) => {
+                if (state.isActive) {
+                    console.log("Capacitor App resumed (isActive: true), refreshing session...");
+                    try {
+                        const { data: { session: currentSession } } = await supabase.auth.getSession();
+                        if (currentSession) {
+                            await syncUserData(currentSession, true);
+                        }
+                    } catch (resumeErr) {
+                        console.warn("Failed to sync session on app resume:", resumeErr);
+                    }
+                }
+            };
+
+            appStateSub = App.addListener('appStateChange', handleAppStateChange);
+
+            // 4. Check for initial launch URL if the app was completely closed/cold-started via deep link
             App.getLaunchUrl().then(async (launchUrlObj) => {
                 if (launchUrlObj?.url) {
                     console.log("App cold-launched with URL:", launchUrlObj.url);
@@ -495,6 +519,9 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             authListener.subscription.unsubscribe();
             if (deepLinkSub) {
                 deepLinkSub.then((s) => s.remove());
+            }
+            if (appStateSub) {
+                appStateSub.then((s) => s.remove());
             }
         };
     }, [syncUserData, router]);
