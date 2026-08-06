@@ -185,8 +185,14 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     }
                 } catch (err: any) {
                     console.error('[Google Login] Native error:', err?.message || err, JSON.stringify(err));
-                    toast.error('Google 로그인에 실패했습니다: ' + (err?.message || '알 수 없는 오류'));
-                    return;
+                    const errStr = String(err?.message || err);
+                    // 💡 네이티브 GoogleAuth 플러그인이 iOS 빌드에 포함되지 않았거나 미구현된 경우 웹 OAuth로 자동 폴백
+                    if (errStr.includes('not implemented') || errStr.includes('GoogleAuth') || errStr.includes('UNIMPLEMENTED')) {
+                        console.log('[Google Login] Native plugin unavailable on iOS, falling back to Web OAuth...');
+                    } else {
+                        toast.error('Google 로그인에 실패했습니다: ' + (err?.message || '알 수 없는 오류'));
+                        return;
+                    }
                 }
             }
 
