@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 1020" width="390" height="1020" style="background-color: #F8FAFC; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <filter id="card-shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#0F172A" flood-opacity="0.04"/>
+    </filter>
+    <filter id="fab-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="12" flood-color="#01C54F" flood-opacity="0.35"/>
+    </filter>
+    <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2E5A44"/>
+      <stop offset="100%" stop-color="#16A34A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mobile Screen Container Background -->
+  <rect width="390" height="1020" fill="#F8FAFC"/>
+
+  <!-- TOP HEADER NAV BAR -->
+  <g id="Header" transform="translate(0, 0)">
+    <rect width="390" height="60" fill="#FFFFFF"/>
+    <line x1="0" y1="60" x2="390" y2="60" stroke="#F1F5F9" stroke-width="1"/>
+    
+    <!-- Title -->
+    <text x="20" y="38" fill="#0F172A" font-size="20" font-weight="800">마이페이지</text>
+    
+    <!-- Right Actions -->
+    <g transform="translate(340, 20)">
+      <!-- Bell / Settings Icon placeholder -->
+      <circle cx="12" cy="12" r="14" fill="#F8FAFC"/>
+      <path d="M 12 7 C 9.5 7 8 8.5 8 11 L 8 13 L 6 15 L 18 15 L 16 13 L 16 11 C 16 8.5 14.5 7 12 7 Z" fill="#64748B"/>
+      <circle cx="15" cy="8" r="3" fill="#EF4444"/>
+    </g>
+  </g>
+
+  <!-- SCROLLABLE MAIN CONTENT AREA -->
+  <g id="MainContent" transform="translate(16, 76)">
+
+    <!-- 1. USER PROFILE CARD -->
+    <g id="UserProfileCard" transform="translate(0, 0)">
+      <rect width="358" height="96" rx="28" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+      
+      <!-- Avatar -->
+      <circle cx="48" cy="48" r="26" fill="url(#avatarGrad)"/>
+      <text x="48" y="54" fill="#FFFFFF" font-size="20" font-weight="900" text-anchor="middle">김</text>
+
+      <!-- User Info -->
+      <text x="88" y="42" fill="#0F172A" font-size="18" font-weight="800">김북오 님</text>
+      <!-- Edit Nickname Button -->
+      <g transform="translate(162, 28)">
+        <rect width="24" height="24" rx="6" fill="#F0FDF4"/>
+        <path d="M 7 17 L 10 17 L 17 10 L 14 7 L 7 14 Z" fill="none" stroke="#16A34A" stroke-width="1.5"/>
+      </g>
+      <text x="88" y="62" fill="#94A3B8" font-size="12" font-weight="500">parent@bookok.app</text>
+    </g>
+
+    <!-- 2. CHILDREN PROFILES CARD -->
+    <g id="ChildrenCard" transform="translate(0, 112)">
+      <rect width="358" height="190" rx="28" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+      
+      <!-- Card Header -->
+      <g transform="translate(20, 20)">
+        <rect width="32" height="32" rx="10" fill="#DCFCE7"/>
+        <text x="16" y="22" fill="#16A34A" font-size="18" font-weight="900" text-anchor="middle">+</text>
+        <text x="44" y="22" fill="#0F172A" font-size="16" font-weight="800">아이 프로필</text>
+      </g>
+
+      <!-- Child List Item 1 (Active) -->
+      <g transform="translate(20, 64)">
+        <rect width="318" height="52" rx="16" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.5"/>
+        <circle cx="26" cy="26" r="14" fill="#16A34A"/>
+        <text x="26" y="31" fill="#FFFFFF" font-size="12" font-weight="900" text-anchor="middle">민</text>
+        
+        <text x="48" y="24" fill="#14532D" font-size="14" font-weight="800">민준</text>
+        <text x="48" y="40" fill="#16A34A" font-size="11" font-weight="600">7세 · 유아</text>
+
+        <!-- Selected Badge -->
+        <rect x="200" y="14" width="48" height="24" rx="6" fill="#FFFFFF"/>
+        <text x="224" y="30" fill="#16A34A" font-size="10" font-weight="800" text-anchor="middle">선택됨</text>
+
+        <!-- Edit & Delete Icons -->
+        <circle cx="264" cy="26" r="11" fill="#FFFFFF"/>
+        <path d="M 260 29 L 268 21" stroke="#64748B" stroke-width="1.2"/>
+        <circle cx="292" cy="26" r="11" fill="#FFFFFF"/>
+        <path d="M 288 22 L 296 30 M 296 22 L 288 30" stroke="#EF4444" stroke-width="1.2"/>
+      </g>
+
+      <!-- Add Child Button -->
+      <g transform="translate(20, 126)">
+        <rect width="318" height="42" rx="12" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-dasharray="4 4"/>
+        <text x="159" y="26" fill="#64748B" font-size="12" font-weight="700" text-anchor="middle">+ 아이 프로필 추가하기</text>
+      </g>
+    </g>
+
+    <!-- 3. FAVORITE LIBRARIES CARD -->
+    <g id="LibraryCard" transform="translate(0, 318)">
+      <rect width="358" height="150" rx="28" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+      
+      <!-- Header -->
+      <g transform="translate(20, 20)">
+        <rect width="32" height="32" rx="10" fill="#DCFCE7"/>
+        <!-- MapPin Icon -->
+        <path d="M 16 10 C 13.5 10 11.5 12 11.5 14.5 C 11.5 18 16 22 16 22 C 16 22 20.5 18 20.5 14.5 C 20.5 12 18.5 10 16 10 Z" fill="#16A34A"/>
+        <text x="44" y="22" fill="#0F172A" font-size="16" font-weight="800">자주가는 도서관</text>
+        <text x="318" y="22" fill="#94A3B8" font-size="12" font-weight="700" text-anchor="end">1 / 3</text>
+      </g>
+
+      <!-- Library Item 1 -->
+      <g transform="translate(20, 64)">
+        <rect width="318" height="52" rx="16" fill="#F8FAFC" stroke="#F1F5F9" stroke-width="1"/>
+        <circle cx="26" cy="26" r="14" fill="#FFFFFF"/>
+        <path d="M 21 30 L 21 22 L 31 22 L 31 30 Z M 24 24 L 28 24 M 24 27 L 28 27" fill="none" stroke="#16A34A" stroke-width="1.5"/>
+        
+        <text x="48" y="24" fill="#0F172A" font-size="13" font-weight="800">국립중앙도서관</text>
+        <text x="48" y="40" fill="#94A3B8" font-size="10" font-weight="500">코드: 111001</text>
+
+        <!-- Delete button -->
+        <circle cx="292" cy="26" r="12" fill="#FFFFFF"/>
+        <path d="M 288 22 L 296 30 M 296 22 L 288 30" stroke="#94A3B8" stroke-width="1.5"/>
+      </g>
+    </g>
+
+    <!-- 4. PARENTAL CONTROLS CARD -->
+    <g id="ParentalCard" transform="translate(0, 484)">
+      <rect width="358" height="175" rx="28" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+      
+      <!-- Header -->
+      <g transform="translate(20, 20)">
+        <rect width="32" height="32" rx="10" fill="#E0E7FF"/>
+        <path d="M 16 10 L 22 13 L 22 18 C 22 22 16 25 16 25 C 16 25 10 22 10 18 L 10 13 Z" fill="#4F46E5"/>
+        <text x="44" y="22" fill="#0F172A" font-size="15" font-weight="800">자녀 보호 기능 설정</text>
+        
+        <!-- Tag -->
+        <rect x="210" y="4" width="108" height="22" rx="6" fill="#EEF2FF"/>
+        <text x="264" y="19" fill="#4F46E5" font-size="10" font-weight="800" text-anchor="middle">Parental Controls</text>
+      </g>
+
+      <!-- Toggle Social Row -->
+      <g transform="translate(20, 64)">
+        <rect width="318" height="46" rx="14" fill="#F8FAFC" stroke="#F1F5F9" stroke-width="1"/>
+        <text x="14" y="22" fill="#0F172A" font-size="12" font-weight="800">커뮤니티 소셜 기능 허용</text>
+        <rect x="142" y="10" width="40" height="16" rx="4" fill="#DCFCE7"/>
+        <text x="162" y="22" fill="#16A34A" font-size="9" font-weight="800" text-anchor="middle">사용 중</text>
+
+        <!-- Toggle Switch ON -->
+        <rect x="260" y="10" width="46" height="26" rx="13" fill="#4F46E5"/>
+        <circle cx="293" cy="23" r="10" fill="#FFFFFF"/>
+        <text x="274" y="26" fill="#FFFFFF" font-size="8" font-weight="900">ON</text>
+      </g>
+
+      <!-- PIN Setting Row -->
+      <g transform="translate(20, 118)">
+        <rect width="318" height="42" rx="14" fill="#EEF2FF" stroke="#E0E7FF" stroke-width="1"/>
+        <text x="14" y="25" fill="#1E1B4B" font-size="12" font-weight="800">🔑 보호자 비밀번호(PIN) 설정</text>
+        
+        <!-- Change Button -->
+        <rect x="220" y="8" width="86" height="26" rx="8" fill="#4F46E5"/>
+        <text x="263" y="25" fill="#FFFFFF" font-size="11" font-weight="800" text-anchor="middle">비밀번호 변경</text>
+      </g>
+    </g>
+
+    <!-- 5. MENU BUTTONS (READ BOOKS, SCRAP, ANALYSIS) -->
+    <g id="MenuButtons" transform="translate(0, 675)">
+
+      <!-- Read Books -->
+      <g transform="translate(0, 0)">
+        <rect width="358" height="64" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+        <rect x="16" y="14" width="36" height="36" rx="10" fill="#EFF6FF"/>
+        <path d="M 27 25 C 27 28 32 28 32 28 L 32 38 C 32 38 27 38 27 35 Z M 27 25 C 27 28 22 28 22 28 L 22 38 C 22 38 27 38 27 35 Z" fill="none" stroke="#3B82F6" stroke-width="1.5"/>
+        
+        <text x="64" y="32" fill="#0F172A" font-size="15" font-weight="800">읽은 책 기록</text>
+        <text x="64" y="48" fill="#94A3B8" font-size="11" font-weight="500">민준 어린이가 읽은 12권의 책</text>
+
+        <!-- Chevron Right -->
+        <path d="M 330 28 L 336 32 L 330 36" fill="none" stroke="#CBD5E1" stroke-width="2"/>
+      </g>
+
+      <!-- Saved Books (Preparing) -->
+      <g transform="translate(0, 76)">
+        <rect width="358" height="64" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" opacity="0.6" filter="url(#card-shadow)"/>
+        <rect x="16" y="14" width="36" height="36" rx="10" fill="#FEFCE8"/>
+        <path d="M 27 24 L 33 24 L 33 38 L 30 35 L 27 38 Z" fill="none" stroke="#EAB308" stroke-width="1.5"/>
+        
+        <text x="64" y="32" fill="#0F172A" font-size="15" font-weight="800">스크랩한 책</text>
+        <text x="64" y="48" fill="#94A3B8" font-size="11" font-weight="500">나중에 읽으려고 저장한 책</text>
+
+        <rect x="280" y="22" width="58" height="20" rx="10" fill="#F1F5F9"/>
+        <text x="309" y="35" fill="#94A3B8" font-size="10" font-weight="800" text-anchor="middle">준비 중</text>
+      </g>
+
+      <!-- Reading Analysis -->
+      <g transform="translate(0, 152)">
+        <rect width="358" height="64" rx="24" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+        <rect x="16" y="14" width="36" height="36" rx="10" fill="#F3E8FF"/>
+        <path d="M 26 38 L 26 32 M 31 38 L 31 26 M 36 38 L 36 30" stroke="#A855F7" stroke-width="2" stroke-linecap="round"/>
+        
+        <text x="64" y="32" fill="#0F172A" font-size="15" font-weight="800">독서 성향 분석</text>
+        <text x="64" y="48" fill="#94A3B8" font-size="11" font-weight="500">AI가 분석한 우리 아이 맞춤 리포트</text>
+
+        <path d="M 330 28 L 336 32 L 330 36" fill="none" stroke="#CBD5E1" stroke-width="2"/>
+      </g>
+
+    </g>
+
+    <!-- FOOTER LINKS -->
+    <g id="Footer" transform="translate(0, 905)">
+      <text x="179" y="0" fill="#94A3B8" font-size="11" font-weight="700" text-anchor="middle" text-decoration="underline">로그아웃</text>
+      <text x="179" y="18" fill="#CBD5E1" font-size="11" font-weight="500" text-anchor="middle">계정 탈퇴</text>
+      <text x="179" y="34" fill="#94A3B8" font-size="10" font-weight="500" text-anchor="middle">이용약관 | 개인정보처리방침</text>
+    </g>
+
+  </g>
+
+  <!-- FIXED BOTTOM NAVIGATION BAR (iOS / Android Style) -->
+  <g id="MobileBottomNav" transform="translate(0, 940)">
+    <!-- White Navbar Background -->
+    <rect width="390" height="80" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1"/>
+    
+    <!-- Tab 1: Home -->
+    <g transform="translate(36, 16)">
+      <path d="M 12 6 L 4 13 L 4 22 L 20 22 L 20 13 Z" fill="none" stroke="#94A3B8" stroke-width="1.8"/>
+      <text x="12" y="34" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">홈</text>
+    </g>
+
+    <!-- Tab 2: AI Reading -->
+    <g transform="translate(108, 16)">
+      <path d="M 6 8 L 18 8 L 18 20 L 6 20 Z M 10 12 L 14 12 M 10 16 L 14 16" fill="none" stroke="#94A3B8" stroke-width="1.8"/>
+      <text x="12" y="34" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">AI 독서</text>
+    </g>
+
+    <!-- Tab 3: Center FAB (AI Librarian) -->
+    <g transform="translate(169, -16)">
+      <!-- Green Floating Circle with Shadow -->
+      <circle cx="26" cy="26" r="26" fill="#01C54F" filter="url(#fab-shadow)" stroke="#FFFFFF" stroke-width="4"/>
+      <!-- Robot / Sparkle Icon -->
+      <circle cx="26" cy="22" r="8" fill="none" stroke="#FFFFFF" stroke-width="2"/>
+      <circle cx="23" cy="20" r="1.5" fill="#FFFFFF"/>
+      <circle cx="29" cy="20" r="1.5" fill="#FFFFFF"/>
+      <path d="M 23 25 Q 26 27 29 25" fill="none" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="26" y="66" fill="#01C54F" font-size="10" font-weight="900" text-anchor="middle">AI 사서</text>
+    </g>
+
+    <!-- Tab 4: Community -->
+    <g transform="translate(258, 16)">
+      <path d="M 6 18 C 6 15 18 15 18 18 M 12 14 C 14 14 15 12 15 10 C 15 8 14 7 12 7 C 10 7 9 8 9 10 C 9 12 10 14 12 14 Z" fill="none" stroke="#94A3B8" stroke-width="1.8"/>
+      <text x="12" y="34" fill="#94A3B8" font-size="10" font-weight="700" text-anchor="middle">커뮤니티</text>
+    </g>
+
+    <!-- Tab 5: MY (Active State) -->
+    <g transform="translate(330, 16)">
+      <!-- Active Icon -->
+      <circle cx="12" cy="10" r="4" fill="#01C54F"/>
+      <path d="M 5 22 C 5 17 19 17 19 22" fill="none" stroke="#01C54F" stroke-width="2"/>
+      <text x="12" y="34" fill="#01C54F" font-size="10" font-weight="900" text-anchor="middle">MY</text>
+    </g>
+
+  </g>
+</svg>

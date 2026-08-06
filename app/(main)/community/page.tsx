@@ -39,7 +39,7 @@ export default function CommunityPage() {
     const [showEulaModal, setShowEulaModal] = useState(false);
 
     const router = useRouter();
-    const { user, userProfile, children, isInitialized } = useAuth();
+    const { user, userProfile, children, isInitialized, loading: authLoading } = useAuth();
 
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
@@ -127,6 +127,8 @@ export default function CommunityPage() {
 
     // Reset posts when sub-menu (category) changes or auth initializes
     useEffect(() => {
+        if (!isInitialized || authLoading) return;
+
         let cancelled = false;
         setPosts([]);
         setPage(0);
@@ -136,7 +138,7 @@ export default function CommunityPage() {
         fetchPosts(activeSubMenu, 0, true, () => cancelled);
 
         return () => { cancelled = true; };
-    }, [activeSubMenu]);
+    }, [activeSubMenu, isInitialized, authLoading]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;

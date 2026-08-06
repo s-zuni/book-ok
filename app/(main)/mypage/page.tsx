@@ -464,7 +464,7 @@ export default function MyPage() {
 
 
             <div className="max-w-xl mx-auto px-6 py-8">
-                {!isInitialized || authLoading || (user && !userProfile) ? (
+                {!isInitialized || authLoading ? (
                     // Loading Skeleton
                     <div className="space-y-8 animate-pulse">
                         <div className="flex items-center gap-5 mb-10">
@@ -479,6 +479,11 @@ export default function MyPage() {
                             <div className="h-24 bg-gray-200 rounded-4xl"></div>
                             <div className="h-24 bg-gray-200 rounded-4xl"></div>
                         </div>
+                    </div>
+                ) : !user ? (
+                    <div className="p-12 text-center text-gray-500">
+                        <p className="font-medium text-lg mb-2">로그인이 필요한 서비스입니다.</p>
+                        <p className="text-sm text-gray-400">로그인 페이지로 이동 중...</p>
                     </div>
                 ) : (
                     <>
@@ -510,7 +515,9 @@ export default function MyPage() {
                                     </div>
                                 ) : (
                                     <div className="flex items-center gap-2">
-                                        <h2 className="text-2xl font-black text-gray-900 truncate max-w-[200px]">{userProfile?.nickname || user?.email?.split('@')[0]}</h2>
+                                        <h2 className="text-2xl font-black text-gray-900 truncate max-w-[200px]">
+                                            {userProfile?.nickname || user?.user_metadata?.name || user?.user_metadata?.nickname || user?.email?.split('@')[0] || '사용자'}
+                                        </h2>
                                         <button onClick={handleEditNicknameClick} className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors">
                                             <Edit2 size={16} />
                                         </button>

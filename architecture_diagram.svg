@@ -1,0 +1,234 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 950" width="100%" height="100%" style="background-color: #F8FAFC; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <!-- Gradients -->
+    <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2E5A44" />
+      <stop offset="100%" stop-color="#16A34A" />
+    </linearGradient>
+
+    <linearGradient id="clientGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EFF6FF" />
+      <stop offset="100%" stop-color="#DBEAFE" />
+    </linearGradient>
+
+    <linearGradient id="backendGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ECFDF5" />
+      <stop offset="100%" stop-color="#D1FAE5" />
+    </linearGradient>
+
+    <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EEF2FF" />
+      <stop offset="100%" stop-color="#E0E7FF" />
+    </linearGradient>
+
+    <linearGradient id="extGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FEF3C7" />
+      <stop offset="100%" stop-color="#FDE68A" />
+    </linearGradient>
+
+    <!-- Filters for Cards Shadow -->
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#0F172A" flood-opacity="0.06"/>
+    </filter>
+    
+    <filter id="shadow-lg" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.10"/>
+    </filter>
+
+    <!-- Markers for Connectors -->
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#16A34A" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#2563EB" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#4F46E5" />
+    </marker>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="1400" height="950" fill="#F8FAFC" rx="0"/>
+
+  <!-- Main Header Banner -->
+  <g transform="translate(40, 30)">
+    <rect width="1320" height="80" rx="20" fill="url(#headerGrad)" filter="url(#shadow)"/>
+    <text x="35" y="48" fill="#FFFFFF" font-size="26" font-weight="800" letter-spacing="-0.5">Book,ok (우리 아이 맞춤 독서 플랫폼) - 전체 서비스 구조도</text>
+    <text x="35" y="68" fill="#FACC15" font-size="14" font-weight="600">Service Architecture &amp; System Integration Diagram</text>
+    <rect x="1150" y="25" width="135" height="32" rx="16" fill="#FFFFFF" fill-opacity="0.2"/>
+    <text x="1217" y="46" fill="#FFFFFF" font-size="12" font-weight="700" text-anchor="middle">v0.1.0 Architecture</text>
+  </g>
+
+  <!-- LAYER 1: CLIENT PRESENTATION TIER (TOP LEFT & TOP RIGHT) -->
+  <g transform="translate(40, 140)">
+    <!-- Container Box -->
+    <rect width="1320" height="230" rx="24" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" filter="url(#shadow)"/>
+    <!-- Layer Badge -->
+    <rect x="24" y="-14" width="220" height="28" rx="14" fill="#2E5A44"/>
+    <text x="134" y="5" fill="#FFFFFF" font-size="13" font-weight="700" text-anchor="middle">1. Client Presentation Tier</text>
+
+    <!-- Sub Box 1: Web Frontend (Next.js) -->
+    <g transform="translate(30, 30)">
+      <rect width="610" height="170" rx="16" fill="url(#clientGrad)" stroke="#BFDBFE" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#1E3A8A" font-size="16" font-weight="800">Next.js 16 Web App (App Router)</text>
+      <text x="20" y="52" fill="#3B82F6" font-size="12" font-weight="600">React 19 • Tailwind CSS v4 • TypeScript</text>
+      
+      <!-- FSD Structure Badges -->
+      <g transform="translate(20, 68)">
+        <!-- app/ -->
+        <rect x="0" y="0" width="105" height="40" rx="8" fill="#FFFFFF" stroke="#93C5FD"/>
+        <text x="52" y="24" fill="#1E40AF" font-size="12" font-weight="700" text-anchor="middle">app/ (Routes)</text>
+        <!-- src/widgets -->
+        <rect x="115" y="0" width="105" height="40" rx="8" fill="#FFFFFF" stroke="#93C5FD"/>
+        <text x="167" y="24" fill="#1E40AF" font-size="12" font-weight="700" text-anchor="middle">widgets/</text>
+        <!-- src/features -->
+        <rect x="230" y="0" width="115" height="40" rx="8" fill="#FFFFFF" stroke="#93C5FD"/>
+        <text x="287" y="24" fill="#1E40AF" font-size="12" font-weight="700" text-anchor="middle">features/</text>
+        <!-- src/entities -->
+        <rect x="355" y="0" width="105" height="40" rx="8" fill="#FFFFFF" stroke="#93C5FD"/>
+        <text x="407" y="24" fill="#1E40AF" font-size="12" font-weight="700" text-anchor="middle">entities/</text>
+        <!-- src/shared -->
+        <rect x="470" y="0" width="100" height="40" rx="8" fill="#FFFFFF" stroke="#93C5FD"/>
+        <text x="520" y="24" fill="#1E40AF" font-size="12" font-weight="700" text-anchor="middle">shared/</text>
+      </g>
+
+      <!-- Key Pages list -->
+      <text x="20" y="142" fill="#475569" font-size="11" font-weight="600">Routes: /(main)/solution | /(main)/chat | /(main)/community | /(main)/book | /admin</text>
+    </g>
+
+    <!-- Sub Box 2: Mobile Native Apps (Capacitor) -->
+    <g transform="translate(670, 30)">
+      <rect width="620" height="170" rx="16" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#0F172A" font-size="16" font-weight="800">Cross-Platform Mobile Apps (Capacitor 8)</text>
+      <text x="20" y="52" fill="#64748B" font-size="12" font-weight="600">Build Script: scripts/build-cap.js • Static Bundle Sync</text>
+
+      <!-- Native Badges -->
+      <g transform="translate(20, 68)">
+        <rect x="0" y="0" width="135" height="40" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+        <text x="67" y="24" fill="#334155" font-size="12" font-weight="700" text-anchor="middle">🤖 Android App</text>
+
+        <rect x="145" y="0" width="135" height="40" rx="8" fill="#FFFFFF" stroke="#CBD5E1"/>
+        <text x="212" y="24" fill="#334155" font-size="12" font-weight="700" text-anchor="middle">🍎 iOS App</text>
+
+        <rect x="290" y="0" width="290" height="40" rx="8" fill="#EFF6FF" stroke="#BFDBFE"/>
+        <text x="435" y="24" fill="#1E40AF" font-size="11" font-weight="700" text-anchor="middle">Native Plugins (Apple Auth, Haptics, Storage)</text>
+      </g>
+
+      <text x="20" y="142" fill="#475569" font-size="11" font-weight="600">CI/CD Integration: Codemagic Automated Mobile Build Pipeline (codemagic.yaml)</text>
+    </g>
+  </g>
+
+  <!-- CONNECTOR 1 -> 2 -->
+  <path d="M 340 370 L 340 400" stroke="#16A34A" stroke-width="3" fill="none" marker-end="url(#arrow-green)"/>
+  <path d="M 980 370 L 980 400" stroke="#2563EB" stroke-width="3" fill="none" marker-end="url(#arrow-blue)"/>
+
+  <!-- LAYER 2: BACKEND & DATABASE TIER (SUPABASE) -->
+  <g transform="translate(40, 410)">
+    <rect width="1320" height="230" rx="24" fill="#FFFFFF" stroke="#10B981" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="24" y="-14" width="240" height="28" rx="14" fill="#10B981"/>
+    <text x="144" y="5" fill="#FFFFFF" font-size="13" font-weight="700" text-anchor="middle">2. Backend &amp; Database Tier (Supabase)</text>
+
+    <!-- Sub Box 1: Auth & SSR Middleware -->
+    <g transform="translate(30, 30)">
+      <rect width="380" height="170" rx="16" fill="url(#backendGrad)" stroke="#A7F3D0" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#065F46" font-size="16" font-weight="800">Auth &amp; SSR Middleware</text>
+      <text x="20" y="52" fill="#059669" font-size="12" font-weight="600">@supabase/ssr • Next.js Middleware</text>
+
+      <rect x="20" y="68" width="340" height="35" rx="8" fill="#FFFFFF" stroke="#6EE7B7"/>
+      <text x="190" y="90" fill="#047857" font-size="12" font-weight="700" text-anchor="middle">GoTrue Auth (Email, Apple OAuth, Google)</text>
+
+      <rect x="20" y="112" width="340" height="35" rx="8" fill="#FFFFFF" stroke="#6EE7B7"/>
+      <text x="190" y="134" fill="#047857" font-size="12" font-weight="700" text-anchor="middle">Session Cookie Rotation &amp; Route Guard</text>
+    </g>
+
+    <!-- Sub Box 2: Database (PostgreSQL) -->
+    <g transform="translate(430, 30)">
+      <rect width="440" height="170" rx="16" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#166534" font-size="16" font-weight="800">PostgreSQL Database (Supabase DB)</text>
+      <text x="20" y="52" fill="#15803D" font-size="12" font-weight="600">Row Level Security (RLS) Enabled</text>
+
+      <!-- Tables Grid -->
+      <g transform="translate(20, 68)">
+        <rect x="0" y="0" width="120" height="35" rx="6" fill="#FFFFFF" stroke="#86EFAC"/>
+        <text x="60" y="22" fill="#14532D" font-size="11" font-weight="700" text-anchor="middle">users</text>
+
+        <rect x="130" y="0" width="130" height="35" rx="6" fill="#FFFFFF" stroke="#86EFAC"/>
+        <text x="195" y="22" fill="#14532D" font-size="11" font-weight="700" text-anchor="middle">child_profiles</text>
+
+        <rect x="270" y="0" width="130" height="35" rx="6" fill="#FFFFFF" stroke="#86EFAC"/>
+        <text x="335" y="22" fill="#14532D" font-size="11" font-weight="700" text-anchor="middle">books</text>
+
+        <rect x="0" y="45" width="190" height="35" rx="6" fill="#FFFFFF" stroke="#86EFAC"/>
+        <text x="95" y="67" fill="#14532D" font-size="11" font-weight="700" text-anchor="middle">reading_plans (4-Week)</text>
+
+        <rect x="200" y="45" width="200" height="35" rx="6" fill="#FFFFFF" stroke="#86EFAC"/>
+        <text x="300" y="67" fill="#14532D" font-size="11" font-weight="700" text-anchor="middle">posts / comments / likes</text>
+      </g>
+    </g>
+
+    <!-- Sub Box 3: Storage & Edge Functions Hub -->
+    <g transform="translate(890, 30)">
+      <rect width="400" height="170" rx="16" fill="url(#edgeGrad)" stroke="#C7D2FE" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#3730A3" font-size="16" font-weight="800">Supabase Edge Functions Hub</text>
+      <text x="20" y="52" fill="#4F46E5" font-size="12" font-weight="600">Deno Runtime • Serverless Endpoint</text>
+
+      <g transform="translate(20, 68)">
+        <rect x="0" y="0" width="170" height="35" rx="6" fill="#FFFFFF" stroke="#A5B4FC"/>
+        <text x="85" y="22" fill="#312E81" font-size="11" font-weight="700" text-anchor="middle">⚡ /chat (AI Counselor)</text>
+
+        <rect x="180" y="0" width="180" height="35" rx="6" fill="#FFFFFF" stroke="#A5B4FC"/>
+        <text x="270" y="22" fill="#312E81" font-size="11" font-weight="700" text-anchor="middle">⚡ /reading-plan (Roadmap)</text>
+
+        <rect x="0" y="45" width="170" height="35" rx="6" fill="#FFFFFF" stroke="#A5B4FC"/>
+        <text x="85" y="67" fill="#312E81" font-size="11" font-weight="700" text-anchor="middle">⚡ /recommendations</text>
+
+        <rect x="180" y="45" width="180" height="35" rx="6" fill="#FFFFFF" stroke="#A5B4FC"/>
+        <text x="270" y="67" fill="#312E81" font-size="11" font-weight="700" text-anchor="middle">⚡ /library (Data Sync)</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- CONNECTOR 2 -> 3 -->
+  <path d="M 1090 640 L 1090 670" stroke="#4F46E5" stroke-width="3" fill="none" marker-end="url(#arrow-purple)"/>
+
+  <!-- LAYER 3: EXTERNAL APIS & INTEGRATIONS TIER -->
+  <g transform="translate(40, 680)">
+    <rect width="1320" height="210" rx="24" fill="#FFFFFF" stroke="#F59E0B" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="24" y="-14" width="280" height="28" rx="14" fill="#F59E0B"/>
+    <text x="164" y="5" fill="#FFFFFF" font-size="13" font-weight="700" text-anchor="middle">3. External Integration &amp; AI Tier</text>
+
+    <!-- Sub Box 1: AI Engines -->
+    <g transform="translate(30, 30)">
+      <rect width="610" height="150" rx="16" fill="url(#extGrad)" stroke="#FDE68A" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#78350F" font-size="16" font-weight="800">Artificial Intelligence LLM APIs</text>
+      <text x="20" y="52" fill="#92400E" font-size="12" font-weight="600">Personalized Reading Recommendation &amp; Counseling Engine</text>
+
+      <g transform="translate(20, 68)">
+        <rect x="0" y="0" width="270" height="55" rx="10" fill="#FFFFFF" stroke="#FCD34D"/>
+        <text x="15" y="24" fill="#B45309" font-size="13" font-weight="800">OpenAI API (gpt-4o / mini)</text>
+        <text x="15" y="42" fill="#D97706" font-size="11" font-weight="600">Reading Plan &amp; AI Chatbot Response</text>
+
+        <rect x="290" y="0" width="280" height="55" rx="10" fill="#FFFFFF" stroke="#FCD34D"/>
+        <text x="15" y="24" fill="#B45309" font-size="13" font-weight="800">Gemini API (2.5-pro / 3.1-pro)</text>
+        <text x="15" y="42" fill="#D97706" font-size="11" font-weight="600">Child Habit &amp; Book Match Analysis</text>
+      </g>
+    </g>
+
+    <!-- Sub Box 2: External Book Data APIs & Build Tools -->
+    <g transform="translate(670, 30)">
+      <rect width="620" height="150" rx="16" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.5"/>
+      <text x="20" y="32" fill="#78350F" font-size="16" font-weight="800">External Data Feeds &amp; CI/CD Infrastructure</text>
+      <text x="20" y="52" fill="#92400E" font-size="12" font-weight="600">Book Catalog APIs &amp; Automated Mobile Deployment</text>
+
+      <g transform="translate(20, 68)">
+        <rect x="0" y="0" width="280" height="55" rx="10" fill="#FFFFFF" stroke="#FCD34D"/>
+        <text x="15" y="24" fill="#B45309" font-size="13" font-weight="800">📚 Aladin &amp; National Library API</text>
+        <text x="15" y="42" fill="#D97706" font-size="11" font-weight="600">ISBN, Book Covers, Fast XML Parser</text>
+
+        <rect x="290" y="0" width="290" height="55" rx="10" fill="#FFFFFF" stroke="#FCD34D"/>
+        <text x="15" y="24" fill="#B45309" font-size="13" font-weight="800">🚀 Codemagic Mobile CI/CD</text>
+        <text x="15" y="42" fill="#D97706" font-size="11" font-weight="600">Auto Android APK/AAB &amp; iOS IPA Build</text>
+      </g>
+    </g>
+  </g>
+</svg>
