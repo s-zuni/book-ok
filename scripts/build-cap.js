@@ -49,22 +49,13 @@ try {
     execSync('npx cap sync', { stdio: 'inherit' });
     console.log('Capacitor sync completed successfully!');
 
-    // Fix Windows path separator issue in Package.swift (invalid escape sequences on macOS builds)
+    // Fix Windows path separator issue and inject CapacitorGoogleAuth in Package.swift
     try {
-        const packageSwiftPath = path.join(__dirname, '../ios/App/CapApp-SPM/Package.swift');
-        if (fs.existsSync(packageSwiftPath)) {
-            console.log('Fixing package path slashes in Package.swift for macOS compile safety...');
-            let content = fs.readFileSync(packageSwiftPath, 'utf8');
-            if (content.includes('\\')) {
-                content = content.replace(/path:\s*"([^"]+)"/g, (match, p1) => {
-                    return `path: "${p1.replace(/\\/g, '/')}"`;
-                });
-                fs.writeFileSync(packageSwiftPath, content, 'utf8');
-                console.log('Package.swift path separators fixed successfully!');
-            }
-        }
+        console.log('Running fix-spm-path.js script...');
+        const fixScript = path.join(__dirname, 'fix-spm-path.js');
+        execSync(`node "${fixScript}"`, { stdio: 'inherit' });
     } catch (err) {
-        console.warn('Could not auto-fix Package.swift paths:', err);
+        console.warn('Could not run fix-spm-path.js:', err);
     }
 
 } catch (error) {
