@@ -22,8 +22,9 @@ function getRouteFiles(dir, files_ = []) {
 let renamedFiles = [];
 
 try {
-    if (fs.existsSync(apiDir)) {
-        const routeFiles = getRouteFiles(apiDir);
+    const appDir = path.join(__dirname, '../app');
+    if (fs.existsSync(appDir)) {
+        const routeFiles = getRouteFiles(appDir);
         console.log(`Temporarily renaming ${routeFiles.length} route files for static export...`);
         for (const file of routeFiles) {
             const newPath = file + '.bak';
