@@ -17,6 +17,11 @@ const config: any = {
       resize: KeyboardResize.Body,
       style: KeyboardStyle.Light,
       resizeOnFullScreen: true
+    },
+    GoogleAuth: {
+      scopes: ["profile", "email"],
+      clientId: "54141143854-1nahh5nueb5njrlvd748dkbm0a34sks9.apps.googleusercontent.com",
+      forceCodeForRefreshToken: true
     }
   },
   ios: {

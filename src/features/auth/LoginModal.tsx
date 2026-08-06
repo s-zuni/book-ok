@@ -12,6 +12,7 @@ import { useAuth } from "@features/auth/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 function getUrlSafeNonce(): string {
     if (typeof window === 'undefined' || !window.crypto) {
@@ -150,6 +151,45 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     return;
                 }
             }
+            
+            if (provider === 'google' && isNative) {
+                try {
+                    console.log('[Google Login] Initializing native Google Sign-In...');
+                    GoogleAuth.initialize();
+                    const googleUser = await GoogleAuth.signIn();
+                    console.log('[Google Login] Native sign in success:', !!googleUser.authentication.idToken);
+
+                    if (googleUser.authentication.idToken) {
+                        const { data, error } = await supabase.auth.signInWithIdToken({
+                            provider: 'google',
+                            token: googleUser.authentication.idToken,
+                        });
+
+                        if (error) {
+                            console.error('[Google Login] Supabase signInWithIdToken error:', error.message, error);
+                            throw error;
+                        }
+
+                        if (data.session) {
+                            console.log('[Google Login] Session obtained, syncing user...');
+                            await syncUser(data.session);
+                            toast.success("로그인되었습니다.");
+                            onClose();
+                            router.refresh();
+                        }
+                        return;
+                    } else {
+                        console.error('[Google Login] No idToken in response');
+                        toast.error('Google 로그인 응답에 토큰이 없습니다.');
+                        return;
+                    }
+                } catch (err: any) {
+                    console.error('[Google Login] Native error:', err?.message || err, JSON.stringify(err));
+                    toast.error('Google 로그인에 실패했습니다: ' + (err?.message || '알 수 없는 오류'));
+                    return;
+                }
+            }
+
             const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
             const callbackUrl = isNative
                 ? 'https://bookok.kr/auth/callback?native=true'

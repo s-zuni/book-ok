@@ -61,6 +61,12 @@
 				<string>com.bookok.kr</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.54141143854-7mclde4lk4u46g1sbqlqnin8jt5ibjv1</string>
+			</array>
+		</dict>
 	</array>
 	<key>NSCameraUsageDescription</key>
 	<string>사용자의 프로필 사진 등록 및 커뮤니티 게시글 사진 첨부를 위해 카메라 접근 권한이 필요합니다.</string>
