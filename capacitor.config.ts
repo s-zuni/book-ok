@@ -18,12 +18,11 @@ const config: any = {
       style: KeyboardStyle.Light,
       resizeOnFullScreen: true
     },
-    GoogleAuth: {
-      scopes: ["profile", "email"],
-      clientId: "54141143854-1nahh5nueb5njrlvd748dkbm0a34sks9.apps.googleusercontent.com",
-      serverClientId: "54141143854-1nahh5nueb5njrlvd748dkbm0a34sks9.apps.googleusercontent.com",
-      iosClientId: "54141143854-7mclde4lk4u46g1sbqlqnin8jt5ibjv1.apps.googleusercontent.com",
-      forceCodeForRefreshToken: true
+    SocialLogin: {
+      google: {
+        webClientId: "54141143854-1nahh5nueb5njrlvd748dkbm0a34sks9.apps.googleusercontent.com",
+        mode: "online"
+      }
     }
   },
   ios: {

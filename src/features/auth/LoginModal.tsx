@@ -12,7 +12,7 @@ import { useAuth } from "@features/auth/AuthContext";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { SignInWithApple } from '@capacitor-community/apple-sign-in';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 
 function getUrlSafeNonce(): string {
     if (typeof window === 'undefined' || !window.crypto) {
@@ -154,15 +154,27 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             
             if (provider === 'google' && isNative) {
                 try {
-                    console.log('[Google Login] Initializing native Google Sign-In...');
-                    GoogleAuth.initialize();
-                    const googleUser = await GoogleAuth.signIn();
-                    console.log('[Google Login] Native sign in success:', !!googleUser.authentication.idToken);
+                    console.log('[Google Login] Initializing Capgo Social Login...');
+                    await SocialLogin.initialize({
+                        google: {
+                            webClientId: '54141143854-1nahh5nueb5njrlvd748dkbm0a34sks9.apps.googleusercontent.com',
+                        },
+                    });
 
-                    if (googleUser.authentication.idToken) {
+                    const res = await SocialLogin.login({
+                        provider: 'google',
+                        options: {
+                            scopes: ['email', 'profile'],
+                        },
+                    });
+
+                    const idToken = (res.result as any)?.idToken || (res.result as any)?.token;
+                    console.log('[Google Login] Native sign in success, hasToken:', !!idToken);
+
+                    if (idToken) {
                         const { data, error } = await supabase.auth.signInWithIdToken({
                             provider: 'google',
-                            token: googleUser.authentication.idToken,
+                            token: idToken,
                         });
 
                         if (error) {
@@ -186,13 +198,12 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 } catch (err: any) {
                     console.error('[Google Login] Native error:', err?.message || err, JSON.stringify(err));
                     const errStr = String(err?.message || err);
-                    // 💡 네이티브 GoogleAuth 플러그인이 iOS 빌드에 포함되지 않았거나 미구현된 경우 웹 OAuth로 자동 폴백
-                    if (errStr.includes('not implemented') || errStr.includes('GoogleAuth') || errStr.includes('UNIMPLEMENTED')) {
-                        console.log('[Google Login] Native plugin unavailable on iOS, falling back to Web OAuth...');
-                    } else {
-                        toast.error('Google 로그인에 실패했습니다: ' + (err?.message || '알 수 없는 오류'));
+                    if (errStr.includes('cancelled') || errStr.includes('1001') || errStr.includes('CANCELED')) {
+                        console.log('[Google Login] User cancelled');
                         return;
                     }
+                    toast.error('Google 로그인 실패: ' + (err?.message || errStr));
+                    return;
                 }
             }
 
