@@ -81,10 +81,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     };
 
     const handleOAuthLogin = async (provider: 'google' | 'kakao' | 'apple') => {
-        if (provider === 'kakao') {
-            toast.error("카카오 로그인은 준비 중 입니다.");
-            return;
-        }
         try {
             vibrate();
             if (typeof window !== 'undefined') {
@@ -93,6 +89,30 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             }
             
             const isNative = Capacitor.isNativePlatform();
+
+            if (provider === 'kakao') {
+                const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
+                const callbackUrl = isNative
+                    ? 'https://bookok.kr/auth/callback?native=true'
+                    : `${window.location.origin}/auth/callback?next=${encodeURIComponent(currentPath)}`;
+
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'kakao',
+                    options: {
+                        redirectTo: callbackUrl,
+                        skipBrowserRedirect: isNative,
+                        queryParams: {
+                            prompt: 'login',
+                        },
+                    },
+                });
+                if (error) throw error;
+
+                if (isNative && data?.url) {
+                    await Browser.open({ url: data.url });
+                }
+                return;
+            }
 
             if (provider === 'apple' && isNative) {
                 try {
@@ -171,13 +191,19 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                     });
 
                     const idToken = (res.result as any)?.idToken || (res.result as any)?.token;
-                    console.log('[Google Login] Native sign in success, hasToken:', !!idToken);
+                    const rawNonce = (res.result as any)?.nonce || (res.result as any)?.rawNonce;
+                    const accessToken = (res.result as any)?.accessToken;
+                    console.log('[Google Login] Native sign in success, hasToken:', !!idToken, 'hasNonce:', !!rawNonce);
 
                     if (idToken) {
-                        const { data, error } = await supabase.auth.signInWithIdToken({
+                        const signInOptions: any = {
                             provider: 'google',
                             token: idToken,
-                        });
+                        };
+                        if (accessToken) signInOptions.access_token = accessToken;
+                        if (rawNonce) signInOptions.nonce = rawNonce;
+
+                        const { data, error } = await supabase.auth.signInWithIdToken(signInOptions);
 
                         if (error) {
                             console.error('[Google Login] Supabase signInWithIdToken error:', error.message, error);
@@ -219,6 +245,9 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 options: {
                     redirectTo: callbackUrl,
                     skipBrowserRedirect: isNative,
+                    queryParams: {
+                        prompt: 'select_account',
+                    },
                 },
             });
             if (error) throw error;
@@ -350,7 +379,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                         <div className="flex flex-col gap-3">
                             <button
                                 onClick={() => handleOAuthLogin('google')}
-                                className="flex items-center w-full bg-white border border-gray-300 rounded-xl p-3 hover:bg-gray-50 transition-colors shadow-sm relative group"
+                                className="flex items-center w-full bg-white border border-gray-300 rounded-xl p-3 hover:bg-gray-50 active:scale-[0.99] transition-all shadow-sm relative group"
                             >
                                 <div className="absolute left-4">
                                     <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -364,8 +393,20 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             </button>
 
                             <button
+                                onClick={() => handleOAuthLogin('kakao')}
+                                className="flex items-center w-full bg-[#FEE500] rounded-xl p-3 hover:bg-[#FADA00] active:scale-[0.99] transition-all shadow-sm relative group"
+                            >
+                                <div className="absolute left-4">
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#000000">
+                                        <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.178.483.376.352.155-.102 2.469-1.68 3.473-2.364.534.078 1.087.118 1.661.118 4.97 0 9-3.185 9-7.115S16.97 3 12 3z" />
+                                    </svg>
+                                </div>
+                                <span className="flex-1 text-[#191919] font-bold text-[15px]">카카오 계정으로 계속하기</span>
+                            </button>
+
+                            <button
                                 onClick={() => handleOAuthLogin('apple')}
-                                className="flex items-center w-full bg-black rounded-xl p-3 hover:bg-black/90 transition-colors shadow-sm relative group"
+                                className="flex items-center w-full bg-black rounded-xl p-3 hover:bg-black/90 active:scale-[0.99] transition-all shadow-sm relative group"
                             >
                                 <div className="absolute left-4">
                                     <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
