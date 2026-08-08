@@ -25,7 +25,7 @@ const getRelativeTime = (dateStr: string) => {
     if (diffMins < 60) return `${diffMins}분 전`;
     if (diffHours < 24) return `${diffHours}시간 전`;
     if (diffDays < 7) return `${diffDays}일 전`;
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 };
 
 export default function CommunityPage() {
@@ -46,13 +46,15 @@ export default function CommunityPage() {
     const POSTS_PER_PAGE = 10;
 
     useEffect(() => {
-        if (user) {
-            const hasAgreed = localStorage.getItem(`bookok_eula_agreed_${user.id}`);
-            if (!hasAgreed) {
+        if (user && userProfile && isInitialized && !authLoading) {
+            const hasAgreedInProfile = !!userProfile.eula_agreed_at;
+            const hasAgreedInLocal = typeof window !== 'undefined' && localStorage.getItem(`bookok_eula_agreed_${user.id}`) === "true";
+            
+            if (!hasAgreedInProfile && !hasAgreedInLocal) {
                 setShowEulaModal(true);
             }
         }
-    }, [user]);
+    }, [user, userProfile, isInitialized, authLoading]);
 
     useEffect(() => {
         if (children && children.length > 0) {
@@ -441,9 +443,14 @@ export default function CommunityPage() {
                                 동의 안 함 (나가기)
                             </button>
                             <button
-                                onClick={() => {
+                                onClick={async () => {
                                     if (user) {
                                         localStorage.setItem(`bookok_eula_agreed_${user.id}`, "true");
+                                        const now = new Date().toISOString();
+                                        await supabase
+                                            .from('profiles')
+                                            .update({ eula_agreed_at: now })
+                                            .eq('id', user.id);
                                     }
                                     setShowEulaModal(false);
                                     toast.success("이용 규약에 동의하셨습니다. 환영합니다! 🎉");

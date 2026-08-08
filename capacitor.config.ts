@@ -21,6 +21,7 @@ const config: any = {
     SocialLogin: {
       google: {
         webClientId: "54141143854-1nahh5nueb5njrlvd748dkbm0a34sks9.apps.googleusercontent.com",
+        iOSClientId: "54141143854-7mclde4lk4u46g1sbqlqnin8jt5ibjv1.apps.googleusercontent.com",
         mode: "online"
       }
     }

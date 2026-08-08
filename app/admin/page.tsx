@@ -57,6 +57,11 @@ export default function AdminPage() {
     const [stats, setStats] = useState<AdminStats | null>(null);
 
     // Form states for Popups
+    const [isNoticeModalOpen, setIsNoticeModalOpen] = useState(false);
+    const [newNoticeTitle, setNewNoticeTitle] = useState('');
+    const [newNoticeContent, setNewNoticeContent] = useState('');
+    const [newNoticeCategory, setNewNoticeCategory] = useState('자유게시판');
+
     const [isPopupModalOpen, setIsPopupModalOpen] = useState(false);
     const [newPopup, setNewPopup] = useState<Partial<Popup>>({
         title: '',
@@ -351,6 +356,36 @@ export default function AdminPage() {
         if (error) toast.error('공지 설정 변경 실패');
         else {
             toast.success(currentStatus ? '공지 해제됨' : '공지로 지정됨');
+            fetchPosts();
+        }
+    };
+
+    const handleCreateNoticePost = async () => {
+        if (!newNoticeTitle.trim() || !newNoticeContent.trim()) {
+            return toast.error('공지 제목과 내용을 입력해주세요.');
+        }
+        if (!user) return toast.error('관리자 로그인이 필요합니다.');
+
+        const { error } = await supabase
+            .from('posts')
+            .insert([{
+                title: newNoticeTitle.trim(),
+                content: newNoticeContent.trim(),
+                category: newNoticeCategory,
+                user_id: user.id,
+                author_nickname: '북콕 운영팀',
+                is_notice: true,
+                views: 0,
+                likes: 0
+            }]);
+
+        if (error) {
+            toast.error('공지글 등록 실패: ' + error.message);
+        } else {
+            toast.success('공지글이 등록되었습니다. 커뮤니티 최상단에 고정됩니다.');
+            setIsNoticeModalOpen(false);
+            setNewNoticeTitle('');
+            setNewNoticeContent('');
             fetchPosts();
         }
     };
@@ -953,19 +988,27 @@ export default function AdminPage() {
                                     <h1 className="text-3xl font-black text-gray-900">커뮤니티 관리</h1>
                                     <p className="text-gray-500 mt-1">게시글과 댓글의 노출 여부를 관리합니다.</p>
                                 </div>
-                                <div className="flex bg-gray-100 p-1 rounded-xl">
-                                    <button 
-                                        onClick={() => setCommunitySubTab('posts')}
-                                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${communitySubTab === 'posts' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        onClick={() => setIsNoticeModalOpen(true)}
+                                        className="px-4 py-2 bg-[#16A34A] text-white rounded-xl text-sm font-bold hover:bg-[#15803D] active:scale-95 transition-all flex items-center gap-1.5 shadow-sm"
                                     >
-                                        게시글
+                                        <Plus size={16} /> 공지 작성
                                     </button>
-                                    <button 
-                                        onClick={() => setCommunitySubTab('comments')}
-                                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${communitySubTab === 'comments' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-                                    >
-                                        댓글
-                                    </button>
+                                    <div className="flex bg-gray-100 p-1 rounded-xl">
+                                        <button 
+                                            onClick={() => setCommunitySubTab('posts')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${communitySubTab === 'posts' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                        >
+                                            게시글
+                                        </button>
+                                        <button 
+                                            onClick={() => setCommunitySubTab('comments')}
+                                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${communitySubTab === 'comments' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                                        >
+                                            댓글
+                                        </button>
+                                    </div>
                                 </div>
                             </header>
 
@@ -1123,6 +1166,73 @@ export default function AdminPage() {
                     </div>
                 </div>
             </main>
+
+            {/* Notice Creation Modal */}
+            {isNoticeModalOpen && (
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
+                            <div>
+                                <h2 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                                    <Megaphone size={22} className="text-[#16A34A]" /> 새 공지사항 작성
+                                </h2>
+                                <p className="text-sm text-gray-500 mb-0">작성된 공지글은 커뮤니티 상단에 최우선 고정 노출됩니다.</p>
+                            </div>
+                            <button onClick={() => setIsNoticeModalOpen(false)} className="p-2 hover:bg-gray-200 rounded-full transition-colors">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">카테고리</label>
+                                <select
+                                    value={newNoticeCategory}
+                                    onChange={(e) => setNewNoticeCategory(e.target.value)}
+                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-900 focus:ring-4 focus:ring-green-100 transition-all outline-none"
+                                >
+                                    <option value="자유게시판">자유게시판</option>
+                                    <option value="독서고민">독서고민</option>
+                                    <option value="연령별추천">연령별추천</option>
+                                    <option value="독서팁">독서팁</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">공지 제목</label>
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-900 focus:ring-4 focus:ring-green-100 transition-all outline-none"
+                                    placeholder="공지사항 제목을 입력하세요"
+                                    value={newNoticeTitle}
+                                    onChange={(e) => setNewNoticeTitle(e.target.value)}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">공지 내용</label>
+                                <textarea 
+                                    className="w-full bg-gray-50 border-none rounded-2xl p-4 font-bold text-gray-900 focus:ring-4 focus:ring-green-100 transition-all outline-none h-40"
+                                    placeholder="공지사항 상세 내용을 입력하세요"
+                                    value={newNoticeContent}
+                                    onChange={(e) => setNewNoticeContent(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="p-8 bg-gray-50/50 border-t border-gray-50 flex justify-end gap-3">
+                            <button 
+                                onClick={() => setIsNoticeModalOpen(false)}
+                                className="px-6 py-4 bg-gray-200 text-gray-700 font-extrabold rounded-2xl hover:bg-gray-300 transition-all"
+                            >
+                                취소
+                            </button>
+                            <button 
+                                onClick={handleCreateNoticePost}
+                                className="px-8 py-4 bg-[#16A34A] text-white font-extrabold rounded-2xl hover:bg-[#15803D] active:scale-95 transition-all shadow-lg shadow-green-200"
+                            >
+                                공지글 등록
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Popup Creation Modal */}
             {isPopupModalOpen && (

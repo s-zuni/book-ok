@@ -51,13 +51,13 @@ export default function AdminStatistics() {
             
             // 초기화 (최근 7일 혹은 데이터 범위)
             profiles.forEach(p => {
-                const date = p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A';
+                const date = p.created_at ? new Date(p.created_at).toLocaleDateString('ko-KR') : 'N/A';
                 if (!statsMap.has(date)) statsMap.set(date, { newUsers: 0, activeUsers: new Set() });
                 statsMap.get(date)!.newUsers++;
             });
 
             activities.forEach(a => {
-                const date = new Date(a.created_at).toLocaleDateString();
+                const date = new Date(a.created_at).toLocaleDateString('ko-KR');
                 if (statsMap.has(date)) {
                     statsMap.get(date)!.activeUsers.add(a.user_id);
                 } else {

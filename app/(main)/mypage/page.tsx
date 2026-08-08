@@ -15,6 +15,7 @@ import { safeFetch } from "@shared/lib/api";
 import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 import ParentalGateModal from "@shared/ui/ParentalGateModal";
+import KoreanDatePicker from "@shared/ui/KoreanDatePicker";
 
 
 export default function MyPage() {
@@ -606,15 +607,41 @@ export default function MyPage() {
                                                 setNewChildType('유아');
                                             }}><X size={16} className="text-gray-400" /></button>
                                         </div>
-                                        <div className="space-y-3">
-                                            <input type="text" id="childNickname" name="childNickname" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
-                                            <input type="date" id="childBirthdate" name="childBirthdate" value={newChildBirthdate} onChange={e => setNewChildBirthdate(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
-                                            <select id="childType" name="childType" value={newChildType} onChange={e => setNewChildType(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50">
-                                                <option value="영아">영아 (0-4세)</option>
-                                                <option value="유아">유아 (5-7세)</option>
-                                                <option value="초등저학년">초등 저학년 (8-10세)</option>
-                                                <option value="초등고학년">초등 고학년 (11-13세)</option>
-                                            </select>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">아이 이름 (닉네임)</label>
+                                                <input type="text" id="childNickname" name="childNickname" placeholder="이름 (닉네임)" value={newChildNickname} onChange={e => setNewChildNickname(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">자녀 출생일 (연 / 월 / 일)</label>
+                                                <KoreanDatePicker
+                                                    id="childBirthdate"
+                                                    name="childBirthdate"
+                                                    value={newChildBirthdate}
+                                                    onChange={(dateStr) => {
+                                                        setNewChildBirthdate(dateStr);
+                                                        if (dateStr) {
+                                                            const birthYear = new Date(dateStr).getFullYear();
+                                                            const currentYear = new Date().getFullYear();
+                                                            const age = currentYear - birthYear;
+                                                            if (age <= 4) setNewChildType('영아');
+                                                            else if (age <= 7) setNewChildType('유아');
+                                                            else if (age <= 10) setNewChildType('초등저학년');
+                                                            else setNewChildType('초등고학년');
+                                                        }
+                                                    }}
+                                                    disabled={isLoading}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">연령 구분</label>
+                                                <select id="childType" name="childType" value={newChildType} onChange={e => setNewChildType(e.target.value)} disabled={isLoading} className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50">
+                                                    <option value="영아">영아 (0-4세)</option>
+                                                    <option value="유아">유아 (5-7세)</option>
+                                                    <option value="초등저학년">초등 저학년 (8-10세)</option>
+                                                    <option value="초등고학년">초등 고학년 (11-13세)</option>
+                                                </select>
+                                            </div>
                                             <button
                                                 onClick={handleChildProfileSubmit}
                                                 disabled={isLoading}

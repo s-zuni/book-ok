@@ -101,6 +101,7 @@ export interface Profile {
     email?: string;
     is_active?: boolean;
     created_at: string;
+    eula_agreed_at?: string;
     favorite_libraries?: Array<{ libCode: string; libName: string }>;
 }
 

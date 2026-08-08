@@ -396,12 +396,12 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         // Skip INITIAL_SESSION to avoid double-sync with initSession above
         const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
             console.log("Auth event received:", event);
-            clearTimeout(failsafeTimer);
 
             // Skip INITIAL_SESSION because initSession() already handles it
             if (event === 'INITIAL_SESSION') {
                 return;
             }
+            clearTimeout(failsafeTimer);
 
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 if (isMounted) {
@@ -428,58 +428,64 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     // Close the In-App browser
                     Browser.close().catch(() => {});
 
-                    // 1. Check for PKCE Authorization Code (?code=...)
-                    if (event.url.includes('code=')) {
-                        try {
-                            const urlObj = new URL(event.url.replace('#', '?'));
-                            const code = urlObj.searchParams.get('code');
-                            if (code) {
-                                console.log("Exchanging PKCE code for session:", code);
-                                setLoading(true);
-                                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-                                if (!error && data.session) {
-                                    console.log("PKCE Session exchange successful!");
-                                    // Force setSession to synchronize internal Authorization Bearer headers in WebView
-                                    await supabase.auth.setSession({
-                                        access_token: data.session.access_token,
-                                        refresh_token: data.session.refresh_token,
-                                    });
-                                    // Use force=true to bypass fetchInProgress lock
-                                    await syncUserData(data.session, true);
-                                    router.refresh();
-                                } else {
-                                    console.error("PKCE Session exchange error:", error);
+                    setLoading(true);
+                    try {
+                        // 1. Check for PKCE Authorization Code (?code=...)
+                        if (event.url.includes('code=')) {
+                            try {
+                                const urlObj = new URL(event.url.replace('#', '?'));
+                                const code = urlObj.searchParams.get('code');
+                                if (code) {
+                                    console.log("Exchanging PKCE code for session:", code);
+                                    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+                                    if (!error && data.session) {
+                                        console.log("PKCE Session exchange successful!");
+                                        // Force setSession to synchronize internal Authorization Bearer headers in WebView
+                                        await supabase.auth.setSession({
+                                            access_token: data.session.access_token,
+                                            refresh_token: data.session.refresh_token,
+                                        });
+                                        // Use force=true to bypass fetchInProgress lock
+                                        await syncUserData(data.session, true);
+                                        router.refresh();
+                                    } else {
+                                        console.error("PKCE Session exchange error:", error);
+                                    }
+                                    return;
                                 }
-                                setLoading(false);
-                                return;
+                            } catch (e) {
+                                console.error("Failed to parse code URL:", e);
                             }
-                        } catch (e) {
-                            console.error("Failed to parse code URL:", e);
                         }
-                    }
 
-                    // 2. Check for hash parameters (#access_token=...)
-                    const hash = event.url.split('#')[1];
-                    if (hash) {
-                        const params = new URLSearchParams(hash);
-                        const accessToken = params.get('access_token');
-                        const refreshToken = params.get('refresh_token');
+                        // 2. Check for hash parameters (#access_token=...)
+                        const hash = event.url.split('#')[1];
+                        if (hash) {
+                            try {
+                                const params = new URLSearchParams(hash);
+                                const accessToken = params.get('access_token');
+                                const refreshToken = params.get('refresh_token');
 
-                        if (accessToken && refreshToken) {
-                            setLoading(true);
-                            const { data, error } = await supabase.auth.setSession({
-                                access_token: accessToken,
-                                refresh_token: refreshToken
-                            });
-                            if (!error && data.session) {
-                                // Use force=true to bypass fetchInProgress lock
-                                await syncUserData(data.session, true);
-                                router.refresh();
-                            } else {
-                                console.error("Failed to set session from deep link:", error);
+                                if (accessToken && refreshToken) {
+                                    const { data, error } = await supabase.auth.setSession({
+                                        access_token: accessToken,
+                                        refresh_token: refreshToken
+                                    });
+                                    if (!error && data.session) {
+                                        // Use force=true to bypass fetchInProgress lock
+                                        await syncUserData(data.session, true);
+                                        router.refresh();
+                                    } else {
+                                        console.error("Failed to set session from deep link:", error);
+                                    }
+                                }
+                            } catch (e) {
+                                console.error("Failed to parse hash URL:", e);
                             }
-                            setLoading(false);
                         }
+                    } finally {
+                        setLoading(false);
+                        setIsInitialized(true);
                     }
                 }
             };

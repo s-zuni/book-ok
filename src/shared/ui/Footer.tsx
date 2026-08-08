@@ -21,7 +21,7 @@ const Footer = () => {
           </div>
           
           <div className="text-left md:text-right">
-            <h4 className="text-xs font-black text-gray-300 uppercase tracking-widest mb-6">Service Information</h4>
+            <h4 className="text-xs font-black text-gray-300 uppercase tracking-widest mb-6">서비스 안내</h4>
             <ul className="space-y-3">
               <li className="text-gray-400 text-xs leading-relaxed">
                 <span className="font-bold text-gray-500">상호명:</span> 북콕 <span className="mx-2">|</span> 

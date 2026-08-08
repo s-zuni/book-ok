@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { useNativeBridge } from "@shared/lib/native-bridge";
+import { toast } from "sonner";
 
 interface ReadingAnalysisProps {
     activeChild: Child | null;
@@ -48,7 +49,12 @@ export default function ReadingAnalysis({
         } else if (navigator.share) {
             navigator.share(shareData).catch(() => {});
         } else {
-            alert('공유 기능을 지원하지 않는 브라우저입니다. URL을 복사해주세요.');
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href);
+                toast.success('분석 결과 링크가 클립보드에 복사되었습니다.');
+            } else {
+                toast.info('현재 페이지 주소를 복사하여 공유하실 수 있습니다.');
+            }
         }
     };
 

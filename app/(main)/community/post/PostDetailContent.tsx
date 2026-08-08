@@ -6,6 +6,7 @@ import { ChevronLeft, MessageSquare, Heart, Eye, Megaphone, MoreVertical } from 
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase } from "@shared/lib/supabase";
 import { Post, Comment } from "@shared/types";
+import { toast } from "sonner";
 
 export default function PostDetailPage() {
     const searchParams = useSearchParams();
@@ -28,7 +29,7 @@ export default function PostDetailPage() {
             }
             if (data) {
                 if (data.is_deleted && !userProfile?.is_admin) {
-                    alert('삭제된 게시글입니다.');
+                    toast.error('삭제된 게시글입니다.');
                     router.push('/community');
                     return;
                 }
@@ -85,7 +86,7 @@ export default function PostDetailPage() {
             setNewComment("");
             fetchComments();
         } else {
-            alert('댓글 작성 실패');
+            toast.error('댓글 작성에 실패했습니다.');
         }
     };
 
@@ -100,7 +101,7 @@ export default function PostDetailPage() {
         const reason = prompt("이 게시글을 신고하시겠습니까? 신고 사유를 적어주세요 (스팸, 욕설, 부적절한 홍보 등):");
         if (reason === null) return;
         if (!reason.trim()) {
-            alert("신고 사유를 입력해 주세요.");
+            toast.error("신고 사유를 입력해 주세요.");
             return;
         }
 
@@ -115,9 +116,9 @@ export default function PostDetailPage() {
         });
 
         if (!error) {
-            alert("신고가 접수되었습니다. 관리자 검토 후 24시간 내에 조치됩니다.");
+            toast.success("신고가 접수되었습니다. 관리자 검토 후 24시간 내에 조치됩니다.");
         } else {
-            alert("신고 접수 중 오류가 발생했습니다.");
+            toast.error("신고 접수 중 오류가 발생했습니다.");
         }
     };
 
@@ -141,7 +142,7 @@ export default function PostDetailPage() {
             blockedUsers.push(post.user_id);
             localStorage.setItem('blocked_users', JSON.stringify(blockedUsers));
         }
-        alert("차단되었습니다.");
+        toast.success("차단되었습니다.");
         router.push('/community');
     };
 
@@ -150,7 +151,7 @@ export default function PostDetailPage() {
         const reason = prompt("이 댓글을 신고하시겠습니까? 신고 사유를 적어주세요 (스팸, 욕설, 부적절한 홍보 등):");
         if (reason === null) return;
         if (!reason.trim()) {
-            alert("신고 사유를 입력해 주세요.");
+            toast.error("신고 사유를 입력해 주세요.");
             return;
         }
 
@@ -165,9 +166,9 @@ export default function PostDetailPage() {
         });
 
         if (!error) {
-            alert("신고가 접수되었습니다. 관리자 검토 후 24시간 내에 조치됩니다.");
+            toast.success("신고가 접수되었습니다. 관리자 검토 후 24시간 내에 조치됩니다.");
         } else {
-            alert("신고 접수 중 오류가 발생했습니다.");
+            toast.error("신고 접수 중 오류가 발생했습니다.");
         }
     };
 
@@ -191,7 +192,7 @@ export default function PostDetailPage() {
             blockedUsers.push(targetUserId);
             localStorage.setItem('blocked_users', JSON.stringify(blockedUsers));
         }
-        alert("차단되었습니다.");
+        toast.success("차단되었습니다.");
         setComments(prev => prev.filter(c => c.user_id !== targetUserId));
     };
 
@@ -242,7 +243,7 @@ export default function PostDetailPage() {
                 {/* Category & Date */}
                 <div className="flex items-center gap-2.5 mb-3">
                     <span className="bg-green-100 text-green-700 px-2.5 py-0.5 rounded-full text-xs font-black">{post.category}</span>
-                    <span className="text-gray-400 text-xs">{new Date(post.created_at).toLocaleDateString()}</span>
+                    <span className="text-gray-400 text-xs">{new Date(post.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
 
                 {/* Title */}
@@ -292,7 +293,7 @@ export default function PostDetailPage() {
                                 <div className="flex justify-between items-center mb-1.5">
                                     <div className="flex items-center gap-2">
                                         <span className="font-bold text-sm text-gray-800">{comment.author_name}</span>
-                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleDateString()}</span>
+                                        <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                     </div>
                                     {user && comment.user_id !== user.id && (
                                         <div className="flex gap-1.5">

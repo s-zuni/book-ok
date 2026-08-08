@@ -30,6 +30,20 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+      - name: Check and Inject GoogleService-Info.plist
+        script: |
+          echo "=== GoogleService-Info.plist Check ==="
+          if [ -n "$GOOGLE_SERVICE_INFO_PLIST_BASE64" ]; then
+            echo "$GOOGLE_SERVICE_INFO_PLIST_BASE64" | base64 --decode > ios/App/App/GoogleService-Info.plist
+            echo "✅ Injected GoogleService-Info.plist from Codemagic Environment Variable!"
+          fi
+
+          if [ -f ios/App/App/GoogleService-Info.plist ]; then
+            echo "✅ GoogleService-Info.plist exists at ios/App/App/GoogleService-Info.plist"
+          else
+            echo "⚠️ WARNING: GoogleService-Info.plist is MISSING in ios/App/App/!"
+            echo "Please commit it to Git or set GOOGLE_SERVICE_INFO_PLIST_BASE64 in Codemagic Environment Variables."
+          fi
       - name: Set up code signing
         script: |
           keychain initialize
