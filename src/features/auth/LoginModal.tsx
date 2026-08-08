@@ -93,7 +93,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             if (provider === 'kakao') {
                 const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
                 const callbackUrl = isNative
-                    ? 'https://bookok.kr/auth/callback?native=true'
+                    ? 'com.bookok.kr://auth-callback'
                     : `${window.location.origin}/auth/callback?next=${encodeURIComponent(currentPath)}`;
 
                 const { data, error } = await supabase.auth.signInWithOAuth({
@@ -200,7 +200,6 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                             provider: 'google',
                             token: idToken,
                         };
-                        if (accessToken) signInOptions.access_token = accessToken;
                         if (rawNonce) signInOptions.nonce = rawNonce;
 
                         const { data, error } = await supabase.auth.signInWithIdToken(signInOptions);
@@ -237,7 +236,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
             const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
             const callbackUrl = isNative
-                ? 'https://bookok.kr/auth/callback?native=true'
+                ? 'com.bookok.kr://auth-callback'
                 : `${window.location.origin}/auth/callback?next=${encodeURIComponent(currentPath)}`;
             
             const { data, error } = await supabase.auth.signInWithOAuth({
