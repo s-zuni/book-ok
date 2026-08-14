@@ -65,6 +65,7 @@ export function createClient() {
             persistSession: true,
             autoRefreshToken: true,
             detectSessionInUrl: !Capacitor.isNativePlatform(),
+            flowType: 'pkce',
         }
     });
 }

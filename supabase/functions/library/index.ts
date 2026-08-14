@@ -64,19 +64,77 @@ serve(async (req) => {
       const libCodes = libCodesStr.split(",").map((code) => code.trim()).filter(Boolean);
 
       const fetchPromises = libCodes.map(async (libCode) => {
-        const fetchUrl = `http://data4library.kr/api/bookExist?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&format=json`;
         try {
-          const response = await fetch(fetchUrl);
-          if (!response.ok) {
-            throw new Error(`Status check failed with status ${response.status}`);
+          // 1. Check book existence & loan availability
+          const existUrl = `http://data4library.kr/api/bookExist?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&format=json`;
+          const existRes = await fetch(existUrl);
+          const existData = existRes.ok ? await existRes.json() : {};
+          const existResult = existData.response?.result || {};
+          const hasBook = existResult.hasBook || "N";
+          const loanAvailable = existResult.loanAvailable || "N";
+
+          let callNumber = "";
+          let shelfLocName = "";
+          let separateShelfName = "";
+
+          // 2. If held at library, fetch item details (call number, shelf location)
+          if (hasBook === "Y") {
+            try {
+              const itemUrl = `http://data4library.kr/api/itemSrch?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&type=ALL&format=json`;
+              const itemRes = await fetch(itemUrl);
+              if (itemRes.ok) {
+                const itemData = await itemRes.json();
+                const docs = itemData.response?.docs || [];
+                if (docs.length > 0) {
+                  const doc = docs[0]?.doc || {};
+                  callNumber = doc.callNumber || doc.callNumbers?.[0]?.callNumber?.callNumber || "";
+                  shelfLocName = doc.shelf_loc_name || doc.callNumbers?.[0]?.callNumber?.shelf_loc_name || "";
+                  separateShelfName = doc.separate_shelf_name || doc.callNumbers?.[0]?.callNumber?.separate_shelf_name || "";
+                }
+              }
+            } catch (e) {
+              console.warn(`Failed to fetch itemSrch for libCode ${libCode}:`, e);
+            }
           }
-          const data = await response.json();
-          const result = data.response?.result || {};
+
+          // 3. Fetch library detailed metadata (homepage, operatingTime, closed, address, tel)
+          let homepage = "";
+          let operatingTime = "";
+          let closed = "";
+          let tel = "";
+          let address = "";
+
+          try {
+            const libInfoUrl = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&libCode=${libCode}&format=json`;
+            const libRes = await fetch(libInfoUrl);
+            if (libRes.ok) {
+              const libData = await libRes.json();
+              const libs = libData.response?.libs || [];
+              if (libs.length > 0) {
+                const libInfo = libs[0]?.lib || libs[0]?.doc || {};
+                homepage = libInfo.homepage || "";
+                operatingTime = libInfo.operatingTime || "";
+                closed = libInfo.closed || "";
+                tel = libInfo.tel || "";
+                address = libInfo.address || "";
+              }
+            }
+          } catch (e) {
+            console.warn(`Failed to fetch libSrch for libCode ${libCode}:`, e);
+          }
 
           return {
             libCode,
-            hasBook: result.hasBook || "N",
-            loanAvailable: result.loanAvailable || "N",
+            hasBook,
+            loanAvailable,
+            callNumber,
+            shelfLocName,
+            separateShelfName,
+            homepage,
+            operatingTime,
+            closed,
+            tel,
+            address,
           };
         } catch (err: any) {
           return {

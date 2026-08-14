@@ -1,0 +1,209 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 393 960" width="393" height="960" style="background-color: #FBFDFB; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <defs>
+    <filter id="card-shadow" x="-8%" y="-8%" width="116%" height="116%">
+      <feDropShadow dx="0" dy="4" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.04"/>
+    </filter>
+    <filter id="cover-shadow" x="-12%" y="-12%" width="124%" height="124%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#0F172A" flood-opacity="0.12"/>
+    </filter>
+    <filter id="side-tab-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="-2" dy="2" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.08"/>
+    </filter>
+
+    <!-- Cover Background Gradient -->
+    <linearGradient id="mellowCover" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4C1D95"/>
+      <stop offset="40%" stop-color="#7C3AED"/>
+      <stop offset="70%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Canvas Background -->
+  <rect width="393" height="960" fill="#FBFDFB"/>
+
+  <!-- 1. TOP HEADER NAV BAR (Matching Screenshot) -->
+  <g id="TopHeader" transform="translate(0, 0)">
+    <rect width="393" height="64" fill="#FFFFFF"/>
+    <line x1="0" y1="64" x2="393" y2="64" stroke="#F1F5F9" stroke-width="1"/>
+
+    <!-- Left Logo & Badge -->
+    <g transform="translate(16, 14)">
+      <circle cx="18" cy="18" r="16" fill="#F0FDF4" stroke="#DCFCE7" stroke-width="1"/>
+      <path d="M 12 16 C 12 13 15 11 18 14 C 21 11 24 13 24 16 C 24 20 18 24 18 24 C 18 24 12 20 12 16 Z" fill="none" stroke="#16A34A" stroke-width="1.8"/>
+      <text x="44" y="24" fill="#0F172A" font-size="18" font-weight="900" letter-spacing="-0.5">Book<tspan fill="#16A34A">,</tspan>ok</text>
+    </g>
+
+    <!-- Right Header Actions (Search glass + Profile pill button) -->
+    <g transform="translate(285, 16)">
+      <!-- Search Icon -->
+      <circle cx="12" cy="16" r="6" fill="none" stroke="#334155" stroke-width="2"/>
+      <line x1="16.5" y1="20.5" x2="21" y2="25" stroke="#334155" stroke-width="2" stroke-linecap="round"/>
+
+      <!-- Profile Button Pill -->
+      <rect x="36" y="2" width="56" height="28" rx="14" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <text x="64" y="20" fill="#16A34A" font-size="11" font-weight="800" text-anchor="middle">프로필</text>
+    </g>
+  </g>
+
+  <!-- 2. BACK LINK ("< 목록으로 돌아가기") -->
+  <g id="BackLink" transform="translate(24, 88)">
+    <path d="M 10 4 L 4 10 L 10 16" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="20" y="14" fill="#475569" font-size="13" font-weight="700">목록으로 돌아가기</text>
+  </g>
+
+  <!-- 3. MAIN BOOK CARD (With side tab floating badge) -->
+  <g id="MainBookCard" transform="translate(20, 126)">
+    <!-- Side floating leaf badge on left edge -->
+    <g transform="translate(-16, 12)">
+      <rect width="36" height="34" rx="10" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1" filter="url(#side-tab-shadow)"/>
+      <path d="M 10 18 C 10 14 14 12 18 15 C 22 12 26 14 26 18 C 26 22 18 26 18 26 Z" fill="#16A34A"/>
+    </g>
+
+    <!-- Main Card Body -->
+    <rect width="353" height="490" rx="36" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+    <!-- Book Cover Image (Art & Characters Mockup) -->
+    <g transform="translate(96, 24)">
+      <rect width="161" height="210" rx="14" fill="url(#mellowCover)" filter="url(#cover-shadow)"/>
+      <!-- Book Title Graphics on Cover -->
+      <rect x="35" y="16" width="91" height="32" rx="10" fill="#F43F5E" stroke="#FFFFFF" stroke-width="1.5"/>
+      <text x="80.5" y="38" fill="#FFFFFF" font-size="15" font-weight="900" text-anchor="middle">팀나빠</text>
+      
+      <!-- Sub Title Tag -->
+      <rect x="42" y="52" width="77" height="14" rx="7" fill="#FACC15"/>
+      <text x="80.5" y="62" fill="#0F172A" font-size="8" font-weight="900" text-anchor="middle">나사 빠진 친구들 ①</text>
+      
+      <!-- Character Avatars Mockup -->
+      <circle cx="50" cy="100" r="16" fill="#60A5FA"/>
+      <circle cx="80.5" cy="115" r="22" fill="#ECE9FE"/>
+      <!-- Hair & eyes mockup -->
+      <circle cx="80.5" cy="110" r="14" fill="#C4B5FD"/>
+      <circle cx="75" cy="112" r="2" fill="#0F172A"/>
+      <circle cx="86" cy="112" r="2" fill="#0F172A"/>
+      
+      <circle cx="112" cy="100" r="16" fill="#F472B6"/>
+      <circle cx="60" cy="155" r="12" fill="#F43F5E"/>
+      <circle cx="100" cy="155" r="14" fill="#FBBF24"/>
+    </g>
+
+    <!-- Category Badge ("어린이") -->
+    <g transform="translate(24, 252)">
+      <rect width="54" height="26" rx="13" fill="#DCFCE7"/>
+      <text x="27" y="17" fill="#16A34A" font-size="12" font-weight="800" text-anchor="middle">어린이</text>
+    </g>
+
+    <!-- Action Buttons ("찜하기", "읽었어요") -->
+    <g transform="translate(24, 290)">
+      <!-- Left: 찜하기 Button -->
+      <rect x="0" y="0" width="92" height="38" rx="19" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5"/>
+      <path d="M 22 13 L 30 13 L 30 25 L 26 22 L 22 25 Z" fill="none" stroke="#64748B" stroke-width="1.5"/>
+      <text x="40" y="24" fill="#475569" font-size="13" font-weight="700">찜하기</text>
+
+      <!-- Right: 읽었어요 Button -->
+      <rect x="102" y="0" width="104" height="38" rx="19" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5"/>
+      <path d="M 120 15 C 120 18 126 18 126 18 L 126 25 C 126 25 120 25 120 22 Z M 120 15 C 120 18 114 18 114 18 L 114 25 C 114 25 120 25 120 22 Z" fill="none" stroke="#64748B" stroke-width="1.5"/>
+      <text x="134" y="24" fill="#475569" font-size="13" font-weight="700">읽었어요</text>
+    </g>
+
+    <!-- Book Title & Description Text -->
+    <g transform="translate(24, 348)">
+      <!-- Title -->
+      <text x="0" y="20" fill="#0F172A" font-size="18" font-weight="900">멜로우TV 팀나빠 1 : 나사 빠진 친구들</text>
+      
+      <!-- Author | Date -->
+      <text x="0" y="44" fill="#64748B" font-size="13" font-weight="600">멜로우TV (원작) | 2026-05-25</text>
+
+      <!-- Description (Exact text from user screenshot) -->
+      <text x="0" y="68" fill="#64748B" font-size="12" font-weight="500" leading="1.6">
+        <tspan x="0" dy="0">제21회 문학동네어린이문학상 대상 수상작. 지구상의</tspan>
+        <tspan x="0" dy="18">마지막 하나가 된 흰바위코뿔소 노든과 버려진 알에서</tspan>
+        <tspan x="0" dy="18">태어난 어린 펭귄이 수없는 긴긴밤을 함께하며, 바다를</tspan>
+        <tspan x="0" dy="18">찾아가가는 이야기이다.</tspan>
+      </text>
+    </g>
+  </g>
+
+  <!-- 4. NEIGHBORHOOD LIBRARY HOLDING CARD (Matching Screenshot) -->
+  <g id="LibraryCard" transform="translate(20, 646)">
+    <!-- Side floating leaf badge on left edge -->
+    <g transform="translate(-16, 12)">
+      <rect width="36" height="34" rx="10" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1" filter="url(#side-tab-shadow)"/>
+      <path d="M 10 18 C 10 14 14 12 18 15 C 22 12 26 14 26 18 C 26 22 18 26 18 26 Z" fill="#16A34A"/>
+    </g>
+
+    <!-- Main Card Body -->
+    <rect width="353" height="300" rx="36" fill="#FFFFFF" stroke="#F1F5F9" stroke-width="1.5" filter="url(#card-shadow)"/>
+
+    <!-- Header Title (Green MapPin Circle + Title) -->
+    <g transform="translate(20, 20)">
+      <circle cx="18" cy="18" r="18" fill="#F0FDF4"/>
+      <!-- MapPin Icon -->
+      <path d="M 18 11 C 14.5 11 12 13.5 12 17 C 12 21 18 25 18 25 C 18 25 24 21 24 17 C 24 13.5 21.5 11 18 11 Z" fill="none" stroke="#16A34A" stroke-width="2"/>
+      <circle cx="18" cy="16" r="2" fill="#16A34A"/>
+
+      <text x="48" y="24" fill="#0F172A" font-size="16" font-weight="900">우리 동네 도서관 소장 현황</text>
+    </g>
+
+    <!-- Library Items List -->
+    <g transform="translate(20, 68)">
+      <!-- Item 1: 별밭 작은도서관 (대출 가능) -->
+      <g transform="translate(0, 0)">
+        <rect width="313" height="64" rx="20" fill="#F9FAFB" stroke="#F3F4F6" stroke-width="1"/>
+        
+        <!-- Building Icon Circle -->
+        <circle cx="32" cy="32" r="18" fill="#FFFFFF" stroke="#F3F4F6" stroke-width="1"/>
+        <rect x="25" y="23" width="14" height="18" rx="2" fill="none" stroke="#22C55E" stroke-width="1.8"/>
+        <rect x="28" y="26" width="3" height="3" fill="#22C55E"/>
+        <rect x="33" y="26" width="3" height="3" fill="#22C55E"/>
+        <rect x="28" y="31" width="3" height="3" fill="#22C55E"/>
+        <rect x="33" y="31" width="3" height="3" fill="#22C55E"/>
+
+        <text x="60" y="27" fill="#0F172A" font-size="13" font-weight="800">별밭 작은도서관</text>
+        <text x="60" y="44" fill="#94A3B8" font-size="10" font-weight="500">코드: 711466</text>
+
+        <!-- Loanable Button Pill -->
+        <rect x="216" y="17" width="82" height="30" rx="10" fill="#4ADE80"/>
+        <text x="257" y="36" fill="#FFFFFF" font-size="11" font-weight="900" text-anchor="middle">대출 가능</text>
+      </g>
+
+      <!-- Item 2: 서빙고동 작은도서관 (대출 가능) -->
+      <g transform="translate(0, 74)">
+        <rect width="313" height="64" rx="20" fill="#F9FAFB" stroke="#F3F4F6" stroke-width="1"/>
+        
+        <circle cx="32" cy="32" r="18" fill="#FFFFFF" stroke="#F3F4F6" stroke-width="1"/>
+        <rect x="25" y="23" width="14" height="18" rx="2" fill="none" stroke="#22C55E" stroke-width="1.8"/>
+        <rect x="28" y="26" width="3" height="3" fill="#22C55E"/>
+        <rect x="33" y="26" width="3" height="3" fill="#22C55E"/>
+        <rect x="28" y="31" width="3" height="3" fill="#22C55E"/>
+        <rect x="33" y="31" width="3" height="3" fill="#22C55E"/>
+
+        <text x="60" y="27" fill="#0F172A" font-size="13" font-weight="800">서빙고동 작은도서관</text>
+        <text x="60" y="44" fill="#94A3B8" font-size="10" font-weight="500">코드: 711405</text>
+
+        <!-- Loanable Button Pill -->
+        <rect x="216" y="17" width="82" height="30" rx="10" fill="#4ADE80"/>
+        <text x="257" y="36" fill="#FFFFFF" font-size="11" font-weight="900" text-anchor="middle">대출 가능</text>
+      </g>
+
+      <!-- Item 3: 서울특별시교육청종로도... (대출중) -->
+      <g transform="translate(0, 148)">
+        <rect width="313" height="64" rx="20" fill="#F9FAFB" stroke="#F3F4F6" stroke-width="1"/>
+        
+        <circle cx="32" cy="32" r="18" fill="#FFFFFF" stroke="#F3F4F6" stroke-width="1"/>
+        <rect x="25" y="23" width="14" height="18" rx="2" fill="none" stroke="#22C55E" stroke-width="1.8"/>
+        <rect x="28" y="26" width="3" height="3" fill="#22C55E"/>
+        <rect x="33" y="26" width="3" height="3" fill="#22C55E"/>
+        <rect x="28" y="31" width="3" height="3" fill="#22C55E"/>
+        <rect x="33" y="31" width="3" height="3" fill="#22C55E"/>
+
+        <text x="60" y="27" fill="#0F172A" font-size="13" font-weight="800">서울특별시교육청종로도...</text>
+        <text x="60" y="44" fill="#94A3B8" font-size="10" font-weight="500">코드: 111021</text>
+
+        <!-- Checked Out Button Pill -->
+        <rect x="224" y="17" width="74" height="30" rx="10" fill="#FEF3C7" stroke="#FDE68A" stroke-width="1"/>
+        <text x="261" y="36" fill="#B45309" font-size="11" font-weight="900" text-anchor="middle">대출중</text>
+      </g>
+    </g>
+  </g>
+</svg>

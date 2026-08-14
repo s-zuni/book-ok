@@ -339,6 +339,10 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 
                 if (isMounted) {
                     await syncUserData(initialSession);
+                    // Clean up sensitive OAuth access_token hash from address bar if present
+                    if (typeof window !== 'undefined' && window.location.hash.includes('access_token')) {
+                        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                    }
                 }
             } catch (err) {
                 console.error("Initial session fetch error:", err);
