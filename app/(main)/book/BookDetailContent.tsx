@@ -216,8 +216,36 @@ export default function BookDetailContent() {
                 const data = await response.json();
                 
                 // Map the results back to include library details, call number, and shelf locations
-                const statusResults = (data.results || []).map((result: any) => {
+                const statusResults = await Promise.all((data.results || []).map(async (result: any) => {
                     const libInfo = favoriteLibs.find(l => String(l.libCode) === String(result.libCode));
+                    let fetchedHomepage = result.homepage || (libInfo as any)?.homepage || '';
+                    let fetchedOperatingTime = result.operatingTime || (libInfo as any)?.operatingTime || '';
+                    let fetchedClosed = result.closed || (libInfo as any)?.closed || '';
+                    let fetchedTel = result.tel || (libInfo as any)?.tel || '';
+                    let fetchedAddress = result.address || (libInfo as any)?.address || '';
+
+                    // Fallback fetch from Data4Library if homepage is missing in Edge Function response
+                    if (!fetchedHomepage) {
+                        try {
+                            const apiKey = "c0bde3ba4483595bfd280c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+                            const libRes = await fetch(`http://data4library.kr/api/libSrch?authKey=${apiKey}&libCode=${result.libCode}&format=json`);
+                            if (libRes.ok) {
+                                const libData = await libRes.json();
+                                const libs = libData.response?.libs || [];
+                                if (libs.length > 0) {
+                                    const info = libs[0]?.lib || libs[0]?.doc || {};
+                                    if (info.homepage) fetchedHomepage = info.homepage;
+                                    if (info.operatingTime) fetchedOperatingTime = info.operatingTime;
+                                    if (info.closed) fetchedClosed = info.closed;
+                                    if (info.tel) fetchedTel = info.tel;
+                                    if (info.address) fetchedAddress = info.address;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("Fallback libSrch fetch failed for", result.libCode, e);
+                        }
+                    }
+
                     return {
                         libCode: result.libCode,
                         libName: libInfo?.libName || "알 수 없는 도서관",
@@ -226,13 +254,13 @@ export default function BookDetailContent() {
                         callNumber: result.callNumber || '',
                         shelfLocName: result.shelfLocName || '',
                         separateShelfName: result.separateShelfName || '',
-                        homepage: result.homepage || '',
-                        operatingTime: result.operatingTime || '',
-                        closed: result.closed || '',
-                        tel: result.tel || '',
-                        address: result.address || '',
+                        homepage: fetchedHomepage,
+                        operatingTime: fetchedOperatingTime,
+                        closed: fetchedClosed,
+                        tel: fetchedTel,
+                        address: fetchedAddress,
                     };
-                });
+                }));
                 
                 setLibraryStatus(statusResults);
             } catch (err) {
@@ -482,32 +510,53 @@ export default function BookDetailContent() {
                                     const isLoanable = status.hasBook === 'Y' && status.loanAvailable === 'Y';
                                     const isCheckedOut = status.hasBook === 'Y' && status.loanAvailable === 'N';
 
-                                    const handleCardClick = () => {
-                                        setSelectedLibraryModal(status);
-                                        setShowLibraryModal(true);
-                                    };
-
                                     const getTargetLink = () => {
-                                        let targetUrl = status.homepage;
-                                        if (!targetUrl) {
-                                            return `https://search.naver.com/search.naver?query=${encodeURIComponent(status.libName + ' ' + (book?.title || ''))}`;
+                                        let rawHomepage = status.homepage?.trim() || '';
+                                        const name = status.libName || '';
+
+                                        // 1. 도서관 정보나루 API에서 넘겨주는 공식 홈페이지 URL이 존재하는 경우 최우선 사용
+                                        if (rawHomepage && rawHomepage !== '') {
+                                            if (!rawHomepage.startsWith('http://') && !rawHomepage.startsWith('https://')) {
+                                                return 'http://' + rawHomepage;
+                                            }
+                                            return rawHomepage;
                                         }
-                                        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-                                            return 'http://' + targetUrl;
+
+                                        // 2. 도서관 이름 기반 주요 지자체/구립 도서관 포털 스마트 매퍼
+                                        if (name.includes('휘경') || name.includes('동대문') || name.includes('이문') || name.includes('답십리') || name.includes('장안') || name.includes('용두') || name.includes('청량리')) {
+                                            return 'https://www.l-lib.or.kr'; // 동대문구 구립도서관 (휘경행복도서관 등)
                                         }
-                                        return targetUrl;
+                                        if (name.includes('강남')) return 'https://library.gangnam.go.kr';
+                                        if (name.includes('서초')) return 'https://seocholib.or.kr';
+                                        if (name.includes('송파')) return 'https://www.splib.or.kr';
+                                        if (name.includes('마포')) return 'https://mapolib.or.kr';
+                                        if (name.includes('은평')) return 'https://www.eplib.or.kr';
+                                        if (name.includes('노원')) return 'https://www.nowonlib.kr';
+                                        if (name.includes('성북')) return 'https://www.sblib.seoul.kr';
+                                        if (name.includes('중구')) return 'https://www.e-junggu.or.kr';
+                                        if (name.includes('부천') || name.includes('상동')) return 'https://www.bcl.go.kr';
+                                        if (name.includes('수원')) return 'https://www.suwonlib.go.kr';
+                                        if (name.includes('성남')) return 'https://www.snlib.go.kr';
+                                        if (name.includes('고양')) return 'https://www.goyanglib.or.kr';
+                                        if (name.includes('용인')) return 'https://lib.yongin.go.kr';
+                                        if (name.includes('대구')) return 'https://library.daegu.go.kr';
+                                        if (name.includes('부산')) return 'https://home.pen.go.kr/siminlib';
+
+                                        return `https://search.naver.com/search.naver?query=${encodeURIComponent(name + ' 공식 홈페이지')}`;
                                     };
 
                                     const handleDirectLinkClick = (e: React.MouseEvent) => {
                                         e.stopPropagation();
-                                        if (status.callNumber) {
-                                            try {
-                                                navigator.clipboard.writeText(`청구기호: ${status.callNumber}`);
-                                                toast.info("청구기호가 복사되었습니다! 도서관 검색창에 활용해보세요.");
-                                            } catch (err) {
-                                                console.warn("Clipboard copy failed:", err);
-                                            }
+                                        const textToCopy = status.callNumber 
+                                            ? `[${status.libName}] 청구기호: ${status.callNumber} (${book?.title || ''})`
+                                            : `[${status.libName}] ${book?.title || ''}`;
+
+                                        try {
+                                            navigator.clipboard.writeText(textToCopy);
+                                        } catch (err) {
+                                            console.warn("Clipboard copy warning:", err);
                                         }
+                                        toast.success("청구기호가 클립보드에 복사되었습니다! 도서관 검색창에 활용해보세요.", { duration: 4000 });
                                     };
 
                                     const targetUrl = getTargetLink();
@@ -515,8 +564,7 @@ export default function BookDetailContent() {
                                     return (
                                         <div
                                             key={status.libCode}
-                                            onClick={handleCardClick}
-                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4.5 rounded-2xl bg-gray-50/80 hover:bg-gray-100/60 border border-gray-100 hover:border-green-200 transition-all cursor-pointer gap-3 shadow-2xs group"
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4.5 rounded-2xl bg-gray-50/80 hover:bg-gray-100/60 border border-gray-100 transition-all gap-3 shadow-2xs group"
                                         >
                                             <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
                                                 <div className="w-10 h-10 rounded-2xl bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0 border border-gray-100 group-hover:bg-green-50 transition-colors">
@@ -533,7 +581,7 @@ export default function BookDetailContent() {
                                                     </div>
 
                                                     {/* Call number & Shelf location Pill */}
-                                                    {status.hasBook === 'Y' && status.callNumber ? (
+                                                    {status.hasBook === 'Y' && status.callNumber && (
                                                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                                                             <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100/80 font-mono">
                                                                 청구기호: {status.callNumber}
@@ -544,27 +592,12 @@ export default function BookDetailContent() {
                                                                 </span>
                                                             )}
                                                         </div>
-                                                    ) : (
-                                                        <div className="text-[10px] text-gray-400 mt-0.5">코드: {status.libCode}</div>
                                                     )}
                                                 </div>
                                             </div>
 
                                             {/* Action Buttons */}
                                             <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                                                {status.hasBook === 'Y' && (
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedLibraryModal(status);
-                                                            setShowLibraryModal(true);
-                                                        }}
-                                                        className="px-3 py-1.5 bg-white hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-xl border border-gray-200 transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-                                                    >
-                                                        <span>책 찾기 카드</span>
-                                                    </button>
-                                                )}
-
                                                 {isNotHeld && (
                                                     <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-100">
                                                         미소장
@@ -577,7 +610,7 @@ export default function BookDetailContent() {
                                                         rel="noopener noreferrer"
                                                         onClick={handleDirectLinkClick}
                                                         className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-black rounded-xl shadow-sm shadow-green-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer no-underline inline-flex"
-                                                        title="클릭 시 도서관 소장/예약 페이지로 이동하며 청구기호가 복사됩니다"
+                                                        title="클릭 시 도서관 공식 홈페이지로 이동하며 청구기호가 복사됩니다"
                                                     >
                                                         <span>대출 가능</span>
                                                         <ExternalLink size={13} />

@@ -59,14 +59,36 @@ export default function LibraryDetailModal({
     };
 
     const getTargetUrl = () => {
-        let targetUrl = status.homepage;
-        if (!targetUrl) {
-            return `https://search.naver.com/search.naver?query=${encodeURIComponent(status.libName + ' ' + bookTitle)}`;
+        let rawHomepage = status.homepage?.trim() || '';
+        const name = status.libName || '';
+
+        if (rawHomepage && rawHomepage !== '') {
+            if (!rawHomepage.startsWith('http://') && !rawHomepage.startsWith('https://')) {
+                return 'http://' + rawHomepage;
+            }
+            return rawHomepage;
         }
-        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
-            return 'http://' + targetUrl;
+
+        if (name.includes('휘경') || name.includes('동대문') || name.includes('이문') || name.includes('답십리') || name.includes('장안') || name.includes('용두') || name.includes('청량리')) {
+            return 'https://www.l-lib.or.kr';
         }
-        return targetUrl;
+        if (name.includes('강남')) return 'https://library.gangnam.go.kr';
+        if (name.includes('서초')) return 'https://seocholib.or.kr';
+        if (name.includes('송파')) return 'https://www.splib.or.kr';
+        if (name.includes('마포')) return 'https://mapolib.or.kr';
+        if (name.includes('은평')) return 'https://www.eplib.or.kr';
+        if (name.includes('노원')) return 'https://www.nowonlib.kr';
+        if (name.includes('성북')) return 'https://www.sblib.seoul.kr';
+        if (name.includes('중구')) return 'https://www.e-junggu.or.kr';
+        if (name.includes('부천') || name.includes('상동')) return 'https://www.bcl.go.kr';
+        if (name.includes('수원')) return 'https://www.suwonlib.go.kr';
+        if (name.includes('성남')) return 'https://www.snlib.go.kr';
+        if (name.includes('고양')) return 'https://www.goyanglib.or.kr';
+        if (name.includes('용인')) return 'https://lib.yongin.go.kr';
+        if (name.includes('대구')) return 'https://library.daegu.go.kr';
+        if (name.includes('부산')) return 'https://home.pen.go.kr/siminlib';
+
+        return `https://search.naver.com/search.naver?query=${encodeURIComponent(name + ' 공식 홈페이지')}`;
     };
 
     const handleGoToHomepageClick = () => {
