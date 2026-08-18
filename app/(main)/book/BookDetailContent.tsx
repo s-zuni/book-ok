@@ -523,8 +523,8 @@ export default function BookDetailContent() {
                                         }
 
                                         // 2. 도서관 이름 기반 주요 지자체/구립 도서관 포털 스마트 매퍼
-                                        if (name.includes('휘경') || name.includes('동대문') || name.includes('이문') || name.includes('답십리') || name.includes('장안') || name.includes('용두') || name.includes('청량리')) {
-                                            return 'https://www.l-lib.or.kr'; // 동대문구 구립도서관 (휘경행복도서관 등)
+                                        if (name.includes('휘경') || name.includes('동대문') || name.includes('이문') || name.includes('답십리') || name.includes('장안')) {
+                                            return 'https://www.l4d.or.kr'; // 동대문구 구립도서관 (www.l4d.or.kr)
                                         }
                                         if (name.includes('강남')) return 'https://library.gangnam.go.kr';
                                         if (name.includes('서초')) return 'https://seocholib.or.kr';
