@@ -48,9 +48,12 @@ serve(async (req) => {
     itemId = itemId || urlObj.searchParams.get("itemId") || "";
 
     // Get API Key from Supabase env
-    let ALADIN_KEY = Deno.env.get("ALADIN_API_KEY") || Deno.env.get("aladin_api_key");
+    const ALADIN_KEY = Deno.env.get("ALADIN_API_KEY") || Deno.env.get("aladin_api_key");
     if (!ALADIN_KEY) {
-      ALADIN_KEY = "ttbzxzx7290920001";
+      return new Response(
+        JSON.stringify({ error: "ALADIN_API_KEY is not configured in Supabase environment secrets." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     let fetchUrl = "";

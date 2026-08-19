@@ -52,94 +52,108 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         };
     };
 
+    const withTimeout = <T,>(promise: Promise<T>, timeoutMs: number, fallbackValue: T): Promise<T> => {
+        return Promise.race([
+            promise,
+            new Promise<T>((resolve) => setTimeout(() => resolve(fallbackValue), timeoutMs))
+        ]);
+    };
+
     const fetchUserProfile = useCallback(async (userId: string, currentUser?: User) => {
         try {
-            // Retry logic for profile fetching (needed after new signup for trigger latency)
-            let data = null;
-            let retries = 0;
-            const maxRetries = 3;
+            const fetchTask = async (): Promise<Profile | null> => {
+                let data: Profile | null = null;
+                let retries = 0;
+                const maxRetries = 2;
 
-            while (retries < maxRetries) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', userId)
-                    .maybeSingle();
-                
-                if (profile) {
-                    data = profile;
-                    break;
+                while (retries < maxRetries) {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', userId)
+                        .maybeSingle();
+                    
+                    if (profile) {
+                        data = profile;
+                        break;
+                    }
+                    
+                    retries++;
+                    if (retries < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 800 * retries));
+                    }
                 }
-                
-                // If not found, wait a bit and retry
-                retries++;
-                if (retries < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * retries));
+
+                if (data) {
+                    setUserProfile(data);
+                    return data;
+                } else if (currentUser) {
+                    const fallback = getProfileFromMetadata(currentUser);
+                    setUserProfile(p => p || fallback);
+
+                    const metadata = currentUser.user_metadata || {};
+                    const nickname = metadata.name || metadata.nickname || metadata.full_name || currentUser.email?.split('@')[0] || "User";
+                    
+                    const newProfile: Profile = {
+                        id: userId,
+                        nickname: nickname,
+                        role: (metadata.role as Profile["role"]) || 'user',
+                        is_admin: metadata.is_admin || false,
+                        phone: metadata.phone || '',
+                        created_at: currentUser.created_at || new Date().toISOString()
+                    };
+
+                    console.log("Upserting missing profile for user:", userId);
+                    const { data: upsertedData } = await supabase
+                        .from('profiles')
+                        .upsert([newProfile], { onConflict: 'id' })
+                        .select()
+                        .maybeSingle();
+
+                    return (upsertedData as Profile) || newProfile;
                 }
-            }
+                return null;
+            };
 
-            if (data) {
-                setUserProfile(data);
-                return data;
-            } else if (currentUser) {
-                // Initial fallback from metadata while waiting/retrying
-                const fallback = getProfileFromMetadata(currentUser);
-                setUserProfile(p => p || fallback);
-
-                // We attempt to UPSERT a new profile so that foreign key constraints don't fail
-                const metadata = currentUser.user_metadata || {};
-                const nickname = metadata.name || metadata.nickname || metadata.full_name || currentUser.email?.split('@')[0] || "User";
-                
-                const newProfile = {
-                    id: userId,
-                    nickname: nickname,
-                    role: metadata.role || 'user',
-                    is_admin: metadata.is_admin || false,
-                    phone: metadata.phone || '',
-                };
-
-                console.log("Upserting missing profile for user:", userId);
-                const { data: upsertedData, error: upsertError } = await supabase
-                    .from('profiles')
-                    .upsert([newProfile], { onConflict: 'id' })
-                    .select()
-                    .maybeSingle();
-
-                if (upsertError) {
-                    console.error('Profile upsert error:', upsertError);
-                    return newProfile;
-                }
-                return upsertedData || newProfile;
-            }
-            
-            return null;
+            // Hard 4-second timeout to prevent any deadlock or hang
+            const fallbackProfile = currentUser ? getProfileFromMetadata(currentUser) : null;
+            const profile = await withTimeout(fetchTask(), 4000, fallbackProfile);
+            if (profile) setUserProfile(profile);
+            return profile;
         } catch (error) {
             console.error("Error fetching user profile:", error);
-            return null;
+            const fallback = currentUser ? getProfileFromMetadata(currentUser) : null;
+            if (fallback) setUserProfile(fallback);
+            return fallback;
         }
     }, []);
 
     const fetchChildrenData = useCallback(async (userId: string) => {
         try {
-            const { data, error } = await supabase
-                .from('children')
-                .select('*, birthdate')
-                .eq('parent_id', userId);
-            
-            if (error) throw error;
-            
-            if (data) {
-                const childrenWithAge = data.map((child: Child) => {
-                    const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : 0;
-                    const currentYear = new Date().getFullYear();
-                    const age = birthYear > 0 ? currentYear - birthYear : 0;
-                    return { ...child, age };
-                });
-                setChildren(childrenWithAge);
-                return childrenWithAge;
-            }
-            setChildren([]);
-            return [];
+            const fetchTask = async (): Promise<Child[]> => {
+                const { data, error } = await supabase
+                    .from('children')
+                    .select('*, birthdate')
+                    .eq('parent_id', userId);
+                
+                if (error) throw error;
+                
+                if (data) {
+                    const childrenWithAge = data.map((child: Child) => {
+                        const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : 0;
+                        const currentYear = new Date().getFullYear();
+                        const age = birthYear > 0 ? currentYear - birthYear : 0;
+                        return { ...child, age };
+                    });
+                    setChildren(childrenWithAge);
+                    return childrenWithAge;
+                }
+                setChildren([]);
+                return [];
+            };
+
+            // Hard 4-second timeout to prevent stalling
+            return await withTimeout(fetchTask(), 4000, []);
         } catch (error) {
             console.error("Error fetching children:", error);
             setChildren([]);
@@ -163,30 +177,26 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             setUser(currentUser);
 
             if (userId && currentUser) {
-                // 프로필과 자녀 데이터를 모두 불러온 후 초기화 완료 처리
-                // (children 데이터가 준비된 뒤 UI가 렌더링되어야 워터폴 지연 방지)
+                // Fetch profile and children in parallel with guaranteed timeout
                 const [profile] = await Promise.all([
                     fetchUserProfile(userId, currentUser),
                     fetchChildrenData(userId),
                 ]);
                 setUserProfile(profile || getProfileFromMetadata(currentUser));
-                setLoading(false);
-                setIsInitialized(true);
-                isInitRef.current = true;
             } else {
                 setUserProfile(null);
                 setChildren([]);
-                setLoading(false);
-                setIsInitialized(true);
-                isInitRef.current = true;
             }
         } catch (err) {
             console.error("Error syncing user data:", err);
-            if (currentSession?.user) setUser(currentSession.user);
+            if (currentSession?.user) {
+                setUser(currentSession.user);
+                setUserProfile(getProfileFromMetadata(currentSession.user));
+            }
+        } finally {
             setLoading(false);
             setIsInitialized(true);
             isInitRef.current = true;
-        } finally {
             fetchInProgress.current = null;
         }
     }, [fetchUserProfile, fetchChildrenData]);
@@ -312,11 +322,15 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     }, [user, resetInactivityTimer]);
 
     useEffect(() => {
-        // Failsafe: force initialization after 5s to prevent infinite loading
+        // Failsafe: force initialization after 4.5s to prevent any infinite loading skeleton
         const failsafeTimer = setTimeout(() => {
-            setLoading(false);
-            setIsInitialized(true);
-        }, 5000);
+            if (isMounted && !isInitRef.current) {
+                console.warn("AuthContext: Failsafe timer fired. Forcing initialization.");
+                setLoading(false);
+                setIsInitialized(true);
+                isInitRef.current = true;
+            }
+        }, 4500);
 
         let isMounted = true;
 
@@ -332,8 +346,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     
                     // Native: CapacitorStorage(Preferences) may not have loaded the token yet
                     if (i < maxRetries - 1) {
-                        console.log(`AuthContext: Session null on attempt ${i + 1}, retrying in ${500 * (i + 1)}ms...`);
-                        await new Promise(r => setTimeout(r, 500 * (i + 1)));
+                        console.log(`AuthContext: Session null on attempt ${i + 1}, retrying in ${300 * (i + 1)}ms...`);
+                        await new Promise(r => setTimeout(r, 300 * (i + 1)));
                     }
                 }
                 
@@ -349,6 +363,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 if (isMounted) {
                     setLoading(false);
                     setIsInitialized(true);
+                    isInitRef.current = true;
                 }
             }
         };
@@ -387,6 +402,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
                 setLoading(false);
                 setIsInitialized(true);
+                isInitRef.current = true;
                 sessionStorage.setItem('bookok_session_active', 'true');
             } else {
                 sessionStorage.setItem('bookok_session_active', 'true');
@@ -397,28 +413,27 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         }
 
         // Listen for auth changes
-        // Skip INITIAL_SESSION to avoid double-sync with initSession above
-        const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+        // Decouple using setTimeout(..., 0) to avoid Supabase Auth lock deadlocks
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, currentSession) => {
             console.log("Auth event received:", event);
 
             // Skip INITIAL_SESSION because initSession() already handles it
             if (event === 'INITIAL_SESSION') {
                 return;
             }
-            clearTimeout(failsafeTimer);
 
-            if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                if (isMounted) {
+            setTimeout(async () => {
+                if (!isMounted) return;
+
+                if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                     // Use force=true to ensure data is re-fetched after login
                     await syncUserData(currentSession, true);
                     router.refresh();
-                }
-            } else if (event === 'SIGNED_OUT') {
-                if (isMounted) {
+                } else if (event === 'SIGNED_OUT') {
                     await syncUserData(null, true);
                     router.refresh();
                 }
-            }
+            }, 0);
         });
 
         // Listen for deep link events & App State changes on native platform
@@ -444,14 +459,16 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                                     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
                                     if (!error && data.session) {
                                         console.log("PKCE Session exchange successful!");
-                                        // Force setSession to synchronize internal Authorization Bearer headers in WebView
                                         await supabase.auth.setSession({
                                             access_token: data.session.access_token,
                                             refresh_token: data.session.refresh_token,
                                         });
-                                        // Use force=true to bypass fetchInProgress lock
-                                        await syncUserData(data.session, true);
-                                        router.refresh();
+                                        setTimeout(async () => {
+                                            if (isMounted) {
+                                                await syncUserData(data.session, true);
+                                                router.refresh();
+                                            }
+                                        }, 0);
                                     } else {
                                         console.error("PKCE Session exchange error:", error);
                                     }
@@ -476,9 +493,12 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                                         refresh_token: refreshToken
                                     });
                                     if (!error && data.session) {
-                                        // Use force=true to bypass fetchInProgress lock
-                                        await syncUserData(data.session, true);
-                                        router.refresh();
+                                        setTimeout(async () => {
+                                            if (isMounted) {
+                                                await syncUserData(data.session, true);
+                                                router.refresh();
+                                            }
+                                        }, 0);
                                     } else {
                                         console.error("Failed to set session from deep link:", error);
                                     }
@@ -490,24 +510,28 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     } finally {
                         setLoading(false);
                         setIsInitialized(true);
+                        isInitRef.current = true;
                     }
                 }
             };
 
             deepLinkSub = App.addListener('appUrlOpen', handleDeepLink);
 
-            // 3. Handle App Resume (Background to Foreground) to refresh expired tokens
-            const handleAppStateChange = async (state: { isActive: boolean }) => {
+            // 3. Handle App Resume (Background to Foreground) to refresh expired tokens safely
+            const handleAppStateChange = (state: { isActive: boolean }) => {
                 if (state.isActive) {
-                    console.log("Capacitor App resumed (isActive: true), refreshing session...");
-                    try {
-                        const { data: { session: currentSession } } = await supabase.auth.getSession();
-                        if (currentSession) {
-                            await syncUserData(currentSession, true);
+                    console.log("Capacitor App resumed (isActive: true), verifying session...");
+                    setTimeout(async () => {
+                        if (!isMounted) return;
+                        try {
+                            const { data: { session: currentSession } } = await supabase.auth.getSession();
+                            if (currentSession) {
+                                await syncUserData(currentSession, false);
+                            }
+                        } catch (resumeErr) {
+                            console.warn("Failed to sync session on app resume:", resumeErr);
                         }
-                    } catch (resumeErr) {
-                        console.warn("Failed to sync session on app resume:", resumeErr);
-                    }
+                    }, 150);
                 }
             };
 
@@ -526,6 +550,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
 
         return () => {
             isMounted = false;
+            clearTimeout(failsafeTimer);
             authListener.subscription.unsubscribe();
             if (deepLinkSub) {
                 deepLinkSub.then((s) => s.remove());

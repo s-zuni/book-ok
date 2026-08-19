@@ -41,9 +41,12 @@ serve(async (req) => {
     region = region || urlObj.searchParams.get("region") || "";
     dtl_region = dtl_region || urlObj.searchParams.get("dtl_region") || "";
 
-    let API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key");
+    const API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key");
     if (!API_KEY) {
-      API_KEY = "c0bde3ba4483595bfd280c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+      return new Response(
+        JSON.stringify({ error: "DATA4LIBRARY_API_KEY is not configured in Supabase environment secrets." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     if (apiType === "book-status" || isbn) {

@@ -127,9 +127,18 @@ export default function CommunityPage() {
         }
     };
 
+    const [forceReady, setForceReady] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setForceReady(true);
+        }, 2500);
+        return () => clearTimeout(timer);
+    }, []);
+
     // Reset posts when sub-menu (category) changes or auth initializes
     useEffect(() => {
-        if (!isInitialized || authLoading) return;
+        if ((!isInitialized || authLoading) && !forceReady) return;
 
         let cancelled = false;
         setPosts([]);
@@ -140,7 +149,7 @@ export default function CommunityPage() {
         fetchPosts(activeSubMenu, 0, true, () => cancelled);
 
         return () => { cancelled = true; };
-    }, [activeSubMenu, isInitialized, authLoading]);
+    }, [activeSubMenu, isInitialized, authLoading, forceReady]);
 
     const handleLoadMore = () => {
         const nextPage = page + 1;

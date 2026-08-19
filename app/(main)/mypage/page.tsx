@@ -238,6 +238,15 @@ export default function MyPage() {
         }
     };
 
+    const [forceReady, setForceReady] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setForceReady(true);
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
     useEffect(() => {
         if (isInitialized && children.length > 0 && !activeChild) {
             setActiveChild(children[0]);
@@ -245,15 +254,15 @@ export default function MyPage() {
     }, [isInitialized, children, activeChild]);
 
     useEffect(() => {
-        if (isInitialized && !user && !authLoading) {
+        if ((isInitialized || forceReady) && !user && !authLoading) {
             router.push('/?login=true');
         }
-    }, [isInitialized, user, authLoading, router]);
+    }, [isInitialized, forceReady, user, authLoading, router]);
 
     // Fallback automatic recovery timer to trigger profile refresh if it stays missing for too long
     useEffect(() => {
         let timer: NodeJS.Timeout;
-        if (isInitialized && user && !userProfile && !authLoading) {
+        if ((isInitialized || forceReady) && user && !userProfile && !authLoading) {
             timer = setTimeout(() => {
                 console.log("UserProfile missing after initialization, triggering fallback profile refresh.");
                 refreshProfile?.().catch(console.error);
@@ -262,7 +271,7 @@ export default function MyPage() {
         return () => {
             if (timer) clearTimeout(timer);
         };
-    }, [isInitialized, user, userProfile, authLoading, refreshProfile]);
+    }, [isInitialized, forceReady, user, userProfile, authLoading, refreshProfile]);
 
     // Removed local fetchChildren logic to avoid race conditions with AuthContext
 
@@ -465,7 +474,7 @@ export default function MyPage() {
 
 
             <div className="max-w-xl mx-auto px-6 py-8">
-                {!isInitialized || authLoading ? (
+                {(!isInitialized || authLoading) && !forceReady ? (
                     // Loading Skeleton
                     <div className="space-y-8 animate-pulse">
                         <div className="flex items-center gap-5 mb-10">

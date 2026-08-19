@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = "https://holaqlorkluptvrcfwtu.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvbGFxbG9ya2x1cHR2cmNmd3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIyMjQ2ODksImV4cCI6MjA3NzgwMDY4OX0.S2yKt3PJBtt4va9WvrjgqqytqcsJQS8s_Fo3N6H43Sk";
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://holaqlorkluptvrcfwtu.supabase.co";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+if (!supabaseAnonKey) {
+    console.error("Please set NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable.");
+    process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
@@ -35,7 +40,8 @@ async function test() {
 
     console.log("Testing direct data4library.kr API fetch (WITHOUT encoding)...");
     try {
-        const API_KEY = "c0bde3ba4483595bfd280c80c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+        const API_KEY = process.env.DATA4LIBRARY_API_KEY;
+        if (!API_KEY) throw new Error("DATA4LIBRARY_API_KEY is not set.");
         const fetchUrl1 = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150&region=11&dtl_region=11230`;
         const res1 = await fetch(fetchUrl1);
         const data1 = await res1.json();
@@ -46,7 +52,8 @@ async function test() {
 
     console.log("Testing direct data4library.kr API fetch (WITH encoding)...");
     try {
-        const API_KEY = "c0bde3ba4483595bfd280c80c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+        const API_KEY = process.env.DATA4LIBRARY_API_KEY;
+        if (!API_KEY) throw new Error("DATA4LIBRARY_API_KEY is not set.");
         const r = encodeURIComponent('11');
         const dr = encodeURIComponent('11230');
         const fetchUrl2 = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150&region=${r}&dtl_region=${dr}`;
@@ -57,7 +64,6 @@ async function test() {
             console.log("First lib:", JSON.stringify(data2?.response?.libs[0]));
         }
     } catch (e) {
-        console.error("Direct Fetch (WITH encoding) Exception:", e);
     }
 }
 
