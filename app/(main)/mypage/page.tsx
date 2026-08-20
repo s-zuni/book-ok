@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
-import { Child, MainMenu, ReadBook } from "@shared/types";
-import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building, Trash2, ShieldCheck, Lock } from "lucide-react";
+import { Child, MainMenu, ReadBook, BookScrap } from "@shared/types";
+import { User, Plus, X, BookOpen, Bookmark, BarChart2, ChevronRight, BookMarked, Star, AlertTriangle, Edit2, Check, MapPin, Building, Trash2, ShieldCheck, Lock, ExternalLink } from "lucide-react";
 import { REGIONS, SUB_REGIONS } from "@shared/lib/regions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -16,6 +16,8 @@ import MobileDrawer from "@shared/ui/MobileDrawer";
 import SkeletonLoader from "@shared/ui/SkeletonLoader";
 import ParentalGateModal from "@shared/ui/ParentalGateModal";
 import KoreanDatePicker from "@shared/ui/KoreanDatePicker";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
 
 
 export default function MyPage() {
@@ -64,13 +66,28 @@ export default function MyPage() {
     const [readBooks, setReadBooks] = useState<ReadBook[]>([]);
     const [showReadBooksModal, setShowReadBooksModal] = useState(false);
 
-    // Library registration state
+    // Scrapped books state
+    const [scrapBooks, setScrapBooks] = useState<BookScrap[]>([]);
+    const [isScrapLoading, setIsScrapLoading] = useState(false);
+    const [showScrapBooksModal, setShowScrapBooksModal] = useState(false);
+
+    // Library registration state & local optimistic state
     const [isAddingLibrary, setIsAddingLibrary] = useState(false);
+    const [favoriteLibs, setFavoriteLibs] = useState<Array<{ libCode: string; libName: string }>>([]);
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedSubRegion, setSelectedSubRegion] = useState("");
     const [foundLibraries, setFoundLibraries] = useState<Array<{ libCode: string; libName: string; address: string }>>([]);
     const [isSearchingLibraries, setIsSearchingLibraries] = useState(false);
     const [isSavingLibrary, setIsSavingLibrary] = useState(false);
+
+    // Sync favoriteLibs with userProfile
+    useEffect(() => {
+        if (userProfile?.favorite_libraries && Array.isArray(userProfile.favorite_libraries)) {
+            setFavoriteLibs(userProfile.favorite_libraries);
+        } else {
+            setFavoriteLibs([]);
+        }
+    }, [userProfile?.favorite_libraries]);
 
     // Parental Control State (Google Play Families Policy Compliance)
     const [isSocialEnabled, setIsSocialEnabled] = useState(true);
@@ -167,18 +184,16 @@ export default function MyPage() {
     }, [selectedRegion, selectedSubRegion]);
 
     const handleAddLibrary = async (lib: { libCode: string; libName: string }) => {
-        console.log("handleAddLibrary clicked:", lib);
-        toast.info("도서관 등록 중...");
-
         if (!user) {
-            console.error("handleAddLibrary failed: user is null");
             toast.error("로그인이 필요합니다.");
             return;
         }
 
-        const rawLibs = userProfile?.favorite_libraries;
-        const currentLibs = Array.isArray(rawLibs) ? rawLibs : [];
-        console.log("currentLibs:", currentLibs);
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
+
+        const currentLibs = favoriteLibs.length > 0 ? favoriteLibs : (Array.isArray(userProfile?.favorite_libraries) ? userProfile.favorite_libraries : []);
 
         if (currentLibs.length >= 3) {
             toast.error("자주가는 도서관은 최대 3곳까지만 등록할 수 있습니다.");
@@ -191,7 +206,8 @@ export default function MyPage() {
 
         setIsSavingLibrary(true);
         const updatedLibs = [...currentLibs, { libCode: String(lib.libCode), libName: lib.libName }];
-        console.log("Saving updated libs:", updatedLibs);
+        // Optimistic UI update
+        setFavoriteLibs(updatedLibs);
 
         try {
             const { error } = await supabase
@@ -211,6 +227,7 @@ export default function MyPage() {
             console.error("Supabase update error:", err);
             const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
             toast.error("도서관 등록 실패: " + errorMessage);
+            if (userProfile?.favorite_libraries) setFavoriteLibs(userProfile.favorite_libraries);
         } finally {
             setIsSavingLibrary(false);
         }
@@ -218,10 +235,17 @@ export default function MyPage() {
 
     const handleDeleteLibrary = async (libCode: string) => {
         if (!user) return;
-        const rawLibs = userProfile?.favorite_libraries;
-        const currentLibs = Array.isArray(rawLibs) ? rawLibs : [];
+
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
+
+        const currentLibs = favoriteLibs.length > 0 ? favoriteLibs : (Array.isArray(userProfile?.favorite_libraries) ? userProfile.favorite_libraries : []);
         const updatedLibs = currentLibs.filter(l => String(l.libCode) !== String(libCode));
         
+        // Optimistic UI update for instant response
+        setFavoriteLibs(updatedLibs);
+
         try {
             const { error } = await supabase
                 .from('profiles')
@@ -235,6 +259,47 @@ export default function MyPage() {
             console.error("Supabase delete error:", err);
             const errorMessage = err instanceof Error ? err.message : "알 수 없는 오류";
             toast.error("도서관 삭제 실패: " + errorMessage);
+            if (userProfile?.favorite_libraries) setFavoriteLibs(userProfile.favorite_libraries);
+        }
+    };
+
+    const fetchScrapBooks = async () => {
+        if (!user) return;
+        setIsScrapLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('book_scraps')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+            if (error) throw error;
+            setScrapBooks((data as BookScrap[]) || []);
+        } catch (err) {
+            console.error("Fetch scrap books error:", err);
+            toast.error("스크랩 도서 목록을 불러오지 못했습니다.");
+        } finally {
+            setIsScrapLoading(false);
+        }
+    };
+
+    const handleDeleteScrap = async (isbn: string) => {
+        if (!user) return;
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
+        setScrapBooks(prev => prev.filter(b => b.isbn !== isbn));
+        try {
+            const { error } = await supabase
+                .from('book_scraps')
+                .delete()
+                .eq('user_id', user.id)
+                .eq('isbn', isbn);
+            if (error) throw error;
+            toast.success("스크랩을 취소했습니다.");
+        } catch (err) {
+            console.error("Delete scrap error:", err);
+            toast.error("스크랩 취소 중 오류가 발생했습니다.");
+            fetchScrapBooks();
         }
     };
 
@@ -677,13 +742,13 @@ export default function MyPage() {
                                         <h3 className="text-lg font-bold">자주가는 도서관</h3>
                                     </div>
                                     <span className="text-xs text-gray-400 font-bold">
-                                        {userProfile?.favorite_libraries?.length || 0} / 3
+                                        {favoriteLibs.length} / 3
                                     </span>
                                 </div>
 
                                 {/* List of Favorite Libraries */}
                                 <div className="space-y-3 mb-4">
-                                    {(userProfile?.favorite_libraries || []).map(lib => (
+                                    {favoriteLibs.map(lib => (
                                         <div
                                             key={lib.libCode}
                                             className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-gray-100 transition-all"
@@ -694,19 +759,24 @@ export default function MyPage() {
                                                 </div>
                                                 <div className="text-left min-w-0">
                                                     <div className="font-bold text-sm text-gray-900 truncate">{lib.libName}</div>
-                                                    <div className="text-[10px] text-gray-400">코드: {lib.libCode}</div>
                                                 </div>
                                             </div>
                                             <button
-                                                onClick={() => handleDeleteLibrary(lib.libCode)}
-                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors shrink-0"
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    handleDeleteLibrary(lib.libCode);
+                                                }}
+                                                className="w-10 h-10 flex items-center justify-center p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded-xl transition-colors shrink-0 touch-manipulation cursor-pointer"
+                                                aria-label={`${lib.libName} 삭제`}
                                             >
-                                                <X size={16} />
+                                                <X size={18} />
                                             </button>
                                         </div>
                                     ))}
 
-                                    {(!userProfile?.favorite_libraries || userProfile?.favorite_libraries?.length === 0) && !isAddingLibrary && (
+                                    {favoriteLibs.length === 0 && !isAddingLibrary && (
                                         <p className="text-sm text-gray-400 text-center py-6 leading-relaxed">
                                             자주가는 도서관을 등록하고<br />도서 소장 및 대출 가능 여부를 확인해 보세요.
                                         </p>
@@ -715,8 +785,9 @@ export default function MyPage() {
 
                                 {/* Add Library Button / Form */}
                                 {!isAddingLibrary ? (
-                                    (userProfile?.favorite_libraries?.length || 0) < 3 && (
+                                    favoriteLibs.length < 3 && (
                                         <button
+                                            type="button"
                                             onClick={() => setIsAddingLibrary(true)}
                                             className="w-full py-3.5 text-center text-sm font-bold text-gray-400 hover:text-green-600 border border-dashed border-gray-200 rounded-xl hover:border-green-300 transition-all cursor-pointer"
                                         >
@@ -745,39 +816,40 @@ export default function MyPage() {
                                                     setSelectedSubRegion("");
                                                     setFoundLibraries([]);
                                                 }}
-                                                className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none bg-white focus:ring-2 focus:ring-green-500"
+                                                className="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:border-green-500 transition-all"
                                             >
                                                 <option value="">시/도 선택</option>
-                                                {REGIONS.map(r => (
-                                                    <option key={r.code} value={r.code}>{r.name}</option>
+                                                {REGIONS.map(reg => (
+                                                    <option key={reg.code} value={reg.code}>{reg.name}</option>
                                                 ))}
                                             </select>
 
-                                            {/* 구군 선택 */}
-                                            <select
-                                                value={selectedSubRegion}
-                                                onChange={e => setSelectedSubRegion(e.target.value)}
-                                                disabled={!selectedRegion}
-                                                className="w-full p-3 rounded-xl border border-gray-200 text-sm font-bold outline-none bg-white focus:ring-2 focus:ring-green-500 disabled:opacity-50"
-                                            >
-                                                <option value="">시/군/구 선택</option>
-                                                {selectedRegion && SUB_REGIONS[selectedRegion]?.map(sr => (
-                                                    <option key={sr.code} value={sr.code}>{sr.name}</option>
-                                                ))}
-                                            </select>
+                                            {/* 시군구 선택 */}
+                                            {selectedRegion && (
+                                                <select
+                                                    value={selectedSubRegion}
+                                                    onChange={e => setSelectedSubRegion(e.target.value)}
+                                                    className="w-full p-3 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 outline-none focus:border-green-500 transition-all animate-in fade-in"
+                                                >
+                                                    <option value="">시/군/구 선택</option>
+                                                    {SUB_REGIONS[selectedRegion]?.map(sub => (
+                                                        <option key={sub.code} value={sub.code}>{sub.name}</option>
+                                                    ))}
+                                                </select>
+                                            )}
 
-                                            {/* 검색 결과 도서관 목록 */}
+                                            {/* 검색 결과 리스트 */}
                                             {selectedSubRegion && (
                                                 <div className="mt-4 border-t border-gray-200/50 pt-3">
                                                     <p className="text-xs font-bold text-gray-400 mb-2">검색 결과</p>
                                                     {isSearchingLibraries ? (
                                                         <div className="flex justify-center py-6">
-                                            <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                                                            <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                                                         </div>
                                                     ) : foundLibraries.length > 0 ? (
                                                         <div className="max-h-48 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
                                                             {foundLibraries.map(lib => {
-                                                                const isAlreadyAdded = Array.isArray(userProfile?.favorite_libraries) && userProfile?.favorite_libraries?.some(l => String(l.libCode) === String(lib.libCode));
+                                                                const isAlreadyAdded = favoriteLibs.some(l => String(l.libCode) === String(lib.libCode));
                                                                 return (
                                                                     <div
                                                                         key={lib.libCode}
@@ -803,7 +875,7 @@ export default function MyPage() {
                                                             })}
                                                         </div>
                                                     ) : (
-                                                        <p className="text-xs text-gray-400 text-center py-6">해당 지역에 검색된 도서관이 없습니다.</p>
+                                                        <p className="text-xs text-gray-400 text-center py-4">해당 지역에 검색된 도서관이 없습니다.</p>
                                                     )}
                                                 </div>
                                             )}
@@ -893,7 +965,18 @@ export default function MyPage() {
                                 <ChevronRight size={20} className="text-gray-300" />
                             </button>
 
-                            <button className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between opacity-60 cursor-not-allowed relative">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (!user) {
+                                        toast.error("로그인이 필요합니다.");
+                                        return;
+                                    }
+                                    fetchScrapBooks();
+                                    setShowScrapBooksModal(true);
+                                }}
+                                className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors cursor-pointer"
+                            >
                                 <div className="flex items-center gap-4">
                                     <div className="w-10 h-10 bg-yellow-50 text-yellow-500 rounded-xl flex items-center justify-center"><Bookmark size={20} strokeWidth={2.5} /></div>
                                     <div className="text-left">
@@ -901,7 +984,7 @@ export default function MyPage() {
                                         <p className="text-xs text-gray-400 mt-0.5">나중에 읽으려고 저장한 책</p>
                                     </div>
                                 </div>
-                                <span className="px-2.5 py-1 bg-gray-100 text-gray-400 text-[10px] font-bold rounded-full">준비 중</span>
+                                <ChevronRight size={20} className="text-gray-300" />
                             </button>
 
                             <button onClick={() => router.push('/solution')} className="w-full bg-white rounded-4xl p-6 shadow-sm border border-gray-100 flex items-center justify-between hover:bg-gray-50 transition-colors">
@@ -1184,6 +1267,98 @@ export default function MyPage() {
                                     저장 완료
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Scrapped Books Modal */}
+            {showScrapBooksModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] p-6 max-w-lg w-full shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-[85vh] flex flex-col">
+                        <div className="flex justify-between items-center pb-4 border-b border-gray-100 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-yellow-50 text-yellow-500 flex items-center justify-center">
+                                    <Bookmark size={20} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-black text-gray-900">스크랩한 책</h3>
+                                    <p className="text-xs text-gray-400 font-medium">총 {scrapBooks.length}권의 책이 저장되어 있습니다.</p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setShowScrapBooksModal(false)}
+                                className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto py-4 space-y-3 pr-1 custom-scrollbar">
+                            {isScrapLoading ? (
+                                <div className="flex flex-col gap-3">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="h-20 bg-gray-50 rounded-2xl animate-pulse" />
+                                    ))}
+                                </div>
+                            ) : scrapBooks.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <Bookmark size={36} className="text-gray-300 mx-auto mb-3" />
+                                    <p className="text-sm font-bold text-gray-500">아직 스크랩한 책이 없습니다.</p>
+                                    <p className="text-xs text-gray-400 mt-1">도서 상세 페이지에서 마음에 드는 책을 찜해보세요!</p>
+                                </div>
+                            ) : (
+                                scrapBooks.map(book => (
+                                    <div
+                                        key={book.id}
+                                        onClick={() => router.push(`/book/?id=${book.isbn}`)}
+                                        className="flex items-center justify-between p-3.5 rounded-2xl bg-gray-50 hover:bg-gray-100/80 border border-gray-100 transition-all cursor-pointer group"
+                                    >
+                                        <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                                            <div className="w-12 h-16 rounded-xl bg-gray-200 overflow-hidden shrink-0 shadow-xs">
+                                                {book.imgsrc ? (
+                                                    <img src={book.imgsrc} alt={book.title} className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                        <BookOpen size={16} />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                {book.category && (
+                                                    <span className="text-[10px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded-md mb-1 inline-block">
+                                                        {book.category}
+                                                    </span>
+                                                )}
+                                                <h4 className="font-bold text-sm text-gray-900 truncate group-hover:text-green-700 transition-colors">{book.title}</h4>
+                                                <p className="text-xs text-gray-400 truncate mt-0.5">{book.author || '저자 미상'}</p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteScrap(book.isbn);
+                                            }}
+                                            className="w-9 h-9 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 active:bg-red-100 rounded-xl transition-colors shrink-0 ml-2"
+                                            title="스크랩 취소"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowScrapBooksModal(false)}
+                                className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-sm transition-colors"
+                            >
+                                닫기
+                            </button>
                         </div>
                     </div>
                 </div>

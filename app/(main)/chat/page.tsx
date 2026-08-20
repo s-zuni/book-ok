@@ -247,19 +247,21 @@ export default function ChatPage() {
 
             const data = await response.json();
             const botMessage = data.result;
-            let content = botMessage.content;
+            let content = botMessage.content || "";
             
-            const loadedBooks: Book[] = [];
-            const match = content.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
-            if (match) {
-                const titles = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
-                content = content.replace(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/, '').trim();
-                
-                // Fetch each book's Aladin details
-                for (const title of titles) {
-                    const book = await fetchAladinBook(title);
-                    if (book) loadedBooks.push(book);
+            let loadedBooks: Book[] = (botMessage.books || data.books || []) as Book[];
+            
+            // Clean up recommendation tag from displayed content
+            if (content.includes('[RECOMMENDED_BOOKS:')) {
+                const match = content.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
+                if (match && loadedBooks.length === 0) {
+                    const identifiers = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
+                    for (const id of identifiers) {
+                        const book = await fetchAladinBook(id);
+                        if (book) loadedBooks.push(book);
+                    }
                 }
+                content = content.replace(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/g, '').trim();
             }
 
             setMessages(prev => [...prev, { 

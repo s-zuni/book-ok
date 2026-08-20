@@ -116,19 +116,19 @@ export function MobileBottomNavContent() {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
-            <nav className="bg-white border-t border-gray-100/80 shadow-[0_-8px_30px_rgba(0,0,0,0.03)] px-4 pt-2.5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+            <nav className="bg-white border-t border-gray-100/80 shadow-[0_-8px_30px_rgba(0,0,0,0.03)] px-3 pt-1.5 pb-[calc(4px+env(safe-area-inset-bottom,0px))]">
                 <div className="flex justify-between items-center max-w-sm mx-auto">
                     {navItems.map((item) => (
                         item.isSpecial ? (
                             <button
                                 key={item.label}
                                 onClick={item.action}
-                                className="relative flex flex-col items-center justify-center -mt-10 group"
+                                className="relative flex flex-col items-center justify-center -mt-7 group"
                             >
-                                <div className="bg-[#01C54F] p-3.5 rounded-full shadow-[0_8px_24px_rgba(1,197,79,0.3)] border-4 border-white ring-2 ring-[#01C54F] transform group-active:scale-95 transition-transform duration-200">
+                                <div className="bg-[#01C54F] p-3 rounded-full shadow-[0_6px_20px_rgba(1,197,79,0.3)] border-[3px] border-white ring-2 ring-[#01C54F] transform group-active:scale-95 transition-transform duration-200">
                                     <item.icon />
                                 </div>
-                                <span className="text-[10px] font-black text-[#01C54F] mt-1.5 tracking-tighter uppercase">{item.label}</span>
+                                <span className="text-[10px] font-black text-[#01C54F] mt-1 tracking-tighter uppercase">{item.label}</span>
                             </button>
                         ) : (
                             <button
@@ -143,11 +143,11 @@ export function MobileBottomNavContent() {
                                         router.push(item.path!);
                                     }
                                 }}
-                                className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 group transition-all duration-300 ${
+                                className={`flex flex-col items-center justify-center flex-1 py-0.5 gap-0.5 group transition-all duration-300 ${
                                     item.isActive ? "text-[#1A1A1A]" : "text-[#999999]"
                                 }`}
                             >
-                                <div className="p-1 transition-all duration-300">
+                                <div className="p-0.5 transition-all duration-300">
                                     <item.icon active={!!item.isActive} />
                                 </div>
                                 <span className={`text-[10px] tracking-tight transition-all duration-300 ${

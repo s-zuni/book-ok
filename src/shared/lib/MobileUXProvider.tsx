@@ -6,15 +6,77 @@ import { App as CapacitorApp } from "@capacitor/app";
 import { Network } from "@capacitor/network";
 import { toast } from "sonner";
 import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 
 export default function MobileUXProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const exitToastId = useRef<string | number | null>(null);
   const lastBackPressTime = useRef<number>(0);
+  const isNavigating = useRef(false);
 
+  // 1. iOS Native Edge-Swipe Back Gesture Handler
   useEffect(() => {
-    // 웹 환경이면 실행하지 않음
+    if (typeof window === "undefined") return;
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isEdgeSwipe = false;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      // Detect touch start at the left edge (within 35px)
+      if (touch.clientX <= 35) {
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        isEdgeSwipe = true;
+      } else {
+        isEdgeSwipe = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isEdgeSwipe || isNavigating.current || e.touches.length !== 1) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = Math.abs(touch.clientY - touchStartY);
+
+      // Horizontal swipe right with minimal vertical movement
+      if (deltaX > 75 && deltaY < 45) {
+        isEdgeSwipe = false;
+        if (pathname !== "/") {
+          isNavigating.current = true;
+          if (Capacitor.isNativePlatform()) {
+            Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+          }
+          router.back();
+          setTimeout(() => {
+            isNavigating.current = false;
+          }, 500);
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      isEdgeSwipe = false;
+    };
+
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+    window.addEventListener("touchend", handleTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", handleTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchend", handleTouchEnd);
+      window.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, [pathname, router]);
+
+  // 2. Native Platform Features (Android Back Button, Network Status, etc.)
+  useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const platform = Capacitor.getPlatform();
@@ -23,11 +85,10 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
     if (platform === 'ios') {
       document.documentElement.style.setProperty('-webkit-overflow-scrolling', 'touch');
       document.body.style.setProperty('-webkit-overflow-scrolling', 'touch');
-      // Ensure overscroll behavior allows native gestures
       document.body.style.overscrollBehaviorX = 'auto';
     }
 
-    // 1. 안드로이드 백 버튼 핸들러
+    // 안드로이드 백 버튼 핸들러
     const backButtonListener = CapacitorApp.addListener("backButton", ({ canGoBack }) => {
       const currentTime = new Date().getTime();
 
@@ -49,12 +110,12 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
       }
     });
 
-    // 2. 오프라인 네트워크 감지 핸들러
+    // 오프라인 네트워크 감지 핸들러
     const networkListener = Network.addListener("networkStatusChange", (status) => {
       if (!status.connected) {
         toast.error("네트워크 연결이 끊겼습니다.", {
           description: "인터넷 연결 상태를 확인해주세요.",
-          duration: Infinity, // 다시 연결될 때까지 유지하거나 수동으로 닫을 수 있게 설정 가능
+          duration: Infinity,
           id: "offline-toast"
         });
       } else {
@@ -65,17 +126,7 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
       }
     });
 
-    // 3. iOS: popstate listener to sync Next.js router with WebView back/forward navigation
-    const handlePopState = () => {
-      // When iOS swipe-back fires, the WebView history changes but Next.js router
-      // may not be aware. This ensures the router state stays synchronized.
-      router.refresh();
-    };
-    if (platform === 'ios') {
-      window.addEventListener('popstate', handlePopState);
-    }
-
-    // 초기 네트워크 상태 체크 (앱 켤 때 이미 오프라인인 경우)
+    // 초기 네트워크 상태 체크
     const checkInitialNetwork = async () => {
       const status = await Network.getStatus();
       if (!status.connected) {
@@ -91,9 +142,6 @@ export default function MobileUXProvider({ children }: { children: React.ReactNo
     return () => {
       backButtonListener.then((listener) => listener.remove());
       networkListener.then((listener) => listener.remove());
-      if (platform === 'ios') {
-        window.removeEventListener('popstate', handlePopState);
-      }
     };
   }, [pathname, router]);
 

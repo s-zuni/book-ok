@@ -116,6 +116,18 @@ export interface Popup {
     created_at: string;
 }
 
+export interface BookScrap {
+    id: string;
+    user_id: string;
+    book_id?: number | null;
+    isbn: string;
+    title: string;
+    author?: string;
+    imgsrc?: string;
+    category?: string;
+    created_at: string;
+}
+
 export interface Report {
     id: string;
     user_id: string;
@@ -133,4 +145,5 @@ export interface Report {
         email: string;
     };
 }
+
 

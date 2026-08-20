@@ -14,6 +14,8 @@ import LibraryDetailModal, { LibraryStatusDetail } from "@features/books/Library
 import { toast } from "sonner";
 import { apiUrl, safeFetch } from "@shared/lib/api";
 import { getOptimizedImageUrl } from "@shared/lib/image-utils";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { Capacitor } from "@capacitor/core";
 
 export default function BookDetailContent() {
     const params = useParams();
@@ -171,20 +173,67 @@ export default function BookDetailContent() {
         if (!user || !book) return;
 
         const checkInteractions = async () => {
-            // Check Read Status (Any child read this book?)
-            const { data } = await supabase.from('read_books')
-                .select('id')
-                .eq('book_id', book.id)
-                .eq('user_id', user.id)
-                .limit(1);
+            const isbn = String(book.bookid || book.id || bookId);
 
-            if (data && data.length > 0) {
-                setIsRead(true);
+            // 1. Check Scrap Status
+            try {
+                const { data: scrapData } = await supabase
+                    .from('book_scraps')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('isbn', isbn)
+                    .maybeSingle();
+
+                if (scrapData) {
+                    setIsScrapped(true);
+                } else {
+                    setIsScrapped(false);
+                }
+            } catch (scrapErr) {
+                console.warn("Error checking scrap status:", scrapErr);
+            }
+
+            // 2. Check Read Status
+            try {
+                // Check if book exists in DB to get its integer id
+                const { data: existingBook } = await supabase
+                    .from('books')
+                    .select('id')
+                    .eq('bookid', isbn)
+                    .maybeSingle();
+
+                if (existingBook) {
+                    const { data: readData } = await supabase
+                        .from('read_books')
+                        .select('id')
+                        .eq('book_id', existingBook.id)
+                        .eq('user_id', user.id)
+                        .limit(1);
+
+                    if (readData && readData.length > 0) {
+                        setIsRead(true);
+                        return;
+                    }
+                }
+
+                // Fallback check by observation_data isbn
+                const { data: readByMeta } = await supabase
+                    .from('read_books')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .contains('observation_data', { book_isbn: isbn })
+                    .limit(1);
+
+                if (readByMeta && readByMeta.length > 0) {
+                    setIsRead(true);
+                }
+            } catch (readErr) {
+                console.warn("Error checking read status:", readErr);
             }
         };
 
         checkInteractions();
-    }, [user, book]);
+    }, [user, book, bookId]);
 
     // Fetch holding status for favorite libraries
     useEffect(() => {
@@ -282,71 +331,141 @@ export default function BookDetailContent() {
         if (data) setReviews(data as unknown as Review[]);
     };
 
-    // Helper to ensure book exists in DB before linking actions
-    const ensureBookInDB = async () => {
-        if (isApiBook && book) {
-            // First check if book already exists by bookid (ISBN)
-            const bookIsbn = book.bookid || book.id;
-            const { data: existingBook } = await supabase.from('books')
-                .select('id').eq('bookid', String(bookIsbn)).maybeSingle();
-            
-            if (existingBook) {
-                // Book already exists, no need to insert
-                setIsApiBook(false);
-                return true;
-            }
+    // Helper to ensure book exists in DB and return the integer ID
+    const ensureBookInDB = async (): Promise<number | null> => {
+        if (!book) return null;
+        const bookIsbn = String(book.bookid || book.id || bookId);
 
-            // Insert new book — only include columns that exist in the DB schema
-            const { error: insertError } = await supabase.from('books').insert({
-                bookid: String(bookIsbn),
-                title: book.title,
-                author: book.author,
-                imgsrc: book.imgsrc,
-                category: book.category,
-                description: book.description,
-                pubDate: book.pubDate || null,
-                publisher: book.publisher || null,
-            });
+        // 1. Check if already exists in books table by bookid (ISBN)
+        const { data: existingBook } = await supabase
+            .from('books')
+            .select('id')
+            .eq('bookid', bookIsbn)
+            .maybeSingle();
 
-            if (insertError) {
-                toast.error("도서 저장 실패: " + insertError.message);
-                return false;
-            }
-            setIsApiBook(false);
-            return true;
+        if (existingBook) {
+            return Number(existingBook.id);
         }
-        return true; // Already in DB
+
+        // 2. If bookId is a number, check by id
+        if (/^\d+$/.test(bookIsbn)) {
+            const { data: existingById } = await supabase
+                .from('books')
+                .select('id')
+                .eq('id', Number(bookIsbn))
+                .maybeSingle();
+            if (existingById) return Number(existingById.id);
+        }
+
+        // 3. Insert new book into books table
+        const { data: newBook, error: insertError } = await supabase.from('books').insert({
+            bookid: bookIsbn,
+            title: book.title,
+            author: book.author || '저자 미상',
+            imgsrc: book.imgsrc || '',
+            category: book.category || '기타',
+            description: book.description || '',
+            pubDate: book.pubDate || null,
+            publisher: book.publisher || null,
+        }).select('id').maybeSingle();
+
+        if (insertError) {
+            console.warn("Failed to insert book to DB:", insertError);
+            return null;
+        }
+
+        return newBook ? Number(newBook.id) : null;
     };
 
     const handleScrap = async () => {
         if (!user) return openLoginModal();
-        await ensureBookInDB();
-        setIsScrapped(!isScrapped);
-        // Implement actual scrap logic if needed
-        toast.success(isScrapped ? "스크랩을 취소했습니다." : "책을 스크랩했습니다!");
+        if (!book) return;
+
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
+
+        const isbn = String(book.bookid || book.id || bookId);
+        const nextScrap = !isScrapped;
+        setIsScrapped(nextScrap);
+
+        try {
+            if (nextScrap) {
+                const dbBookId = await ensureBookInDB();
+                const { error } = await supabase.from('book_scraps').upsert({
+                    user_id: user.id,
+                    book_id: dbBookId,
+                    isbn: isbn,
+                    title: book.title,
+                    author: book.author || '',
+                    imgsrc: book.imgsrc || '',
+                    category: book.category || '기타'
+                }, { onConflict: 'user_id,isbn' });
+
+                if (error) throw error;
+                toast.success("책을 찜 목록에 저장했습니다!");
+            } else {
+                const { error } = await supabase
+                    .from('book_scraps')
+                    .delete()
+                    .eq('user_id', user.id)
+                    .eq('isbn', isbn);
+
+                if (error) throw error;
+                toast.success("찜하기를 취소했습니다.");
+            }
+        } catch (err) {
+            console.error("Scrap error:", err);
+            setIsScrapped(!nextScrap);
+            toast.error("찜하기 처리에 실패했습니다.");
+        }
     };
 
     const handleMarkRead = async () => {
         if (!user) return openLoginModal();
-        if (userChildren.length === 0) return toast.error("먼저 자녀 프로필을 등록해주세요.");
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
+        if (userChildren.length === 0) {
+            toast.error("먼저 자녀 프로필을 등록해주세요.", {
+                action: {
+                    label: "마이페이지 이동",
+                    onClick: () => router.push('/mypage')
+                }
+            });
+            return;
+        }
 
         await ensureBookInDB();
         setShowChildModal(true);
     };
 
     const handleChildSelect = async (childId: string, recordData?: { rating?: number; difficulty_rating?: '쉬움' | '적당' | '어려움'; reading_time_minutes?: number; observations?: Record<string, string> }) => {
-        if (!book) return;
+        if (!book || !user) return;
+
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Medium });
+        }
 
         try {
+            const dbBookId = await ensureBookInDB();
+            const bookIsbn = String(book.bookid || book.id || bookId);
+
             const { error } = await supabase.from('read_books').insert({
-                user_id: user?.id,
-                child_id: childId,
-                book_id: book.id,
+                user_id: user.id,
+                child_id: Number(childId),
+                book_id: dbBookId,
                 read_date: new Date().toISOString(),
                 rating: recordData?.rating || null,
                 difficulty_rating: recordData?.difficulty_rating || null,
                 reading_time_minutes: recordData?.reading_time_minutes || null,
-                observation_data: recordData?.observations || null
+                observation_data: {
+                    ...(recordData?.observations || {}),
+                    book_title: book.title,
+                    book_author: book.author,
+                    book_isbn: bookIsbn,
+                    book_cover: book.imgsrc
+                }
             });
 
             if (error) throw error;
