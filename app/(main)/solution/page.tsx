@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@shared/ui/Header";
 import { apiUrl, safeFetch } from "@shared/lib/api";
@@ -13,6 +13,7 @@ import OptimizedImage from "@shared/ui/OptimizedImage";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { Capacitor, PluginListenerHandle } from "@capacitor/core";
 import { Keyboard } from "@capacitor/keyboard";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { marked } from "marked";
 import { toast } from "sonner";
 
@@ -62,10 +63,12 @@ export function SolutionPageContent() {
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
 
-    // Mobile specific states
+    // Mobile specific states & refs
     const [mobileTab, setMobileTab] = useState<'analysis' | 'solution'>('analysis');
     const [isKeyboardActive, setIsKeyboardActive] = useState(false);
     const [viewportHeight, setViewportHeight] = useState("100dvh");
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (typeof window === "undefined") return;
@@ -122,6 +125,13 @@ export function SolutionPageContent() {
     const [mobileSolutionHistory, setMobileSolutionHistory] = useState<{ role: 'user' | 'assistant', content: string, books?: RecommendedBook[] }[]>([]);
     const [mobileInput, setMobileInput] = useState('');
     const [mobileLoading, setMobileLoading] = useState(false);
+
+    // Auto-scroll chat history on new message
+    useEffect(() => {
+        if (mobileTab === 'solution') {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }
+    }, [mobileSolutionHistory, mobileLoading, mobileTab]);
 
     // States for Reading Analysis
     const [userReadBooks, setUserReadBooks] = useState<BookWithObservation[]>([]);
@@ -225,8 +235,28 @@ export function SolutionPageContent() {
     // Load custom recommended books on demand
     const loadAnalysisBooks = async (categoryId: string = "1108", query: string = "추천도서") => {
         try {
+            const age = activeChild?.age || 0;
+            const childType = activeChild?.type || "";
+            
+            // Age-based category and search refinement
+            let effectiveCategoryId = categoryId;
+            if (categoryId === "1108" && (age < 7 || childType === '유아')) {
+                effectiveCategoryId = "13789"; // 유아 카테고리
+            }
+            
+            let effectiveQuery = query;
+            if (query === "추천도서" || query === "베스트셀러") {
+                if (age < 7 || childType === '유아') {
+                    effectiveQuery = "유아 그림책";
+                } else if (age <= 10 || childType === '초등저학년') {
+                    effectiveQuery = "초등 저학년 추천도서";
+                } else {
+                    effectiveQuery = "초등 고학년 추천도서";
+                }
+            }
+
             const response = await safeFetch(
-                `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(query)}&categoryId=${categoryId}&sort=SalesPoint&apiType=ItemSearch`,
+                `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(effectiveQuery)}&categoryId=${effectiveCategoryId}&sort=SalesPoint&apiType=ItemSearch`,
                 {
                     method: 'GET',
                     headers: {
@@ -240,8 +270,8 @@ export function SolutionPageContent() {
                 const data = await response.json();
                 const items = data.item?.slice(0, 5) || [];
                 const parsed = items.map((item: AladinRecommendItem) => ({
-                    id: item.itemId,
-                    bookid: item.itemId,
+                    id: item.itemId || item.isbn13,
+                    bookid: item.itemId || item.isbn13,
                     title: item.title.split(" - ")[0],
                     author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
                     publisher: item.publisher,
@@ -259,6 +289,10 @@ export function SolutionPageContent() {
     const handleMobileSolutionSubmit = async () => {
         if (!mobileInput.trim() || mobileLoading) return;
         
+        if (Capacitor.isNativePlatform()) {
+            await Haptics.impact({ style: ImpactStyle.Light });
+        }
+
         const userText = mobileInput;
         setMobileSolutionHistory(prev => [...prev, { role: 'user', content: userText }]);
         setMobileInput('');
@@ -287,12 +321,11 @@ export function SolutionPageContent() {
             2. 고민을 해결할 수 있는 **구체적인 실천 전략 3가지**를 제안하되, 글머리 기호(-)로 작성하세요.
             3. 답변에는 실제 아이의 이름인 **'${childName}'**을 언급하여 부모님의 고민에 직접 응답한다는 인상을 주세요.
             4. 자녀의 최근 독서 성향(선호 장르나 최근 읽은 책)을 언급하며 솔루션과 연계해 조언해주세요.
-            5. 핵심 행동 팁이나 키워드는 **굵게** 표시하세요. 단, 마크다운(**) 기호를 제외한 일반 글귀 형태로 표시해도 무방하며 줄바꿈(\n)을 활용하세요.
+            5. 핵심 행동 팁이나 키워드는 **굵게** 표시하세요.
             6. **[중요] 추천도서 태깅**:
                - 만약 답변 도중 추천하고 싶은 구체적인 아동 도서가 있다면, 답변 맨 마지막 줄에 반드시 \`[RECOMMENDED_BOOKS: 책제목1, 책제목2, ...]\` 형태로 추천한 도서들의 정확한 제목을 쉼표로 구분하여 기재해주세요.
                - 단, 가상의 책 제목이 아닌 실제 출판된 아동 도서의 정확한 제목이어야 합니다.
-               - 예: ... 따라서 "무지개 물고기"와 "언제나 사랑해"를 읽어보시길 권합니다.
-                 [RECOMMENDED_BOOKS: 무지개 물고기, 언제나 사랑해]
+               - 예: [RECOMMENDED_BOOKS: 무지개 물고기, 언제나 사랑해]
             `;
 
             const response = await safeFetch(`${supabaseUrl}/functions/v1/chat`, {
@@ -311,54 +344,79 @@ export function SolutionPageContent() {
 
             const data = await response.json();
 
-            let resultText = data.result || "죄송해요, 솔루션을 생성할 수 없습니다.";
+            let resultText = "";
+            let loadedBooks: RecommendedBook[] = [];
+
+            if (data && data.result) {
+                if (typeof data.result === 'string') {
+                    resultText = data.result;
+                } else if (data.result.content) {
+                    resultText = data.result.content;
+                } else {
+                    resultText = JSON.stringify(data.result);
+                }
+                if (Array.isArray(data.result.books) && data.result.books.length > 0) {
+                    loadedBooks = data.result.books;
+                }
+            }
+            if (Array.isArray(data.books) && data.books.length > 0 && loadedBooks.length === 0) {
+                loadedBooks = data.books;
+            }
+
+            if (!resultText) {
+                resultText = "죄송해요, 솔루션을 생성할 수 없습니다.";
+            }
 
             // Parse RECOMMENDED_BOOKS tags
-            const loadedBooks: RecommendedBook[] = [];
-            const match = resultText.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
-            if (match) {
-                const titles = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
-                // Strip the tagging markup from visible text
-                resultText = resultText.replace(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/, '').trim();
-                
-                // Fetch each recommended book's Aladin details
-                for (const title of titles) {
-                    const book = await fetchAladinBook(title);
-                    if (book) loadedBooks.push(book);
+            if (resultText.includes('[RECOMMENDED_BOOKS:')) {
+                const match = resultText.match(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/);
+                if (match) {
+                    const titles = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
+                    resultText = resultText.replace(/\[RECOMMENDED_BOOKS:\s*(.*?)\]/g, '').trim();
+                    
+                    if (loadedBooks.length === 0) {
+                        for (const title of titles) {
+                            const book = await fetchAladinBook(title);
+                            if (book) loadedBooks.push(book);
+                        }
+                    }
                 }
-            } else {
+            } else if (loadedBooks.length === 0) {
                 // Fallback: Extract recommendation keywords to search matching books
                 const matchKeywords = resultText.match(/\*\*([^*]+)\*\*/g) || [];
                 let keywordToSearch = preferredGenreLabel !== "미정" ? preferredGenreLabel : "그림책";
-                if (matchKeywords.length > 0) {
+                if (matchKeywords.length > 0 && matchKeywords[0]) {
                     keywordToSearch = matchKeywords[0].replace(/\*\*/g, '').substring(0, 10);
                 }
 
-                // Fetch matching recommendation books from Aladin
-                const searchResponse = await safeFetch(
-                    `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`,
-                    {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'apikey': supabaseAnonKey,
-                            'Authorization': `Bearer ${supabaseAnonKey}`
+                try {
+                    const searchResponse = await safeFetch(
+                        `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(keywordToSearch)}&apiType=ItemSearch&sort=SalesPoint`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'apikey': supabaseAnonKey,
+                                'Authorization': `Bearer ${supabaseAnonKey}`
+                            }
+                        }
+                    );
+                    if (searchResponse.ok) {
+                        const searchData = await searchResponse.json();
+                        const items = searchData.item?.slice(0, 3) || [];
+                        for (const item of items) {
+                            loadedBooks.push({
+                                title: item.title.split(" - ")[0],
+                                author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
+                                publisher: item.publisher,
+                                rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
+                                reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
+                                coverUrl: item.cover
+                            });
                         }
                     }
-                );
-                if (searchResponse.ok) {
-                    const searchData = await searchResponse.json();
-                    const items = searchData.item?.slice(0, 3) || [];
-                    for (const item of items) {
-                        loadedBooks.push({
-                            title: item.title.split(" - ")[0],
-                            author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                            publisher: item.publisher,
-                            rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
-                            reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
-                            coverUrl: item.cover
-                        });
-                    }
+                } catch (searchErr) {
+                    console.warn("Fallback book search error:", searchErr);
                 }
             }
 
@@ -370,7 +428,7 @@ export function SolutionPageContent() {
 
         } catch (error) {
             console.error(error);
-            setMobileSolutionHistory(prev => [...prev, { role: 'assistant', content: "죄송해요, 솔루션을 생성하는 중에 오류가 발생했습니다." }]);
+            setMobileSolutionHistory(prev => [...prev, { role: 'assistant', content: "죄송해요, 솔루션을 생성하는 중에 오류가 발생했습니다. 다시 시도해 주세요." }]);
         } finally {
             setMobileLoading(false);
         }
@@ -384,18 +442,39 @@ export function SolutionPageContent() {
 
     // Fetch AI Coach recommendation category based on actual books
     const fetchAICoachRecommendation = async (books: BookWithObservation[]) => {
+        const age = activeChild?.age || 0;
+        const childType = activeChild?.type || "";
+
+        // Age-specific curated recommendation pools for dynamic fallback
+        const toddlerPool = [
+            { cat: "그림책", ment: "다채로운 색감과 따뜻한 이야기가 담긴 그림책으로 상상력을 키워주세요!" },
+            { cat: "과학/자연", ment: "주변 동식물과 자연 현상에 대한 호기심을 자극하는 자연관찰 책을 추천해요!" },
+            { cat: "철학 · 인성", ment: "마음을 표현하고 친구와 사이좋게 지내는 따뜻한 생활동화를 읽어보세요!" },
+            { cat: "예술/음악", ment: "리듬감 있는 말놀이와 음악·미술 감각을 깨우는 책을 함께 읽어보세요!" }
+        ];
+
+        const lowerElemPool = [
+            { cat: "과학/자연", ment: "원리를 스스로 탐구하고 발견하는 재미를 느낄 수 있는 과학책을 추천해요!" },
+            { cat: "창작 · 문학", ment: "스스로 긴 줄글을 읽는 성취감을 느낄 수 있는 저학년 창작동화를 시도해보세요!" },
+            { cat: "역사/인물", ment: "멋진 인물들의 이야기와 역사의 흥미로운 장면을 들려주세요!" },
+            { cat: "수학 · 논리", ment: "재미있는 이야기 속에 수학적 사고력이 쏙쏙 녹아있는 책을 추천해요!" }
+        ];
+
+        const upperElemPool = [
+            { cat: "역사/인물", ment: "한국사와 세계사의 큰 흐름을 이해하고 통찰력을 기를 수 있는 인물책을 추천해요!" },
+            { cat: "과학/자연", ment: "교과와 연계된 흥미진진한 과학 탐구 도서로 깊이 있는 지식을 넓혀주세요!" },
+            { cat: "철학 · 인성", ment: "스스로 생각하는 힘과 올바른 가치관을 길러주는 어린이 인문철학 도서를 추천해요!" },
+            { cat: "수학 · 논리", ment: "논리적 사고와 문제 해결력을 키워주는 스토리텔링 수학 도서를 추천해요!" }
+        ];
+
+        const pool = (age < 7 || childType === '유아') ? toddlerPool : (age <= 10 || childType === '초등저학년') ? lowerElemPool : upperElemPool;
+
         if (!books || books.length === 0) {
-            // Default based on age if no books
-            const age = activeChild?.age || 0;
-            if (age < 5) {
-                setAiCoachCategory("그림책");
-                setAiCoachMent("다채로운 색감과 따뜻한 이야기가 담긴 그림책 위주로 읽혀주세요!");
-            } else if (age < 9) {
-                setAiCoachCategory("과학/자연");
-                setAiCoachMent("세상에 대한 호기심을 유발하는 자연 관찰 및 과학책을 추천해 드려요!");
-            } else {
-                setAiCoachCategory("역사/인물");
-                setAiCoachMent("다양한 인물의 삶과 지혜가 녹아있는 역사 인물 도서를 늘려주세요!");
+            const randomIndex = Math.floor(Math.random() * pool.length);
+            const randomItem = pool[randomIndex] || pool[0];
+            if (randomItem) {
+                setAiCoachCategory(randomItem.cat);
+                setAiCoachMent(randomItem.ment);
             }
             return;
         }
@@ -403,13 +482,13 @@ export function SolutionPageContent() {
         try {
             const bookInfoText = books.slice(0, 5).map(b => `- ${b.title} (${b.category || '미분류'})`).join('\n');
             const prompt = `
-            자녀(${childName})가 최근에 읽은 다음 책 목록을 분석하여, 이 아이에게 딱 맞게 독서 편식을 방지하거나 흥미를 넓혀줄 수 있는 추천 '단 하나의 핵심 카테고리 분야'와 부모에게 격려를 보내는 코칭 메시지를 아래 JSON 포맷으로 작성해주세요.
+            자녀(${childName}, 만 ${age}세)가 최근에 읽은 다음 책 목록을 분석하여, 이 아이에게 딱 맞게 독서 편식을 방지하거나 흥미를 넓혀줄 수 있는 추천 '단 하나의 핵심 카테고리 분야'와 부모에게 격려를 보내는 코칭 메시지를 아래 JSON 포맷으로 작성해주세요.
             
             [최근 읽은 책 목록]
             ${bookInfoText}
 
             [선택할 수 있는 추천 카테고리 후보]
-            - '그림책', '과학/자연', '역사/인물', '철학 · 인성', '예술/음악', '수학 · 논리' 중 정확히 한 개만 선택해야 합니다.
+            - '그림책', '과학/자연', '역사/인물', '철학 · 인성', '예술/음악', '수학 · 논리', '창작 · 문학' 중 정확히 한 개만 선택해야 합니다.
 
             응답은 반드시 마크다운 코드 블록 없이 순수 JSON만 반환해야 합니다:
             {
@@ -427,25 +506,31 @@ export function SolutionPageContent() {
                 body: JSON.stringify({ prompt, mode: 'expert' })
             });
 
-            if (!response.ok) {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || `HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data && data.result && data.result.content) {
-                const cleanJson = data.result.content.replace(/```json/g, '').replace(/```/g, '').trim();
-                const recommendation = JSON.parse(cleanJson);
-                if (recommendation.recommendedCategory) {
-                    setAiCoachCategory(recommendation.recommendedCategory);
-                }
-                if (recommendation.coachingMent) {
-                    setAiCoachMent(recommendation.coachingMent);
+            if (response.ok) {
+                const data = await response.json();
+                const rawContent = data.result?.content || (typeof data.result === 'string' ? data.result : '');
+                if (rawContent) {
+                    const cleanJson = rawContent.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const recommendation = JSON.parse(cleanJson);
+                    if (recommendation.recommendedCategory) {
+                        setAiCoachCategory(recommendation.recommendedCategory);
+                    }
+                    if (recommendation.coachingMent) {
+                        setAiCoachMent(recommendation.coachingMent);
+                    }
+                    return;
                 }
             }
         } catch (e) {
-            console.error("Failed to fetch AI coach suggestions", e);
+            console.warn("Failed to fetch AI coach suggestions, using dynamic pool fallback", e);
+        }
+
+        // Fallback
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        const randomItem = pool[randomIndex] || pool[0];
+        if (randomItem) {
+            setAiCoachCategory(randomItem.cat);
+            setAiCoachMent(randomItem.ment);
         }
     };
 
@@ -455,10 +540,17 @@ export function SolutionPageContent() {
     const [aiSolutionLoading, setAiSolutionLoading] = useState(false);
 
     useEffect(() => {
-        // Sync activeChild with global children list once initialized
+        // Sync activeChild with localStorage & global children list
         if (isInitialized && children.length > 0) {
-            if (!activeChild || !children.some(c => c.id === activeChild.id)) {
+            const savedChildId = typeof window !== 'undefined' ? localStorage.getItem('bookok_active_child_id') : null;
+            const matched = savedChildId ? children.find(c => String(c.id) === savedChildId) : null;
+            if (matched) {
+                setActiveChild(matched);
+            } else if (!activeChild || !children.some(c => c.id === activeChild.id)) {
                 setActiveChild(children[0]);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('bookok_active_child_id', String(children[0].id));
+                }
             }
         }
     }, [isInitialized, children, activeChild]);
@@ -1185,7 +1277,7 @@ export function SolutionPageContent() {
                                 </div>
                             </div>
 
-                            {/* AI 독서코치 고정 알림 배너 (Figma 269:10400 기준 고정형) */}
+                            {/* AI 독서코치 고정 알림 배너 */}
                             <div 
                                 onClick={() => setSelectedCoachCategory(aiCoachCategory)}
                                 className="bg-white border border-gray-100 rounded-[28px] p-4 flex items-center gap-3.5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] cursor-pointer hover:bg-gray-50 active:scale-[0.99] transition-all"
@@ -1196,7 +1288,7 @@ export function SolutionPageContent() {
                                 <div className="flex-1">
                                     <div className="text-[10px] font-black text-[#16A34A] tracking-wider leading-none uppercase">AI 독서코치</div>
                                     <div className="text-[13px] font-bold text-gray-800 mt-1 block tracking-tight">
-                                        &quot;{aiCoachCategory}&quot; 분야를 시도해보면 어떨까요? (클릭 시 추천도서 탐색)
+                                        &quot;{aiCoachCategory}&quot; 분야를 시도해보면 어떨까요?
                                     </div>
                                     <div className="text-[11px] text-gray-400 mt-0.5">{aiCoachMent}</div>
                                 </div>
@@ -1264,9 +1356,9 @@ export function SolutionPageContent() {
                         </div>
                     ) : (
                         /* ================= SOLUTION TAB ================= */
-                        <div className="flex flex-col h-full overflow-hidden p-4">
+                        <div className="flex flex-col h-full overflow-hidden bg-[#F4F6F8]">
                             {/* Scrollable conversation history */}
-                            <div className="flex-1 overflow-y-auto space-y-4 pb-4">
+                            <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                 <div className="bg-white border border-gray-100 rounded-[28px] p-5 shadow-[0_4px_12px_rgba(0,0,0,0.02)] space-y-3">
                                     <div className="flex items-center gap-1">
                                         <span className="text-[#16A34A] font-black text-lg">◆</span>
@@ -1278,6 +1370,34 @@ export function SolutionPageContent() {
                                     <p className="text-xs text-gray-500 font-extrabold leading-relaxed">
                                         15년 경력 전문가가 {childName}의 성향을 바탕으로 조언해 드릴게요.
                                     </p>
+
+                                    {mobileSolutionHistory.length === 0 && (
+                                        <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                                            <span className="text-[11px] font-black text-gray-400 block ml-0.5">💡 자주 묻는 독서 고민 질문</span>
+                                            <div className="flex flex-col gap-1.5">
+                                                {[
+                                                    "책을 끝까지 집중해서 못 읽고 금방 딴짓을 해요 📖",
+                                                    "공룡이나 특정 분야 책만 편식해서 읽어요 🦖",
+                                                    "책을 읽고 난 후 대화나 소감 표현을 어려워해요 🗣️",
+                                                    "잠자리에서 읽기 좋은 독서 습관과 책을 추천해주세요 🌙"
+                                                ].map((promptText, pIdx) => (
+                                                    <button
+                                                        key={pIdx}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setMobileInput(promptText);
+                                                            if (inputRef.current) {
+                                                                inputRef.current.focus();
+                                                            }
+                                                        }}
+                                                        className="text-left bg-gray-50 hover:bg-gray-100 border border-gray-150 rounded-2xl px-3.5 py-2.5 text-xs font-bold text-gray-700 active:scale-[0.98] transition-all"
+                                                    >
+                                                        {promptText}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {mobileSolutionHistory.map((msg, idx) => {
@@ -1285,7 +1405,7 @@ export function SolutionPageContent() {
                                     return (
                                         <div key={idx} className="space-y-3">
                                             <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[85%] px-4 py-3 rounded-[24px] text-[13.5px] leading-relaxed shadow-sm ${
+                                                <div className={`max-w-[85%] px-4 py-3.5 rounded-[24px] text-[15px] leading-relaxed shadow-sm ${
                                                     isUser ? 'bg-[#1A1A1A] text-white rounded-tr-none' : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
                                                 }`}>
                                                     {!isUser && msg.content.startsWith("◆") ? (
@@ -1293,37 +1413,39 @@ export function SolutionPageContent() {
                                                             <span className="text-[#16A34A] font-black">{msg.content.slice(0, msg.content.indexOf(" ") + 1)}</span>
                                                             <span className="font-bold">{msg.content.slice(msg.content.indexOf(" ") + 1)}</span>
                                                         </div>
-                                                     ) : !isUser ? (
-                                                         <div 
-                                                             className="prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-0.5 prose-li:my-0 text-gray-800 whitespace-pre-line"
-                                                             dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
-                                                         />
-                                                     ) : (
-                                                         <div className="whitespace-pre-line">{msg.content}</div>
-                                                     )}
+                                                    ) : !isUser ? (
+                                                        <div 
+                                                            className="prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-0.5 prose-li:my-0 text-gray-800 whitespace-pre-line"
+                                                            dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
+                                                        />
+                                                    ) : (
+                                                        <div className="whitespace-pre-line">{msg.content}</div>
+                                                    )}
                                                 </div>
                                             </div>
 
                                             {msg.books && msg.books.length > 0 && (
-                                                <div className="flex overflow-x-auto gap-4 py-2 px-1 scrollbar-hide -mx-4 px-4">
-                                                    {msg.books.map((book, bIdx) => (
-                                                        <div 
-                                                            key={bIdx} 
-                                                            onClick={() => router.push(`/book/?id=${book.id || book.bookid || '9788997984848'}`)}
-                                                            className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-95 transition-transform"
-                                                        >
-                                                            <div className="relative w-full h-[140px] rounded-[16px] overflow-hidden mb-2 border border-gray-50">
-                                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
+                                                <div className="flex overflow-x-auto gap-4 py-2 px-1 scrollbar-hide -mx-4 md:mx-0 md:px-0">
+                                                    <div className="flex gap-3 px-4 md:px-0">
+                                                        {msg.books.map((book, bIdx) => (
+                                                            <div 
+                                                                key={bIdx} 
+                                                                onClick={() => router.push(`/book/?id=${book.id || book.bookid || '9788997984848'}`)}
+                                                                className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.03)] w-[150px] shrink-0 cursor-pointer active:scale-95 transition-transform hover:border-[#16A34A]/30"
+                                                            >
+                                                                <div className="relative w-full h-[170px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-100">
+                                                                    <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="150px" sizePreset="thumbnail" />
+                                                                </div>
+                                                                <h4 className="font-extrabold text-[12px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
+                                                                <p className="text-[9.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
+                                                                <div className="flex items-center gap-0.5 text-[#16A34A]">
+                                                                    <Star size={10} fill="currentColor" />
+                                                                    <span className="text-[10px] font-black">{book.rating}</span>
+                                                                    <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
+                                                                </div>
                                                             </div>
-                                                            <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
-                                                            <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
-                                                            <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                                <Star size={9} fill="currentColor" />
-                                                                <span className="text-[10px] font-black">{book.rating}</span>
-                                                                <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
@@ -1332,8 +1454,8 @@ export function SolutionPageContent() {
 
                                 {mobileLoading && (
                                     <div className="flex justify-start">
-                                        <div className="bg-white px-4 py-3 rounded-[24px] rounded-tl-none border border-gray-100 shadow-sm">
-                                            <div className="flex gap-1 items-center">
+                                        <div className="bg-white px-5 py-4 rounded-[24px] rounded-tl-none border border-gray-100 shadow-sm">
+                                            <div className="flex gap-1.5 items-center">
                                                 <div className="w-2.5 h-2.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                                                 <div className="w-2.5 h-2.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                                                 <div className="w-2.5 h-2.5 bg-gray-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -1341,32 +1463,35 @@ export function SolutionPageContent() {
                                         </div>
                                     </div>
                                 )}
+                                <div ref={messagesEndRef} />
                             </div>
 
                             {/* Chat Input form */}
                             <div 
-                                className="bg-[#F8F9FA] pt-2"
+                                className="bg-white border-t border-gray-100 px-4 py-3 shrink-0"
                                 style={{ 
                                     paddingBottom: isKeyboardActive 
-                                        ? '0.5rem' 
-                                        : 'calc(0.5rem + env(safe-area-inset-bottom, 0px))' 
+                                        ? '0.75rem' 
+                                        : 'calc(4.75rem + env(safe-area-inset-bottom, 0px))' 
                                 }}
                             >
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 max-w-3xl mx-auto">
                                     <input
+                                        ref={inputRef}
                                         type="text"
                                         value={mobileInput}
                                         onChange={(e) => setMobileInput(e.target.value)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleMobileSolutionSubmit()}
                                         placeholder={`${childName}의 독서 고민을 들려주세요...`}
-                                        className="flex-1 bg-white border border-gray-200 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 text-base font-semibold text-gray-900 placeholder-gray-400"
+                                        className="flex-1 bg-gray-50 border border-gray-100 rounded-full px-5 py-3 outline-none focus:ring-2 focus:ring-[#16A34A]/20 focus:border-[#16A34A] text-base font-medium text-gray-900 transition-all placeholder-gray-400"
+                                        enterKeyHint="send"
                                     />
                                     <button
                                         onClick={handleMobileSolutionSubmit}
                                         disabled={!mobileInput.trim() || mobileLoading}
-                                        className="bg-[#1A1A1A] hover:bg-gray-800 disabled:bg-gray-200 disabled:opacity-50 text-white p-3 rounded-full transition-all flex items-center justify-center shrink-0 shadow-md"
+                                        className="bg-[#1A1A1A] hover:bg-gray-800 disabled:bg-gray-200 disabled:opacity-50 text-white p-3 rounded-full transition-all duration-300 flex items-center justify-center shrink-0"
                                     >
-                                        <Send size={16} />
+                                        <Send size={18} />
                                     </button>
                                 </div>
                             </div>

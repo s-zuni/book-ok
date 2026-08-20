@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { Child, MainMenu } from "@shared/types";
 import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import HeroSection from "@widgets/hero/HeroSection";
 import RecommendationSection from "@features/books/RecommendationSection";
-import { ChevronLeft, ChevronRight, Bell, Search, Star, BookOpen, X, Check, Award } from "lucide-react";
+import { ChevronLeft, ChevronRight, Bell, Search, Star, BookOpen, X, Check, Award, Plus, Sparkles } from "lucide-react";
 import MainPopup from "@shared/ui/MainPopup";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
@@ -72,11 +72,15 @@ const TrophyIcon = () => (
     </svg>
 );
 
-export default function HomeContent() {
+function HomeContentInner() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
     const [searchQuery, setSearchQuery] = useState("");
     const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const sectionParam = searchParams?.get('section');
 
     const handleSearch = (page?: number) => {
         if (searchQuery.trim()) {
@@ -87,7 +91,6 @@ export default function HomeContent() {
     const [activeChild, setActiveChild] = useState<Child | null>(null);
     const { user, children, userProfile } = useAuth();
     const { openLoginModal } = useLoginModal();
-    const router = useRouter();
 
     // Mobile specific states for Aladin books
     const [librarianBooks, setLibrarianBooks] = useState<FormattedRecommendBook[]>([]);
@@ -105,8 +108,68 @@ export default function HomeContent() {
     const [showCongrats, setShowCongrats] = useState(false);
     const [challengeBookTitle, setChallengeBookTitle] = useState("");
     const [challengeReview, setChallengeReview] = useState("");
+    const [quickPickBooks, setQuickPickBooks] = useState<string[]>([]);
 
     const [hasReadBooks, setHasReadBooks] = useState<boolean>(false);
+
+    // Sync sub-menus with URL params for seamless browser back/forward and native swipe back
+    useEffect(() => {
+        if (sectionParam === 'librarian') {
+            setActiveSubMenu('사서 추천');
+        } else if (sectionParam === 'age') {
+            setActiveSubMenu('연령별 추천 도서');
+        } else if (sectionParam === 'awards') {
+            setActiveSubMenu('수상 도서작');
+        } else if (!sectionParam) {
+            setActiveSubMenu('');
+        }
+    }, [sectionParam]);
+
+    const handleOpenSection = (menuName: string, sectionKey: string) => {
+        setActiveSubMenu(menuName);
+        router.push(`/?section=${sectionKey}`);
+    };
+
+    const handleCloseSection = () => {
+        setActiveSubMenu('');
+        router.push('/');
+    };
+
+    // Quick pick books for Challenge Modal (scraps + recent reads)
+    useEffect(() => {
+        if (isChallengeModalOpen && user) {
+            const fetchQuickPick = async () => {
+                const titles = new Set<string>();
+                try {
+                    const { data: scraps } = await supabase
+                        .from('book_scraps')
+                        .select('title')
+                        .eq('user_id', user.id)
+                        .limit(6);
+                    if (scraps) scraps.forEach(s => s.title && titles.add(s.title));
+
+                    if (activeChild) {
+                        const { data: readData } = await supabase
+                            .from('read_books')
+                            .select('observation_data, books(title)')
+                            .eq('child_id', activeChild.id)
+                            .order('read_date', { ascending: false })
+                            .limit(6);
+                        if (readData) {
+                            readData.forEach((r: any) => {
+                                const t = r.books?.title || r.observation_data?.book_title;
+                                if (t) titles.add(t);
+                            });
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Failed to fetch quick pick books:", e);
+                }
+                setQuickPickBooks(Array.from(titles));
+            };
+            fetchQuickPick();
+        }
+    }, [isChallengeModalOpen, user, activeChild]);
 
     useEffect(() => {
         const checkReadBooks = async () => {
@@ -242,13 +305,29 @@ export default function HomeContent() {
 
     useEffect(() => {
         if (children.length > 0) {
-            if (!activeChild || !children.some(c => c.id === activeChild.id)) {
+            const savedChildId = typeof window !== 'undefined' ? localStorage.getItem('bookok_active_child_id') : null;
+            const matched = savedChildId ? children.find(c => String(c.id) === savedChildId) : null;
+            
+            if (matched) {
+                setActiveChild(matched);
+            } else if (!activeChild || !children.some(c => c.id === activeChild.id)) {
                 setActiveChild(children[0]);
+                if (typeof window !== 'undefined') {
+                    localStorage.setItem('bookok_active_child_id', String(children[0].id));
+                }
             }
         } else {
             setActiveChild(null);
         }
     }, [children, activeChild]);
+
+    const handleSelectChild = (child: Child) => {
+        setActiveChild(child);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('bookok_active_child_id', String(child.id));
+        }
+        toast.success(`${child.name}의 프로필로 전환되었습니다.`);
+    };
 
     // Fetch Aladin book recommendations for the mobile home view
     useEffect(() => {
@@ -374,7 +453,7 @@ export default function HomeContent() {
                                     <div className="grid md:grid-cols-3 gap-8">
                                         {/* Librarian Picks */}
                                         <button
-                                            onClick={() => setActiveSubMenu('사서 추천')}
+                                            onClick={() => handleOpenSection('사서 추천', 'librarian')}
                                             className="bg-white p-9 rounded-[40px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_20px_40px_rgba(46,90,68,0.1)] hover:border-[#2E5A44]/20 transition-all duration-500 text-left group overflow-hidden relative"
                                         >
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-[#E8F5E9] rounded-full -mr-16 -mt-16 opacity-50 group-hover:scale-150 transition-transform duration-700" />
@@ -390,7 +469,7 @@ export default function HomeContent() {
 
                                         {/* Age-based Recommendations */}
                                         <button
-                                            onClick={() => setActiveSubMenu('연령별 추천 도서')}
+                                            onClick={() => handleOpenSection('연령별 추천 도서', 'age')}
                                             className="bg-gray-50 p-9 rounded-[40px] shadow-sm border border-transparent hover:bg-white hover:shadow-[0_20px_40px_rgba(46,90,68,0.1)] hover:border-[#2E5A44]/20 transition-all duration-500 text-left group overflow-hidden relative"
                                         >
                                             <div className="absolute bottom-0 right-0 w-24 h-24 bg-[#2E5A44]/5 rounded-full -mr-8 -mb-8 opacity-50 group-hover:scale-150 transition-transform duration-700" />
@@ -406,7 +485,7 @@ export default function HomeContent() {
 
                                         {/* Award Winners */}
                                         <button
-                                            onClick={() => setActiveSubMenu('수상 도서작')}
+                                            onClick={() => handleOpenSection('수상 도서작', 'awards')}
                                             className="bg-white p-9 rounded-[40px] shadow-[0_4px_20px_rgba(0,0,0,0.04)] border border-gray-100 hover:shadow-[0_20px_40px_rgba(46,90,68,0.1)] hover:border-[#2E5A44]/20 transition-all duration-500 text-left group overflow-hidden relative"
                                         >
                                             <div className="absolute top-1/2 right-0 w-20 h-20 bg-yellow-400/10 rounded-full -mr-10 opacity-50 group-hover:scale-150 transition-transform duration-700" />
@@ -426,7 +505,7 @@ export default function HomeContent() {
                             /* Detail List View */
                             <div className="max-w-7xl mx-auto px-6 py-8">
                                 <button
-                                    onClick={() => setActiveSubMenu('')}
+                                    onClick={handleCloseSection}
                                     className="mb-10 flex items-center gap-2 text-gray-400 hover:text-[#2E5A44] font-black transition-all group"
                                 >
                                     <div className="p-2 rounded-full bg-gray-100 group-hover:bg-[#E8F5E9] transition-colors">
@@ -475,8 +554,8 @@ export default function HomeContent() {
                         {/* Header */}
                         <header className="bg-white border-b border-gray-100 px-4 pb-3 flex items-center gap-3 sticky top-0 z-40 shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
                             <button
-                                onClick={() => setActiveSubMenu('')}
-                                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-700"
+                                onClick={handleCloseSection}
+                                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors text-gray-700 active:scale-95"
                             >
                                 <ChevronLeft size={22} />
                             </button>
@@ -534,24 +613,24 @@ export default function HomeContent() {
                             <div className="flex items-center gap-3">
                                 <button 
                                     onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
-                                    className="text-gray-700 p-1"
+                                    className="text-gray-700 p-1 active:scale-95 transition-transform"
                                 >
                                     {isMobileSearchOpen ? <X size={20} /> : <Search size={20} />}
                                 </button>
-                                <button className="text-gray-700 p-1">
+                                <button className="text-gray-700 p-1 active:scale-95 transition-transform">
                                     <Bell size={20} />
                                 </button>
                                 {user ? (
                                     <button 
                                         onClick={() => router.push('/mypage')}
-                                        className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 transition-colors"
+                                        className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 active:scale-95 transition-all"
                                     >
                                         프로필
                                     </button>
                                 ) : (
                                     <button 
                                         onClick={openLoginModal}
-                                        className="bg-black text-white rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-gray-800 transition-colors"
+                                        className="bg-black text-white rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-gray-800 active:scale-95 transition-all"
                                     >
                                         로그인
                                     </button>
@@ -582,11 +661,19 @@ export default function HomeContent() {
                             </div>
                         )}
 
-                        {/* Welcome Message */}
-                        <div className="p-5 bg-white">
-                            <p className="text-xs font-bold text-gray-400 mb-1">
-                                {user ? `안녕하세요 ${userProfile?.nickname || user?.user_metadata?.name || "학부모"}님!` : "안녕하세요! 반가워요."}
-                            </p>
+                        {/* Welcome Message & Child Quick Switcher */}
+                        <div className="p-5 bg-white border-b border-gray-50">
+                            <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-xs font-bold text-gray-400">
+                                    {user ? `안녕하세요 ${userProfile?.nickname || user?.user_metadata?.name || "학부모"}님!` : "안녕하세요! 반가워요."}
+                                </p>
+                                {user && children.length > 0 && (
+                                    <span className="text-[10px] font-black text-[#16A34A] bg-green-50 border border-green-100 px-2.5 py-0.5 rounded-full">
+                                        자녀 {children.length}명
+                                    </span>
+                                )}
+                            </div>
+
                             {activeChild ? (
                                 <h2 className="text-xl font-black leading-tight text-gray-900 tracking-tight">
                                     {activeChild.name}를 위한 오늘의 책,<br />
@@ -608,6 +695,45 @@ export default function HomeContent() {
                                             ? `✨ ${userProfile?.nickname || user?.user_metadata?.name || "학부모"} 부모님, 자녀 등록 후 독서 관리를 시작해보세요!` 
                                             : "✨ 로그인하고 자녀를 등록하여 맞춤 독서 관리를 시작해 보세요!"}
                                     </h2>
+                                </div>
+                            )}
+
+                            {/* Quick Child Switcher Bar */}
+                            {user && children.length > 0 && (
+                                <div className="flex items-center gap-2 mt-3.5 overflow-x-auto scrollbar-hide py-1">
+                                    {children.map((child) => {
+                                        const isSelected = activeChild?.id === child.id;
+                                        return (
+                                            <button
+                                                key={child.id}
+                                                type="button"
+                                                onClick={() => handleSelectChild(child)}
+                                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black transition-all shrink-0 active:scale-95 ${
+                                                    isSelected
+                                                        ? 'bg-[#16A34A] text-white shadow-sm ring-2 ring-[#16A34A]/20'
+                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                }`}
+                                            >
+                                                <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black ${
+                                                    isSelected ? 'bg-white text-[#16A34A]' : 'bg-gray-200 text-gray-700'
+                                                }`}>
+                                                    {child.name.charAt(0)}
+                                                </span>
+                                                <span>{child.name}</span>
+                                                <span className={`text-[10px] font-bold ${isSelected ? 'text-green-100' : 'text-gray-400'}`}>
+                                                    ({child.age}세)
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                    <button
+                                        type="button"
+                                        onClick={() => router.push('/mypage')}
+                                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold text-gray-500 bg-gray-50 border border-dashed border-gray-300 hover:text-[#16A34A] hover:border-green-300 transition-colors shrink-0 active:scale-95"
+                                    >
+                                        <Plus size={12} />
+                                        <span>자녀 추가</span>
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -670,7 +796,7 @@ export default function HomeContent() {
                         <div className="py-4 space-y-3.5">
                             <div className="flex justify-between items-center px-5">
                                 <h3 className="font-black text-base text-gray-900 tracking-tight">사서가 추천하는 책</h3>
-                                <span onClick={() => setActiveSubMenu('사서 추천')} className="text-xs font-bold text-gray-400 cursor-pointer">더보기 &gt;</span>
+                                <span onClick={() => handleOpenSection('사서 추천', 'librarian')} className="text-xs font-bold text-gray-400 cursor-pointer active:text-[#16A34A] transition-colors">더보기 &gt;</span>
                             </div>
 
                             {/* Sort Filter Tabs */}
@@ -701,23 +827,23 @@ export default function HomeContent() {
                             <div className="flex overflow-x-auto gap-4 py-1 px-5 scrollbar-hide">
                                 {librarianLoading ? (
                                     Array.from({ length: 4 }).map((_, i) => (
-                                        <div key={i} className="bg-white rounded-[24px] p-2.5 border border-gray-100 w-[128px] shrink-0 animate-pulse">
-                                            <div className="w-full h-[145px] bg-gray-150 rounded-[16px] mb-2" />
+                                        <div key={i} className="bg-white rounded-[24px] p-3 border border-gray-100 w-[136px] shrink-0 animate-pulse">
+                                            <div className="w-full h-[150px] bg-gray-150 rounded-[16px] mb-2" />
                                             <div className="h-3 bg-gray-150 rounded w-4/5 mb-1" />
                                             <div className="h-2.5 bg-gray-150 rounded w-3/5" />
                                         </div>
                                     ))
                                 ) : (
                                     librarianBooks.map((book, idx) => (
-                                        <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
-                                            <div className="relative w-full h-[145px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
-                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
+                                        <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[136px] shrink-0 cursor-pointer active:scale-[0.97] transition-all">
+                                            <div className="relative w-full h-[150px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
+                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="136px" sizePreset="thumbnail" />
                                             </div>
-                                            <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
-                                            <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
+                                            <h4 className="font-extrabold text-xs text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
+                                            <p className="text-[10px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
                                             <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                <Star size={9} fill="currentColor" />
-                                                <span className="text-[10px] font-black">{book.rating}</span>
+                                                <Star size={10} fill="currentColor" />
+                                                <span className="text-[11px] font-black">{book.rating}</span>
                                                 <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
                                             </div>
                                         </div>
@@ -730,7 +856,7 @@ export default function HomeContent() {
                         <div className="py-2 space-y-3.5">
                             <div className="flex justify-between items-center px-5">
                                 <h3 className="font-black text-base text-gray-900 tracking-tight">수상작 도서</h3>
-                                <span onClick={() => setActiveSubMenu('수상 도서작')} className="text-xs font-bold text-gray-400 cursor-pointer">더보기 &gt;</span>
+                                <span onClick={() => handleOpenSection('수상 도서작', 'awards')} className="text-xs font-bold text-gray-400 cursor-pointer active:text-[#16A34A] transition-colors">더보기 &gt;</span>
                             </div>
 
                             {/* Sort Filter Tabs */}
@@ -761,23 +887,23 @@ export default function HomeContent() {
                             <div className="flex overflow-x-auto gap-4 py-1 px-5 scrollbar-hide">
                                 {awardLoading ? (
                                     Array.from({ length: 4 }).map((_, i) => (
-                                        <div key={i} className="bg-white rounded-[24px] p-2.5 border border-gray-100 w-[128px] shrink-0 animate-pulse">
-                                            <div className="w-full h-[145px] bg-gray-150 rounded-[16px] mb-2" />
+                                        <div key={i} className="bg-white rounded-[24px] p-3 border border-gray-100 w-[136px] shrink-0 animate-pulse">
+                                            <div className="w-full h-[150px] bg-gray-150 rounded-[16px] mb-2" />
                                             <div className="h-3 bg-gray-150 rounded w-4/5 mb-1" />
                                             <div className="h-2.5 bg-gray-150 rounded w-3/5" />
                                         </div>
                                     ))
                                 ) : (
                                     awardBooks.map((book, idx) => (
-                                        <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-2.5 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[128px] shrink-0 cursor-pointer active:scale-[0.98] transition-transform">
-                                            <div className="relative w-full h-[145px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
-                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="128px" sizePreset="thumbnail" />
+                                        <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-3 border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[136px] shrink-0 cursor-pointer active:scale-[0.97] transition-all">
+                                            <div className="relative w-full h-[150px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
+                                                <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="136px" sizePreset="thumbnail" />
                                             </div>
-                                            <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
-                                            <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
+                                            <h4 className="font-extrabold text-xs text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
+                                            <p className="text-[10px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
                                             <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                <Star size={9} fill="currentColor" />
-                                                <span className="text-[10px] font-black">{book.rating}</span>
+                                                <Star size={10} fill="currentColor" />
+                                                <span className="text-[11px] font-black">{book.rating}</span>
                                                 <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
                                             </div>
                                         </div>
@@ -917,26 +1043,67 @@ export default function HomeContent() {
 
                         {/* Reading Form inputs */}
                         {!hasReadToday ? (
-                            <div className="space-y-3 mb-4">
+                            <div className="space-y-3.5 mb-4">
                                 <div>
                                     <label className="text-[10px] font-black text-gray-400 block mb-1">읽은 책 제목</label>
                                     <input 
                                         type="text" 
                                         placeholder="어떤 책을 함께 읽으셨나요?" 
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs outline-none focus:bg-white focus:ring-2 focus:ring-green-200 transition-all font-bold"
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs outline-none focus:bg-white focus:ring-2 focus:ring-green-200 transition-all font-bold text-gray-900"
                                         value={challengeBookTitle}
                                         onChange={(e) => setChallengeBookTitle(e.target.value)}
                                     />
+                                    {/* Quick Pick from Scraps / Recent Reads */}
+                                    {quickPickBooks.length > 0 && (
+                                        <div className="mt-1.5">
+                                            <span className="text-[9.5px] font-black text-gray-400 block mb-1">📌 내 서재/찜한 책에서 빠른 선택</span>
+                                            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+                                                {quickPickBooks.map((title, i) => (
+                                                    <button
+                                                        key={i}
+                                                        type="button"
+                                                        onClick={() => setChallengeBookTitle(title)}
+                                                        className="px-2.5 py-1 rounded-full bg-green-50/80 border border-green-200/60 text-[10px] font-bold text-green-800 whitespace-nowrap active:scale-95 hover:bg-green-100 transition-all"
+                                                    >
+                                                        {title}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
+
                                 <div>
                                     <label className="text-[10px] font-black text-gray-400 block mb-1">짧은 독서 소감</label>
                                     <textarea 
                                         rows={2}
                                         placeholder="아이가 책을 읽고 어떤 반응이나 소감을 보였나요?" 
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs outline-none focus:bg-white focus:ring-2 focus:ring-green-200 transition-all font-medium"
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 text-xs outline-none focus:bg-white focus:ring-2 focus:ring-green-200 transition-all font-medium text-gray-900"
                                         value={challengeReview}
                                         onChange={(e) => setChallengeReview(e.target.value)}
                                     />
+                                    {/* Preset Review Chips */}
+                                    <div className="mt-1.5">
+                                        <span className="text-[9.5px] font-black text-gray-400 block mb-1">💬 자주 쓰는 소감</span>
+                                        <div className="flex flex-wrap gap-1">
+                                            {[
+                                                "재미있게 완독했어요 ⭐",
+                                                "아이가 또 읽어달래요 👍",
+                                                "그림이 따뜻하고 예뻐요 🎨",
+                                                "호기심과 질문이 많아졌어요 💡",
+                                                "스스로 집중해서 읽었어요 📖"
+                                            ].map((preset, i) => (
+                                                <button
+                                                    key={i}
+                                                    type="button"
+                                                    onClick={() => setChallengeReview(preset)}
+                                                    className="px-2 py-0.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-[9.5px] font-bold text-gray-600 active:scale-95 transition-all"
+                                                >
+                                                    {preset}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -1024,5 +1191,13 @@ export default function HomeContent() {
 
             <MainPopup />
         </div>
+    );
+}
+
+export default function HomeContent() {
+    return (
+        <Suspense fallback={null}>
+            <HomeContentInner />
+        </Suspense>
     );
 }

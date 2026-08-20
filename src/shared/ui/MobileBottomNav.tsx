@@ -57,8 +57,8 @@ export function MobileBottomNavContent() {
 
     if (
         pathname === "/chat" || 
-        pathname === "/chat/" || 
-        (pathname?.startsWith("/solution") && tab === "solution")
+        pathname === "/chat/" ||
+        pathname?.startsWith("/chat/")
     ) {
         return null;
     }
@@ -87,7 +87,7 @@ export function MobileBottomNavContent() {
             isActive: pathname === "/"
         },
         {
-            label: "AI 독서",
+            label: "독서 분석",
             icon: ReaderIcon,
             path: "/solution",
             isActive: pathname?.startsWith("/solution")

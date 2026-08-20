@@ -81,7 +81,7 @@ export default function RootLayout({
           <MobileUXProvider>
             <LoginModalProvider>
               <ChatbotProvider>
-                <Toaster position="top-center" richColors closeButton />
+                <Toaster position="bottom-center" offset="76px" richColors closeButton />
                 <SplashScreen />
                 {children}
               </ChatbotProvider>

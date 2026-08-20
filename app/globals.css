@@ -58,6 +58,10 @@ h1, h2, h3, h4, h5, h6 {
   padding-bottom: var(--safe-area-bottom);
 }
 
+.pb-mobile-nav {
+  padding-bottom: calc(4.75rem + var(--safe-area-bottom));
+}
+
 .mb-safe {
   margin-bottom: var(--safe-area-bottom);
 }

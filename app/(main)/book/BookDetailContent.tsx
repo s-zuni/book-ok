@@ -240,16 +240,34 @@ export default function BookDetailContent() {
         const checkLibraryHoldings = async () => {
             const rawLibs = userProfile?.favorite_libraries;
             const favoriteLibs = Array.isArray(rawLibs) ? rawLibs : [];
+            
             if (!book || favoriteLibs.length === 0) {
                 setLibraryStatus([]);
+                setLibraryStatusLoading(false);
                 return;
+            }
+
+            const isbn = book.id || book.bookid || bookId;
+            const libCodes = favoriteLibs.map(l => l.libCode).join(',');
+            const cacheKey = `book_lib_status_${isbn}_${libCodes}`;
+
+            // Check cache first for instant rendering
+            try {
+                const cached = typeof window !== 'undefined' ? sessionStorage.getItem(cacheKey) : null;
+                if (cached) {
+                    const parsed = JSON.parse(cached);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        setLibraryStatus(parsed);
+                        setLibraryStatusLoading(false);
+                        return;
+                    }
+                }
+            } catch (e) {
+                // Ignore cache read error
             }
 
             setLibraryStatusLoading(true);
             try {
-                const libCodes = favoriteLibs.map(l => l.libCode).join(',');
-                const isbn = book.id || book.bookid || bookId;
-                
                 const response = await safeFetch(`${supabaseUrl}/functions/v1/library`, {
                     method: 'POST',
                     headers: {
@@ -259,42 +277,15 @@ export default function BookDetailContent() {
                     },
                     body: JSON.stringify({ apiType: 'book-status', isbn: isbn, libCodes: libCodes })
                 });
+                
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
                 
                 // Map the results back to include library details, call number, and shelf locations
-                const statusResults = await Promise.all((data.results || []).map(async (result: any) => {
+                const statusResults = (data.results || []).map((result: any) => {
                     const libInfo = favoriteLibs.find(l => String(l.libCode) === String(result.libCode));
-                    let fetchedHomepage = result.homepage || (libInfo as any)?.homepage || '';
-                    let fetchedOperatingTime = result.operatingTime || (libInfo as any)?.operatingTime || '';
-                    let fetchedClosed = result.closed || (libInfo as any)?.closed || '';
-                    let fetchedTel = result.tel || (libInfo as any)?.tel || '';
-                    let fetchedAddress = result.address || (libInfo as any)?.address || '';
-
-                    // Fallback fetch from Data4Library if homepage is missing in Edge Function response
-                    if (!fetchedHomepage) {
-                        try {
-                            const apiKey = "c0bde3ba4483595bfd280c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
-                            const libRes = await fetch(`http://data4library.kr/api/libSrch?authKey=${apiKey}&libCode=${result.libCode}&format=json`);
-                            if (libRes.ok) {
-                                const libData = await libRes.json();
-                                const libs = libData.response?.libs || [];
-                                if (libs.length > 0) {
-                                    const info = libs[0]?.lib || libs[0]?.doc || {};
-                                    if (info.homepage) fetchedHomepage = info.homepage;
-                                    if (info.operatingTime) fetchedOperatingTime = info.operatingTime;
-                                    if (info.closed) fetchedClosed = info.closed;
-                                    if (info.tel) fetchedTel = info.tel;
-                                    if (info.address) fetchedAddress = info.address;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn("Fallback libSrch fetch failed for", result.libCode, e);
-                        }
-                    }
-
                     return {
                         libCode: result.libCode,
                         libName: libInfo?.libName || "알 수 없는 도서관",
@@ -303,17 +294,38 @@ export default function BookDetailContent() {
                         callNumber: result.callNumber || '',
                         shelfLocName: result.shelfLocName || '',
                         separateShelfName: result.separateShelfName || '',
-                        homepage: fetchedHomepage,
-                        operatingTime: fetchedOperatingTime,
-                        closed: fetchedClosed,
-                        tel: fetchedTel,
-                        address: fetchedAddress,
+                        homepage: result.homepage || (libInfo as any)?.homepage || '',
+                        operatingTime: result.operatingTime || (libInfo as any)?.operatingTime || '',
+                        closed: result.closed || (libInfo as any)?.closed || '',
+                        tel: result.tel || (libInfo as any)?.tel || '',
+                        address: result.address || (libInfo as any)?.address || '',
                     };
-                }));
+                });
                 
                 setLibraryStatus(statusResults);
+                try {
+                    sessionStorage.setItem(cacheKey, JSON.stringify(statusResults));
+                } catch (e) {
+                    // Ignore cache write error
+                }
             } catch (err) {
-                console.error(err);
+                console.error("Library holding fetch error:", err);
+                // Fallback default status so UI never hangs in skeleton
+                const fallbackResults = favoriteLibs.map(lib => ({
+                    libCode: lib.libCode,
+                    libName: lib.libName,
+                    hasBook: 'N',
+                    loanAvailable: 'N',
+                    callNumber: '',
+                    shelfLocName: '',
+                    separateShelfName: '',
+                    homepage: '',
+                    operatingTime: '',
+                    closed: '',
+                    tel: '',
+                    address: '',
+                }));
+                setLibraryStatus(fallbackResults);
             } finally {
                 setLibraryStatusLoading(false);
             }

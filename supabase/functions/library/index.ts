@@ -41,13 +41,21 @@ serve(async (req) => {
     region = region || urlObj.searchParams.get("region") || "";
     dtl_region = dtl_region || urlObj.searchParams.get("dtl_region") || "";
 
-    const API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key");
-    if (!API_KEY) {
-      return new Response(
-        JSON.stringify({ error: "DATA4LIBRARY_API_KEY is not configured in Supabase environment secrets." }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key") || "c0bde3ba4483595bfd280c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+
+    // Helper for fast fetching with timeout
+    const fetchWithTimeout = async (url: string, timeoutMs: number = 3500) => {
+      const controller = new AbortController();
+      const id = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(id);
+        return res;
+      } catch (err) {
+        clearTimeout(id);
+        return null;
+      }
+    };
 
     if (apiType === "book-status" || isbn) {
       if (!isbn) {
@@ -70,8 +78,8 @@ serve(async (req) => {
         try {
           // 1. Check book existence & loan availability
           const existUrl = `http://data4library.kr/api/bookExist?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&format=json`;
-          const existRes = await fetch(existUrl);
-          const existData = existRes.ok ? await existRes.json() : {};
+          const existRes = await fetchWithTimeout(existUrl, 3000);
+          const existData = (existRes && existRes.ok) ? await existRes.json() : {};
           const existResult = existData.response?.result || {};
           const hasBook = existResult.hasBook || "N";
           const loanAvailable = existResult.loanAvailable || "N";
@@ -84,8 +92,8 @@ serve(async (req) => {
           if (hasBook === "Y") {
             try {
               const itemUrl = `http://data4library.kr/api/itemSrch?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&type=ALL&format=json`;
-              const itemRes = await fetch(itemUrl);
-              if (itemRes.ok) {
+              const itemRes = await fetchWithTimeout(itemUrl, 3000);
+              if (itemRes && itemRes.ok) {
                 const itemData = await itemRes.json();
                 const docs = itemData.response?.docs || [];
                 if (docs.length > 0) {
@@ -109,8 +117,8 @@ serve(async (req) => {
 
           try {
             const libInfoUrl = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&libCode=${libCode}&format=json`;
-            const libRes = await fetch(libInfoUrl);
-            if (libRes.ok) {
+            const libRes = await fetchWithTimeout(libInfoUrl, 3000);
+            if (libRes && libRes.ok) {
               const libData = await libRes.json();
               const libs = libData.response?.libs || [];
               if (libs.length > 0) {
