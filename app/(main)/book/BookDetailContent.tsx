@@ -283,7 +283,7 @@ export default function BookDetailContent() {
                 }
                 const data = await response.json();
                 
-                // Map the results back to include library details, call number, and shelf locations
+                // Map the results back to include library name
                 const statusResults = (data.results || []).map((result: any) => {
                     const libInfo = favoriteLibs.find(l => String(l.libCode) === String(result.libCode));
                     return {
@@ -291,14 +291,6 @@ export default function BookDetailContent() {
                         libName: libInfo?.libName || "알 수 없는 도서관",
                         hasBook: result.hasBook || 'N',
                         loanAvailable: result.loanAvailable || 'N',
-                        callNumber: result.callNumber || '',
-                        shelfLocName: result.shelfLocName || '',
-                        separateShelfName: result.separateShelfName || '',
-                        homepage: result.homepage || (libInfo as any)?.homepage || '',
-                        operatingTime: result.operatingTime || (libInfo as any)?.operatingTime || '',
-                        closed: result.closed || (libInfo as any)?.closed || '',
-                        tel: result.tel || (libInfo as any)?.tel || '',
-                        address: result.address || (libInfo as any)?.address || '',
                     };
                 });
                 
@@ -316,14 +308,6 @@ export default function BookDetailContent() {
                     libName: lib.libName,
                     hasBook: 'N',
                     loanAvailable: 'N',
-                    callNumber: '',
-                    shelfLocName: '',
-                    separateShelfName: '',
-                    homepage: '',
-                    operatingTime: '',
-                    closed: '',
-                    tel: '',
-                    address: '',
                 }));
                 setLibraryStatus(fallbackResults);
             } finally {
@@ -641,123 +625,35 @@ export default function BookDetailContent() {
                                     const isLoanable = status.hasBook === 'Y' && status.loanAvailable === 'Y';
                                     const isCheckedOut = status.hasBook === 'Y' && status.loanAvailable === 'N';
 
-                                    const getTargetLink = () => {
-                                        let rawHomepage = status.homepage?.trim() || '';
-                                        const name = status.libName || '';
-
-                                        // 1. 도서관 정보나루 API에서 넘겨주는 공식 홈페이지 URL이 존재하는 경우 최우선 사용
-                                        if (rawHomepage && rawHomepage !== '') {
-                                            if (!rawHomepage.startsWith('http://') && !rawHomepage.startsWith('https://')) {
-                                                return 'http://' + rawHomepage;
-                                            }
-                                            return rawHomepage;
-                                        }
-
-                                        // 2. 도서관 이름 기반 주요 지자체/구립 도서관 포털 스마트 매퍼
-                                        if (name.includes('휘경') || name.includes('동대문') || name.includes('이문') || name.includes('답십리') || name.includes('장안')) {
-                                            return 'https://www.l4d.or.kr'; // 동대문구 구립도서관 (www.l4d.or.kr)
-                                        }
-                                        if (name.includes('강남')) return 'https://library.gangnam.go.kr';
-                                        if (name.includes('서초')) return 'https://seocholib.or.kr';
-                                        if (name.includes('송파')) return 'https://www.splib.or.kr';
-                                        if (name.includes('마포')) return 'https://mapolib.or.kr';
-                                        if (name.includes('은평')) return 'https://www.eplib.or.kr';
-                                        if (name.includes('노원')) return 'https://www.nowonlib.kr';
-                                        if (name.includes('성북')) return 'https://www.sblib.seoul.kr';
-                                        if (name.includes('중구')) return 'https://www.e-junggu.or.kr';
-                                        if (name.includes('부천') || name.includes('상동')) return 'https://www.bcl.go.kr';
-                                        if (name.includes('수원')) return 'https://www.suwonlib.go.kr';
-                                        if (name.includes('성남')) return 'https://www.snlib.go.kr';
-                                        if (name.includes('고양')) return 'https://www.goyanglib.or.kr';
-                                        if (name.includes('용인')) return 'https://lib.yongin.go.kr';
-                                        if (name.includes('대구')) return 'https://library.daegu.go.kr';
-                                        if (name.includes('부산')) return 'https://home.pen.go.kr/siminlib';
-
-                                        return `https://search.naver.com/search.naver?query=${encodeURIComponent(name + ' 공식 홈페이지')}`;
-                                    };
-
-                                    const handleDirectLinkClick = (e: React.MouseEvent) => {
-                                        e.stopPropagation();
-                                        const textToCopy = status.callNumber 
-                                            ? `[${status.libName}] 청구기호: ${status.callNumber} (${book?.title || ''})`
-                                            : `[${status.libName}] ${book?.title || ''}`;
-
-                                        try {
-                                            navigator.clipboard.writeText(textToCopy);
-                                        } catch (err) {
-                                            console.warn("Clipboard copy warning:", err);
-                                        }
-                                        toast.success("청구기호가 클립보드에 복사되었습니다! 도서관 검색창에 활용해보세요.", { duration: 4000 });
-                                    };
-
-                                    const targetUrl = getTargetLink();
-
                                     return (
                                         <div
                                             key={status.libCode}
-                                            className="flex flex-col sm:flex-row sm:items-center justify-between p-4.5 rounded-2xl bg-gray-50/80 hover:bg-gray-100/60 border border-gray-100 transition-all gap-3 shadow-2xs group"
+                                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-gray-100 transition-all"
                                         >
-                                            <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
-                                                <div className="w-10 h-10 rounded-2xl bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0 border border-gray-100 group-hover:bg-green-50 transition-colors">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-10 h-10 rounded-full bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0">
                                                     <Building size={18} />
                                                 </div>
-                                                <div className="text-left min-w-0 flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="font-bold text-sm text-gray-900 truncate">{status.libName}</div>
-                                                        {status.operatingTime && (
-                                                            <span className="hidden md:inline-block text-[10px] text-gray-400 font-medium truncate">
-                                                                · {status.operatingTime}
-                                                            </span>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Call number & Shelf location Pill */}
-                                                    {status.hasBook === 'Y' && status.callNumber && (
-                                                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                                            <span className="text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100/80 font-mono">
-                                                                청구기호: {status.callNumber}
-                                                            </span>
-                                                            {(status.shelfLocName || status.separateShelfName) && (
-                                                                <span className="text-[10px] font-medium text-gray-500 truncate">
-                                                                    {[status.separateShelfName, status.shelfLocName].filter(Boolean).join(' ')}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    )}
+                                                <div className="text-left min-w-0">
+                                                    <div className="font-bold text-sm text-gray-900 truncate">{status.libName}</div>
                                                 </div>
                                             </div>
 
-                                            {/* Action Buttons */}
-                                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                                            <div className="shrink-0 ml-3">
                                                 {isNotHeld && (
-                                                    <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-xl border border-red-100">
+                                                    <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-lg border border-red-100">
                                                         미소장
                                                     </span>
                                                 )}
                                                 {isLoanable && (
-                                                    <a
-                                                        href={targetUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={handleDirectLinkClick}
-                                                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs font-black rounded-xl shadow-sm shadow-green-200 flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer no-underline inline-flex"
-                                                        title="클릭 시 도서관 공식 홈페이지로 이동하며 청구기호가 복사됩니다"
-                                                    >
-                                                        <span>대출 가능</span>
-                                                        <ExternalLink size={13} />
-                                                    </a>
+                                                    <span className="px-3 py-1.5 bg-green-500 text-white text-xs font-black rounded-lg shadow-sm shadow-green-100">
+                                                        대출 가능
+                                                    </span>
                                                 )}
                                                 {isCheckedOut && (
-                                                    <a
-                                                        href={targetUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={handleDirectLinkClick}
-                                                        className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-800 text-xs font-black rounded-xl border border-orange-200 flex items-center gap-1.5 transition-all cursor-pointer no-underline inline-flex"
-                                                    >
-                                                        <span>대출 중</span>
-                                                        <ExternalLink size={13} />
-                                                    </a>
+                                                    <span className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-black rounded-lg border border-orange-200">
+                                                        대출중
+                                                    </span>
                                                 )}
                                             </div>
                                         </div>
