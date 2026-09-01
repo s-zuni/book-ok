@@ -46,6 +46,7 @@ import { ChatbotProvider } from "@widgets/chatbot/ChatbotContext";
 import { LoginModalProvider } from "@features/auth/LoginModalContext";
 import SplashScreen from "@shared/ui/SplashScreen";
 import MobileUXProvider from "@shared/lib/MobileUXProvider";
+import AnalyticsTracker from "@shared/ui/AnalyticsTracker";
 
 export default function RootLayout({
   children,
@@ -78,6 +79,7 @@ export default function RootLayout({
         }}
       >
         <AuthProvider>
+          <AnalyticsTracker />
           <MobileUXProvider>
             <LoginModalProvider>
               <ChatbotProvider>

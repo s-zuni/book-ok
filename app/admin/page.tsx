@@ -614,9 +614,25 @@ export default function AdminPage() {
                                     ))}
                                 </div>
                                 
-                                <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm min-h-[400px] flex flex-col items-center justify-center text-gray-400">
-                                    <BarChart3 size={48} className="mb-4 opacity-50" />
-                                    <p className="font-bold">추가 대시보드 지표를 여기에 구성할 수 있습니다.</p>
+                                <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/5 to-transparent p-8 rounded-4xl border border-green-500/20 flex flex-col md:flex-row items-center justify-between gap-6">
+                                    <div className="space-y-2">
+                                        <span className="px-3 py-1 bg-green-500 text-white font-black text-xs rounded-full">
+                                            NEW Analytics
+                                        </span>
+                                        <h3 className="text-xl font-black text-gray-900">
+                                            각 서비스별 체류시간 및 이용자수 상세 분석
+                                        </h3>
+                                        <p className="text-sm text-gray-500 font-medium max-w-xl">
+                                            AI 챗봇 콕이, 도서 탐색, 독서 솔루션, 커뮤니티, 마이페이지 등 각 서비스별 실제 체류시간과 이용자수, 시간대별 및 디바이스별 활동 추이를 실시간으로 확인하세요.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={() => setActiveTab('statistics')}
+                                        className="cursor-pointer whitespace-nowrap px-6 py-3.5 bg-green-600 hover:bg-green-700 text-white font-black text-sm rounded-2xl shadow-lg shadow-green-600/20 transition-all flex items-center gap-2"
+                                    >
+                                        <TrendingUp size={18} />
+                                        서비스 통계 확인하기
+                                    </button>
                                 </div>
                             </div>
                         )}
