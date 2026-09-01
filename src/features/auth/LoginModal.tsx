@@ -48,7 +48,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
     const [keepLoggedIn, setKeepLoggedIn] = useState(true);
     const [tapCount, setTapCount] = useState(0);
     const { vibrate } = useNativeBridge();
-    const { syncUser } = useAuth();
+    const { syncUser, openOnboardingModal, children } = useAuth();
     const router = useRouter();
 
     useEffect(() => {

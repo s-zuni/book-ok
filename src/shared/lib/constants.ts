@@ -26,5 +26,16 @@ export const RECOMMENDATION_TABS: Record<string, { label: string; query: string;
         { label: '볼로냐 라가치상', query: '볼로냐라가치', apiType: 'ItemSearch' },
         { label: '안데르센상', query: '안데르센', apiType: 'ItemSearch' },
         { label: '방정환문학상', query: '방정환문학상', apiType: 'ItemSearch' }
+    ],
+    '아이 맞춤 추천 도서': [
+        { label: '전체 (맞춤)', query: '어린이 베스트셀러', categoryId: '1108', apiType: 'ItemSearch' },
+        { label: '그림책 · 동화', query: '창작그림책', categoryId: '1108', apiType: 'ItemSearch' },
+        { label: '자연 · 과학', query: '어린이 과학 자연', categoryId: '1137', apiType: 'ItemSearch' },
+        { label: '역사 · 사회', query: '어린이 역사 인물', categoryId: '1109', apiType: 'ItemSearch' },
+        { label: '수학 · 논리', query: '어린이 수학 퍼즐', categoryId: '1175', apiType: 'ItemSearch' },
+        { label: '예술 · 체육', query: '어린이 예술 미술', categoryId: '1177', apiType: 'ItemSearch' },
+        { label: '인성 · 마음', query: '어린이 인성 생활습관', categoryId: '1132', apiType: 'ItemSearch' },
+        { label: '언어 · 한글', query: '어린이 한글 말놀이', categoryId: '13790', apiType: 'ItemSearch' },
+        { label: '학습만화', query: '어린이 학습만화', categoryId: '1110', apiType: 'ItemSearch' }
     ]
 };

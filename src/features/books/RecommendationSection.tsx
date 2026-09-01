@@ -34,12 +34,13 @@ export default function RecommendationSection({ title, subtitle, query, category
     // Determine the actual query to use
     // Determine the actual query to use
     const activeTabConfig = tabs.find(t => t.label === activeTab);
-    const currentQuery = activeTabConfig?.query || query;
-    const currentCategoryId = activeTabConfig?.categoryId || categoryId;
-    const currentApiType = activeTabConfig?.apiType || 'ItemSearch';
+    const isDefaultAllTab = activeTab === '전체' || activeTab === '전체 (맞춤)';
+    const currentQuery = (isDefaultAllTab && query) ? query : (activeTabConfig?.query || query);
+    const currentCategoryId = (isDefaultAllTab && categoryId) ? categoryId : (activeTabConfig?.categoryId || categoryId);
+    const currentApiType = (isDefaultAllTab && apiType) ? apiType : (activeTabConfig?.apiType || 'ItemSearch');
     const currentQueryType = (currentApiType === 'ItemList') 
         ? (sortBy === 'PublishTime' ? 'ItemNewAll' : 'Bestseller')
-        : (activeTabConfig?.queryType || 'Bestseller');
+        : (activeTabConfig?.queryType || queryType || 'Bestseller');
 
     const [displayCount, setDisplayCount] = useState(12); // Initial display count
 

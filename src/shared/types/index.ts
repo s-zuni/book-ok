@@ -64,6 +64,8 @@ export interface Child {
     type: string;
     parent_id: string;
     birthdate: string;
+    gender?: string;
+    preferred_topics?: string[];
 }
 
 export interface ReadBook {

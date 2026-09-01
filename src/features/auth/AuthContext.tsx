@@ -16,6 +16,9 @@ interface AuthContextType {
     children: Child[];
     loading: boolean;
     isInitialized: boolean;
+    isOnboardingModalOpen: boolean;
+    openOnboardingModal: () => void;
+    closeOnboardingModal: () => void;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
     refreshChildren: () => Promise<void>;
@@ -32,6 +35,10 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     const [children, setChildren] = useState<Child[]>([]);
     const [loading, setLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
+
+    const openOnboardingModal = useCallback(() => setIsOnboardingModalOpen(true), []);
+    const closeOnboardingModal = useCallback(() => setIsOnboardingModalOpen(false), []);
     
     // To prevent redundant fetches and race conditions
     const fetchInProgress = useRef<string | null>(null);
@@ -133,17 +140,22 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             const fetchTask = async (): Promise<Child[]> => {
                 const { data, error } = await supabase
                     .from('children')
-                    .select('*, birthdate')
+                    .select('*, birthdate, gender, preferred_topics')
                     .eq('parent_id', userId);
                 
                 if (error) throw error;
                 
                 if (data) {
-                    const childrenWithAge = data.map((child: Child) => {
+                    const childrenWithAge = data.map((child: any) => {
                         const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : 0;
                         const currentYear = new Date().getFullYear();
                         const age = birthYear > 0 ? currentYear - birthYear : 0;
-                        return { ...child, age };
+                        return { 
+                            ...child, 
+                            age,
+                            gender: child.gender || undefined,
+                            preferred_topics: Array.isArray(child.preferred_topics) ? child.preferred_topics : []
+                        };
                     });
                     setChildren(childrenWithAge);
                     return childrenWithAge;
@@ -583,6 +595,9 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             children, 
             loading, 
             isInitialized,
+            isOnboardingModalOpen,
+            openOnboardingModal,
+            closeOnboardingModal,
             signOut, 
             refreshProfile, 
             refreshChildren,

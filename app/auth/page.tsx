@@ -167,7 +167,7 @@ export default function AuthPage() {
                     // 회원가입 시 자동 로그인됨 → 바로 홈으로 이동
                     if (data.session) {
                         toast.success('회원가입이 완료되었습니다! 환영합니다 🎉');
-                        router.push('/');
+                        router.push('/?onboarding=child');
                     } else {
                         // 세션이 없는 경우 (이메일 확인 필요 등) → 로그인으로 안내
                         toast.success('회원가입이 완료되었습니다! 로그인해주세요.');
