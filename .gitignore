@@ -8,6 +8,52 @@
 !.yarn/releases
 !.yarn/versions
 
+# Package & Archive files (tarballs, packages, binaries)
+*.tgz
+*.tar.gz
+*.tar
+*.gz
+*.zip
+*.7z
+*.rar
+*.iso
+*.dmg
+*.apk
+*.aab
+*.ipa
+*.exe
+*.pkg
+*.bundle
+
+# Media & Image Files (Uploaded or generated assets)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.avif
+*.heic
+*.heif
+*.bmp
+*.tiff
+*.svg
+*.ico
+*.mp4
+*.webm
+*.mov
+*.mp3
+*.wav
+
+# Explicitly keep essential UI icons, logos and mobile app launcher assets
+!public/icons/*
+!public/images/*
+!assets/*
+!app/favicon.ico
+!android/app/src/main/res/mipmap-*/*
+!android/app/src/main/res/drawable*/*
+!ios/App/App/Assets.xcassets/**/*
+!docs/designs/*.svg
+
 # Next.js & Web Build Outputs
 /.next/
 /out/
@@ -45,6 +91,11 @@ next-env.d.ts
 *.njsproj
 *.sln
 *.sw?
+*.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 
 # OS Generated Files
 .DS_Store
@@ -69,4 +120,3 @@ yarn-error.log*
 
 # Vercel
 .vercel
-
