@@ -84,6 +84,25 @@ workflows:
             --p12-password "1234" \
             --create
 
+      - name: Increment build number
+        script: |
+          echo "=== App Store Connect 최신 빌드 번호 조회 및 자동 증가 ==="
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" || echo "")
+          if [ -z "$LATEST_BUILD_NUMBER" ] || [ "$LATEST_BUILD_NUMBER" = "null" ]; then
+            LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$BUNDLE_ID" || echo "44")
+          fi
+          
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+            LATEST_BUILD_NUMBER=44
+          fi
+
+          NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "✅ 빌드 번호 갱신: 기존 ($LATEST_BUILD_NUMBER) -> 신규 ($NEW_BUILD_NUMBER)"
+          
+          cd ios/App
+          agvtool new-version -all "$NEW_BUILD_NUMBER"
+          cd ../..
+
       - name: Build iOS App
         script: |
           echo "=== 0. SPM 캐시 및 이전 결론 파일 삭제 ==="
@@ -97,8 +116,20 @@ workflows:
           echo "=== 1. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
           xcode-project use-profiles --project "$XCODE_PROJECT"
 
-          echo "=== 2. IPA 빌드 ==="
-          xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"
+          echo "=== 2. IPA 빌드 및 에러 발생 시 상세 로그 출력 ==="
+          if ! xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"; then
+            echo "❌ xcode-project build-ipa 실패! 상세 원인 확인을 위해 xcodebuild 실행 로그를 직접 출력합니다."
+            xcodebuild archive \
+              -project "$XCODE_PROJECT" \
+              -scheme "$XCODE_SCHEME" \
+              -destination "generic/platform=iOS" \
+              -archivePath "build/ios/xcarchive/App.xcarchive" \
+              COMPILER_INDEX_STORE_ENABLE=NO \
+              DEVELOPMENT_TEAM=7AB2D79572 \
+              CODE_SIGN_STYLE=Manual \
+              2>&1 | tail -n 120
+            exit 1
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
