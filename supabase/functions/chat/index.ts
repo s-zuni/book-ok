@@ -48,34 +48,60 @@ serve(async (req) => {
         searchKeyword = lastUserMessage.slice(0, 30).trim() || "베스트셀러";
       }
 
-      const aladinKey = Deno.env.get("ALADIN_API_KEY") || Deno.env.get("aladin_api_key") || "ttbzxzx7290920001";
+      const rawYes24Key = Deno.env.get("YES24_API_KEY") || Deno.env.get("yes24_api_key");
+      const aladinKey = Deno.env.get("ALADIN_API_KEY") || Deno.env.get("aladin_api_key");
 
       try {
-        const aladinUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${aladinKey}&Query=${encodeURIComponent(searchKeyword)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=1108&MaxResults=10&Cover=Big&Sort=SalesPoint`;
-        const aladinRes = await fetch(aladinUrl, {
-          headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (Windows; BookOk/1.0)" }
-        });
-
-        if (aladinRes.ok) {
-          const aladinData = await aladinRes.json();
-          if (aladinData?.item && Array.isArray(aladinData.item)) {
-            candidateBooks = aladinData.item.map((item: any) => ({
-              id: item.isbn13 || item.isbn || String(item.itemId),
-              bookid: item.isbn13 || item.isbn || String(item.itemId),
-              title: item.title?.split(" - ")?.[0]?.trim() || item.title,
-              author: item.author?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || item.author || "저자 미상",
-              publisher: item.publisher || "",
-              coverUrl: item.cover || "",
-              imgsrc: item.cover || "",
-              description: item.description || "",
-              category: item.categoryName?.split(">")?.[1]?.trim() || item.categoryName || "유아/아동",
-              rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-              reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
-            }));
+        if (rawYes24Key) {
+          const yes24Key = rawYes24Key.startsWith("yk_") ? rawYes24Key : `yk_${rawYes24Key}`;
+          const yesUrl = `https://apis.yes24.com/v1/goods/itemList?query=${encodeURIComponent(searchKeyword)}&page=1&pageSize=10&category=BOOK&detail=Y`;
+          const yesRes = await fetch(yesUrl, {
+            headers: { "X-Api-Key": yes24Key, "Accept": "application/json" }
+          });
+          if (yesRes.ok) {
+            const yesData = await yesRes.json();
+            if (yesData.data?.items && Array.isArray(yesData.data.items)) {
+              candidateBooks = yesData.data.items.map((item: any) => ({
+                id: item.isbn13 || item.isbn10 || String(item.itemId),
+                bookid: item.isbn13 || item.isbn10 || String(item.itemId),
+                title: item.title?.split(" - ")?.[0]?.trim() || item.title,
+                author: item.author?.replace(/\s*저(\/.*)?$/, "")?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || item.author || "저자 미상",
+                publisher: item.publisher || "",
+                coverUrl: item.cover || "",
+                imgsrc: item.cover || "",
+                description: item.contentDetail?.bookIntroduction || item.contentDetail?.bookSummary || "",
+                category: item.goodsSortNm || item.goodsType || "유아/아동",
+                rating: item.starScore ? parseFloat((item.starScore / 2).toFixed(1)) : 4.8,
+                reviewsCount: item.salePoint ? Math.min(Math.floor(item.salePoint / 100), 300) + 12 : 120,
+              }));
+            }
+          }
+        } else if (aladinKey) {
+          const aladinUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${aladinKey}&Query=${encodeURIComponent(searchKeyword)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=1108&MaxResults=10&Cover=Big&Sort=SalesPoint`;
+          const aladinRes = await fetch(aladinUrl, {
+            headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (Windows; BookOk/1.0)" }
+          });
+          if (aladinRes.ok) {
+            const aladinData = await aladinRes.json();
+            if (aladinData?.item && Array.isArray(aladinData.item)) {
+              candidateBooks = aladinData.item.map((item: any) => ({
+                id: item.isbn13 || item.isbn || String(item.itemId),
+                bookid: item.isbn13 || item.isbn || String(item.itemId),
+                title: item.title?.split(" - ")?.[0]?.trim() || item.title,
+                author: item.author?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || item.author || "저자 미상",
+                publisher: item.publisher || "",
+                coverUrl: item.cover || "",
+                imgsrc: item.cover || "",
+                description: item.description || "",
+                category: item.categoryName?.split(">")?.[1]?.trim() || item.categoryName || "유아/아동",
+                rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
+                reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
+              }));
+            }
           }
         }
-      } catch (aladinErr) {
-        console.warn("Aladin pre-search error:", aladinErr);
+      } catch (bookSearchErr) {
+        console.warn("Book pre-search error:", bookSearchErr);
       }
 
       // 후보 도서 텍스트 생성

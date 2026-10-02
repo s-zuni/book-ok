@@ -25,6 +25,8 @@ const baseConfig: NextConfig = {
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "image.aladin.co.kr" },
+      { protocol: "https", hostname: "image.yes24.com" },
+      { protocol: "https", hostname: "*.yes24.com" },
       { protocol: "https", hostname: "covers.openlibrary.org" },
       { protocol: "https", hostname: "books.google.com" },
       { protocol: "https", hostname: "*.supabase.co" },

@@ -97,6 +97,7 @@ export default function BookDetailContent() {
                             imgsrc: rawItem.cover,
                             category: rawItem.categoryName?.split('>')?.[1]?.trim() || rawItem.categoryName || '기타',
                             description: rawItem.description || data.description || '',
+                            toc: rawItem.toc || data.toc || '',
                             pubDate: rawItem.pubDate || '',
                             publisher: rawItem.publisher || '',
                         };
@@ -569,7 +570,15 @@ export default function BookDetailContent() {
                                     </div>
                                     <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-gray-900 mb-2">{book.title}</h1>
                                     <p className="text-gray-500 font-medium mb-6">{book.author} | {book.pubDate}</p>
-                                    {book.description && <p className="text-gray-600 leading-relaxed mb-6 text-sm">{book.description}</p>}
+                                    {book.description && <p className="text-gray-600 leading-relaxed mb-6 text-sm whitespace-pre-line">{book.description}</p>}
+                                    {book.toc && (
+                                        <div className="mt-6 pt-5 border-t border-gray-100">
+                                            <h4 className="text-xs font-black tracking-wider text-gray-400 uppercase mb-3">도서 목차</h4>
+                                            <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                                {book.toc.replace(/<[^>]*>?/gm, '')}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </>
                         ) : (
