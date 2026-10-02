@@ -116,32 +116,20 @@ workflows:
           echo "=== 1. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
           xcode-project use-profiles --project "$XCODE_PROJECT"
 
-          echo "=== 1-1. 프로비저닝 프로파일 및 인증서 정보 추출 ==="
-          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-          PROFILE=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -n 1)
-          if [ -z "$PROFILE" ]; then
-            PROFILES_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
-            PROFILE=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -n 1)
+          echo "=== 2. IPA 빌드 및 에러 발생 시 상세 로그 출력 ==="
+          if ! xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"; then
+            echo "❌ xcode-project build-ipa 실패! 상세 원인 확인을 위해 xcodebuild 실행 로그를 직접 출력합니다."
+            xcodebuild archive \
+              -project "$XCODE_PROJECT" \
+              -scheme "$XCODE_SCHEME" \
+              -destination "generic/platform=iOS" \
+              -archivePath "build/ios/xcarchive/App.xcarchive" \
+              COMPILER_INDEX_STORE_ENABLE=NO \
+              DEVELOPMENT_TEAM=7AB2D79572 \
+              CODE_SIGN_STYLE=Manual \
+              2>&1 | tail -n 120
+            exit 1
           fi
-          
-          if [ -n "$PROFILE" ]; then
-            PROFILE_UUID=$(security cms -D -i "$PROFILE" | plutil -extract UUID raw - 2>/dev/null || echo "")
-            echo "✅ 찾은 프로비저닝 프로파일: $PROFILE (UUID: $PROFILE_UUID)"
-          fi
-
-          SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep -E "Apple Distribution|iPhone Distribution" | awk -F'"' '{print $2}' | head -n 1)
-          echo "✅ 서명 인증서: $SIGNING_IDENTITY"
-
-          echo "=== 2. IPA 빌드 ==="
-          ARCHIVE_FLAGS="CODE_SIGN_STYLE=Manual"
-          if [ -n "$SIGNING_IDENTITY" ]; then
-            ARCHIVE_FLAGS="$ARCHIVE_FLAGS CODE_SIGN_IDENTITY=\"$SIGNING_IDENTITY\""
-          fi
-          if [ -n "$PROFILE_UUID" ]; then
-            ARCHIVE_FLAGS="$ARCHIVE_FLAGS PROVISIONING_PROFILE=\"$PROFILE_UUID\""
-          fi
-
-          eval xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME" --archive-flags "$ARCHIVE_FLAGS"
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
