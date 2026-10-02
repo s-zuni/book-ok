@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Book } from "@shared/types";
+import { toBook, type BookApiItem } from "@shared/lib/book-mapper";
 import BookGrid from "@features/books/BookGrid";
 import { ChevronRight, BookX } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -54,24 +55,9 @@ export default function RecommendationSection({ title, subtitle, query, category
     };
 
     useEffect(() => {
-interface AladinRecommendItem {
-    isbn13?: string;
-    isbn?: string;
-    title: string;
-    author: string;
-    cover: string;
-    categoryName: string;
-    pubDate: string;
-    description: string;
-    customerRating?: number;
-    salesPoint?: number;
-}
-
         const fetchBooks = async () => {
             setLoading(true);
             try {
-                let items: AladinRecommendItem[] = [];
- 
                 // Invoke Supabase Edge Function recommendations
                 const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                     method: 'POST',
@@ -91,22 +77,9 @@ interface AladinRecommendItem {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
-                console.log('Aladin Data:', data);
-                if (data.item) {
-                    items = limit ? data.item.slice(0, limit) : data.item;
-                    const mappedBooks: Book[] = items.map((item: AladinRecommendItem) => ({
-                        id: String(item.isbn13 || item.isbn || ''),
-                        bookid: String(item.isbn13 || item.isbn || ''),
-                        title: item.title.split(" - ")[0],
-                        author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                        imgsrc: item.cover, // Ensures high res if available
-                        category: item.categoryName,
-                        pubDate: item.pubDate,
-                        description: item.description,
-                        rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                        reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 400) + 21 : Math.floor(Math.random() * 50) + 120,
-                    }));
-                    setBooks(mappedBooks);
+                                if (data.item) {
+                    const items: BookApiItem[] = limit ? data.item.slice(0, limit) : data.item;
+                    setBooks(items.map(toBook));
                 } else {
                     setBooks([]);
                 }

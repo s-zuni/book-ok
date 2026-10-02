@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Book } from "@shared/types";
+import { toBook } from "@shared/lib/book-mapper";
 import BookGrid from "@features/books/BookGrid";
 import { Sparkles, TrendingUp, AlertCircle, BarChart3 } from "lucide-react";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
@@ -108,29 +109,9 @@ export default function AIRecommendationList({ keywords, readBooks = [] }: AIRec
                     preferredData = await preferredResponse.json();
                 }
 
-interface AladinItem {
-    isbn13?: string;
-    isbn?: string;
-    title: string;
-    author: string;
-    cover: string;
-    categoryName: string;
-    pubDate: string;
-    description: string;
-}
-
                 if (!preferredError && preferredData) {
                     if (preferredData.item) {
-                        const mapped: Book[] = preferredData.item.map((item: AladinItem) => ({
-                            id: item.isbn13 || item.isbn || '',
-                            bookid: item.isbn13 || item.isbn || '',
-                            title: item.title,
-                            author: item.author,
-                            imgsrc: item.cover,
-                            category: item.categoryName,
-                            pubDate: item.pubDate,
-                            description: item.description
-                        }));
+                        const mapped: Book[] = preferredData.item.map(toBook);
                         setPreferredBooks(mapped);
                     }
                 }
@@ -162,16 +143,7 @@ interface AladinItem {
 
                         if (!balancedError && balancedData) {
                             if (balancedData.item) {
-                                const mapped: Book[] = balancedData.item.slice(0, 2).map((item: AladinItem) => ({
-                                    id: item.isbn13 || item.isbn || '',
-                                    bookid: item.isbn13 || item.isbn || '',
-                                    title: item.title,
-                                    author: item.author,
-                                    imgsrc: item.cover,
-                                    category: item.categoryName,
-                                    pubDate: item.pubDate,
-                                    description: item.description
-                                }));
+                                const mapped: Book[] = balancedData.item.slice(0, 2).map(toBook);
                                 balancedBooksResult.push(...mapped);
                             }
                         }

@@ -8,7 +8,7 @@ import { useLoginModal } from "@features/auth/LoginModalContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import HeroSection from "@widgets/hero/HeroSection";
 import RecommendationSection from "@features/books/RecommendationSection";
-import { ChevronLeft, ChevronRight, Bell, Search, Star, BookOpen, X, Check, Award, Plus, Sparkles, Heart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Bell, Search, BookOpen, X, Check, Award, Plus, Sparkles, Heart } from "lucide-react";
 import MainPopup from "@shared/ui/MainPopup";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
@@ -16,29 +16,10 @@ import { toast } from "sonner";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { apiUrl, safeFetch } from "@shared/lib/api";
 import ChildOnboardingModal from "@features/children/ChildOnboardingModal";
+import { toBook, type BookApiItem } from "@shared/lib/book-mapper";
+import type { Book } from "@shared/types";
+import BookRating from "@shared/ui/BookRating";
 import { getChildRecommendationParams } from "@features/books/recommendationEngine";
-
-interface AladinRecommendItem {
-    isbn13?: string;
-    itemId?: string;
-    title: string;
-    author: string;
-    publisher: string;
-    customerRating?: number;
-    salesPoint?: number;
-    cover: string;
-    pubDate?: string;
-}
-
-interface FormattedRecommendBook {
-    id: string;
-    title: string;
-    author: string;
-    publisher: string;
-    rating: number;
-    reviewsCount: number;
-    coverUrl: string;
-}
 
 
 // Premium Icon Wrappers to match the new design system
@@ -97,13 +78,13 @@ function HomeContentInner() {
 
     const isChildOnboardingOpen = isOnboardingModalOpen || onboardingParam === 'child';
 
-    // Curation states for Aladin & Data4Library books
-    const [customBooks, setCustomBooks] = useState<FormattedRecommendBook[]>([]);
+    // Curation states for YES24 & Data4Library books
+    const [customBooks, setCustomBooks] = useState<Book[]>([]);
     const [customLoading, setCustomLoading] = useState(false);
     const [customSort, setCustomSort] = useState<'latest' | 'popular'>('popular');
 
-    const [librarianBooks, setLibrarianBooks] = useState<FormattedRecommendBook[]>([]);
-    const [awardBooks, setAwardBooks] = useState<FormattedRecommendBook[]>([]);
+    const [librarianBooks, setLibrarianBooks] = useState<Book[]>([]);
+    const [awardBooks, setAwardBooks] = useState<Book[]>([]);
     const [librarianLoading, setLibrarianLoading] = useState(false);
     const [awardLoading, setAwardLoading] = useState(false);
     const [librarianSort, setLibrarianSort] = useState<'latest' | 'popular'>('popular');
@@ -366,16 +347,8 @@ function HomeContentInner() {
 
                 const data = await response.json();
                 if (data) {
-                    const items: AladinRecommendItem[] = data.item?.slice(0, 8) || [];
-                    const formatted = items.map((item: AladinRecommendItem) => ({
-                        id: item.isbn13 || item.itemId || '',
-                        title: item.title.split(" - ")[0],
-                        author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                        publisher: item.publisher,
-                        rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                        reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 450) + 25 : Math.floor(Math.random() * 50) + 110,
-                        coverUrl: item.cover
-                    }));
+                    const items: BookApiItem[] = data.item?.slice(0, 8) || [];
+                    const formatted = items.map(toBook);
                     setCustomBooks(formatted);
                 }
             } catch (e) {
@@ -388,7 +361,7 @@ function HomeContentInner() {
         fetchCustomPicks();
     }, [activeChild, customSort]);
 
-    // Fetch Aladin book recommendations for the mobile home view
+    // Fetch librarian book recommendations for the mobile home view
     useEffect(() => {
         const fetchLibrarianPicks = async () => {
             setLibrarianLoading(true);
@@ -409,7 +382,7 @@ function HomeContentInner() {
                     const items = data.item || [];
                     
                     // Client-side sort to support popular vs latest
-                    const sortedItems = [...items].sort((a: AladinRecommendItem, b: AladinRecommendItem) => {
+                    const sortedItems = [...items].sort((a: BookApiItem, b: BookApiItem) => {
                         if (librarianSort === 'popular') {
                             return (b.salesPoint || 0) - (a.salesPoint || 0);
                         } else {
@@ -420,15 +393,7 @@ function HomeContentInner() {
                     });
 
                     const sliced = sortedItems.slice(0, 8);
-                    const formatted = sliced.map((item: AladinRecommendItem) => ({
-                        id: item.isbn13 || item.itemId || '',
-                        title: item.title.split(" - ")[0],
-                        author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                        publisher: item.publisher,
-                        rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                        reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 400) + 21 : Math.floor(Math.random() * 50) + 120,
-                        coverUrl: item.cover
-                    }));
+                    const formatted = sliced.map(toBook);
                     setLibrarianBooks(formatted);
                 }
             } catch (e) {
@@ -459,16 +424,8 @@ function HomeContentInner() {
                 }
                 const data = await response.json();
                 if (data) {
-                    const items: AladinRecommendItem[] = data.item?.slice(0, 8) || [];
-                    const formatted = items.map((item: AladinRecommendItem) => ({
-                        id: item.isbn13 || item.itemId || '',
-                        title: item.title.split(" - ")[0],
-                        author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                        publisher: item.publisher,
-                        rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                        reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 15 : Math.floor(Math.random() * 50) + 90,
-                        coverUrl: item.cover
-                    }));
+                    const items: BookApiItem[] = data.item?.slice(0, 8) || [];
+                    const formatted = items.map(toBook);
                     setAwardBooks(formatted);
                 }
             } catch (e) {
@@ -948,11 +905,7 @@ function HomeContentInner() {
                                             </div>
                                             <h4 className="font-extrabold text-xs text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                             <p className="text-[10px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
-                                            <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                <Star size={10} fill="currentColor" />
-                                                <span className="text-[11px] font-black">{book.rating}</span>
-                                                <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                            </div>
+                                            <BookRating rating={book.rating} iconSize={10} className="text-[11px]" />
                                         </div>
                                     ))
                                 )}
@@ -1008,11 +961,7 @@ function HomeContentInner() {
                                             </div>
                                             <h4 className="font-extrabold text-xs text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                             <p className="text-[10px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
-                                            <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                <Star size={10} fill="currentColor" />
-                                                <span className="text-[11px] font-black">{book.rating}</span>
-                                                <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                            </div>
+                                            <BookRating rating={book.rating} iconSize={10} className="text-[11px]" />
                                         </div>
                                     ))
                                 )}
@@ -1068,11 +1017,7 @@ function HomeContentInner() {
                                             </div>
                                             <h4 className="font-extrabold text-xs text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                             <p className="text-[10px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
-                                            <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                <Star size={10} fill="currentColor" />
-                                                <span className="text-[11px] font-black">{book.rating}</span>
-                                                <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                            </div>
+                                            <BookRating rating={book.rating} iconSize={10} className="text-[11px]" />
                                         </div>
                                     ))
                                 )}

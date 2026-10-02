@@ -6,6 +6,18 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// "흔한남매 원저/백난도 글/..." , "루리 글,그림", "백희나 저" → 대표 저자명만 추출
+function cleanYes24Author(author: string | undefined): string {
+  if (!author) return "저자 미상";
+  let first = author.split("/")[0].split(",")[0].replace(/\(.*?\)/g, "").trim();
+  let prev = "";
+  while (prev !== first) {
+    prev = first;
+    first = first.replace(/\s+(원저|글그림|글|그림|저|지음|지은이|옮김|역)$/, "").trim();
+  }
+  return first || author;
+}
+
 serve(async (req) => {
   // CORS Preflight Request
   if (req.method === "OPTIONS") {
@@ -35,7 +47,7 @@ serve(async (req) => {
         { role: "user", content: prompt || messages?.[messages.length - 1]?.content || "" }
       ];
     } else {
-      // AI 사서 모드 - 알라딘 실시간 도서 검색 Grounding 수행
+      // AI 사서 모드 - YES24 실시간 도서 검색 Grounding 수행
       const lastUserMessage = messages?.[messages.length - 1]?.content || "";
       
       // 검색 키워드 정제
@@ -49,7 +61,6 @@ serve(async (req) => {
       }
 
       const rawYes24Key = Deno.env.get("YES24_API_KEY") || Deno.env.get("yes24_api_key");
-      const aladinKey = Deno.env.get("ALADIN_API_KEY") || Deno.env.get("aladin_api_key");
 
       try {
         if (rawYes24Key) {
@@ -60,44 +71,26 @@ serve(async (req) => {
           });
           if (yesRes.ok) {
             const yesData = await yesRes.json();
-            if (yesData.data?.items && Array.isArray(yesData.data.items)) {
-              candidateBooks = yesData.data.items.map((item: any) => ({
-                id: item.isbn13 || item.isbn10 || String(item.itemId),
-                bookid: item.isbn13 || item.isbn10 || String(item.itemId),
-                title: item.title?.split(" - ")?.[0]?.trim() || item.title,
-                author: item.author?.replace(/\s*저(\/.*)?$/, "")?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || item.author || "저자 미상",
-                publisher: item.publisher || "",
-                coverUrl: item.cover || "",
-                imgsrc: item.cover || "",
-                description: item.contentDetail?.bookIntroduction || item.contentDetail?.bookSummary || "",
-                category: item.goodsSortNm || item.goodsType || "유아/아동",
-                rating: item.starScore ? parseFloat((item.starScore / 2).toFixed(1)) : 4.8,
-                reviewsCount: item.salePoint ? Math.min(Math.floor(item.salePoint / 100), 300) + 12 : 120,
-              }));
+            if (Array.isArray(yesData.data?.items)) {
+              candidateBooks = yesData.data.items.map((item: any) => {
+                const isbn = item.isbn13 || item.isbn10 || String(item.itemId);
+                return {
+                  id: isbn,
+                  bookid: isbn,
+                  title: item.title?.split(" - ")?.[0]?.trim() || item.title,
+                  author: cleanYes24Author(item.author),
+                  publisher: item.publisher || "",
+                  coverUrl: item.cover || "",
+                  imgsrc: item.cover || "",
+                  description: item.contentDetail?.bookIntroduction || item.contentDetail?.bookSummary || "",
+                  category: item.goodsSortNm || item.goodsType || "유아/아동",
+                  // starScore 0 = 평점 없음 (YES24 0~10 척도 → 5점 만점)
+                  rating: item.starScore > 0 ? Math.round(item.starScore * 5) / 10 : undefined,
+                };
+              });
             }
-          }
-        } else if (aladinKey) {
-          const aladinUrl = `https://www.aladin.co.kr/ttb/api/ItemSearch.aspx?ttbkey=${aladinKey}&Query=${encodeURIComponent(searchKeyword)}&Output=js&Version=20131101&SearchTarget=Book&CategoryId=1108&MaxResults=10&Cover=Big&Sort=SalesPoint`;
-          const aladinRes = await fetch(aladinUrl, {
-            headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (Windows; BookOk/1.0)" }
-          });
-          if (aladinRes.ok) {
-            const aladinData = await aladinRes.json();
-            if (aladinData?.item && Array.isArray(aladinData.item)) {
-              candidateBooks = aladinData.item.map((item: any) => ({
-                id: item.isbn13 || item.isbn || String(item.itemId),
-                bookid: item.isbn13 || item.isbn || String(item.itemId),
-                title: item.title?.split(" - ")?.[0]?.trim() || item.title,
-                author: item.author?.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "")?.split(",")?.[0]?.trim() || item.author || "저자 미상",
-                publisher: item.publisher || "",
-                coverUrl: item.cover || "",
-                imgsrc: item.cover || "",
-                description: item.description || "",
-                category: item.categoryName?.split(">")?.[1]?.trim() || item.categoryName || "유아/아동",
-                rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
-              }));
-            }
+          } else {
+            console.warn("YES24 pre-search failed:", yesRes.status);
           }
         }
       } catch (bookSearchErr) {

@@ -85,9 +85,6 @@ export const YES24_TOPIC_CATEGORIES: TopicCategoryConfig[] = [
     }
 ];
 
-// Backward compatibility alias
-export const ALADIN_TOPIC_CATEGORIES = YES24_TOPIC_CATEGORIES;
-
 export interface CustomRecommendationParams {
     query: string;
     categoryId: string;

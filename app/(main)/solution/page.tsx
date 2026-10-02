@@ -7,7 +7,9 @@ import { apiUrl, safeFetch } from "@shared/lib/api";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { Child, Book, MainMenu } from "@shared/types";
-import { Star, Send, Sparkles } from "lucide-react";
+import { toBook, type BookApiItem } from "@shared/lib/book-mapper";
+import BookRating from "@shared/ui/BookRating";
+import { Send, Sparkles } from "lucide-react";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { useLoginModal } from "@features/auth/LoginModalContext";
@@ -19,34 +21,11 @@ import { toast } from "sonner";
 
 
 
-interface RecommendedBook {
-    id?: string;
-    bookid?: string;
-    title: string;
-    author: string;
-    publisher: string;
-    rating: number;
-    reviewsCount: number;
-    coverUrl: string;
-}
-
 interface SupabaseReadBook {
     book_id: string;
     read_date: string;
     observation_data: Record<string, string> | null;
     books: Book | Book[] | null;
-}
-
-interface AladinRecommendItem {
-    isbn13?: string;
-    itemId?: string;
-    title: string;
-    author: string;
-    publisher: string;
-    customerRating?: number;
-    salesPoint?: number;
-    cover: string;
-    pubDate?: string;
 }
 
 interface BookWithObservation extends Book {
@@ -121,8 +100,8 @@ export function SolutionPageContent() {
         setMobileTab(newTab);
         router.replace(`/solution?tab=${newTab}`);
     };
-    const [analysisBooks, setAnalysisBooks] = useState<RecommendedBook[]>([]);
-    const [mobileSolutionHistory, setMobileSolutionHistory] = useState<{ role: 'user' | 'assistant', content: string, books?: RecommendedBook[] }[]>([]);
+    const [analysisBooks, setAnalysisBooks] = useState<Book[]>([]);
+    const [mobileSolutionHistory, setMobileSolutionHistory] = useState<{ role: 'user' | 'assistant', content: string, books?: Book[] }[]>([]);
     const [mobileInput, setMobileInput] = useState('');
     const [mobileLoading, setMobileLoading] = useState(false);
 
@@ -138,8 +117,8 @@ export function SolutionPageContent() {
     const [readingAnalysisResult, setReadingAnalysisResult] = useState('');
     const [readingAnalysisLoading, setReadingAnalysisLoading] = useState(false);
 
-    // Helper to fetch and format book details from Aladin API
-    const fetchAladinBook = async (title: string): Promise<RecommendedBook | null> => {
+    // Helper to fetch and format book details from YES24 API
+    const fetchBookByTitle = async (title: string): Promise<Book | null> => {
         try {
             const response = await safeFetch(
                 `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`,
@@ -156,21 +135,14 @@ export function SolutionPageContent() {
             const data = await response.json();
             const item = data.item?.[0];
             if (!item) return null;
-            return {
-                title: item.title.split(" - ")[0],
-                author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                publisher: item.publisher,
-                rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
-                coverUrl: item.cover
-            };
+            return toBook(item);
         } catch (e) {
-            console.error("Failed to fetch Aladin book for title:", title, e);
+            console.error("Failed to fetch book for title:", title, e);
             return null;
         }
     };
 
-    // Load initial recommended books on mount from Aladin API
+    // Load initial recommended books on mount from YES24 API
     useEffect(() => {
         const loadAnalysisBooks = async () => {
             const bookTitles = [
@@ -179,9 +151,9 @@ export function SolutionPageContent() {
                 "왜 먼저 물어보지 않니?"
             ];
             
-            const loaded: RecommendedBook[] = [];
+            const loaded: Book[] = [];
             for (const title of bookTitles) {
-                const book = await fetchAladinBook(title);
+                const book = await fetchBookByTitle(title);
                 if (book) loaded.push(book);
             }
             setAnalysisBooks(loaded);
@@ -269,16 +241,7 @@ export function SolutionPageContent() {
             if (response.ok) {
                 const data = await response.json();
                 const items = data.item?.slice(0, 5) || [];
-                const parsed = items.map((item: AladinRecommendItem) => ({
-                    id: item.itemId || item.isbn13,
-                    bookid: item.itemId || item.isbn13,
-                    title: item.title.split(" - ")[0],
-                    author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                    publisher: item.publisher,
-                    rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                    reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
-                    coverUrl: item.cover
-                }));
+                const parsed = items.map(toBook);
                 setAnalysisBooks(parsed);
             }
         } catch (e) {
@@ -345,7 +308,7 @@ export function SolutionPageContent() {
             const data = await response.json();
 
             let resultText = "";
-            let loadedBooks: RecommendedBook[] = [];
+            let loadedBooks: Book[] = [];
 
             if (data && data.result) {
                 if (typeof data.result === 'string') {
@@ -376,7 +339,7 @@ export function SolutionPageContent() {
                     
                     if (loadedBooks.length === 0) {
                         for (const title of titles) {
-                            const book = await fetchAladinBook(title);
+                            const book = await fetchBookByTitle(title);
                             if (book) loadedBooks.push(book);
                         }
                     }
@@ -405,14 +368,7 @@ export function SolutionPageContent() {
                         const searchData = await searchResponse.json();
                         const items = searchData.item?.slice(0, 3) || [];
                         for (const item of items) {
-                            loadedBooks.push({
-                                title: item.title.split(" - ")[0],
-                                author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                                publisher: item.publisher,
-                                rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.5,
-                                reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 200) + 5 : Math.floor(Math.random() * 50) + 50,
-                                coverUrl: item.cover
-                            });
+                            loadedBooks.push(toBook(item));
                         }
                     }
                 } catch (searchErr) {
@@ -1335,11 +1291,7 @@ export function SolutionPageContent() {
                                                 </div>
                                                 <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                                 <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
-                                                <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                    <Star size={9} fill="currentColor" />
-                                                    <span className="text-[10px] font-black">{book.rating}</span>
-                                                    <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                                </div>
+                                                <BookRating rating={book.rating} iconSize={9} className="text-[10px]" />
                                             </div>
                                         ))
                                     ) : (
@@ -1438,11 +1390,7 @@ export function SolutionPageContent() {
                                                                 </div>
                                                                 <h4 className="font-extrabold text-[12px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                                                 <p className="text-[9.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author} / {book.publisher}</p>
-                                                                <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                                    <Star size={10} fill="currentColor" />
-                                                                    <span className="text-[10px] font-black">{book.rating}</span>
-                                                                    <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                                                </div>
+                                                                <BookRating rating={book.rating} iconSize={10} className="text-[10px]" />
                                                             </div>
                                                         ))}
                                                     </div>

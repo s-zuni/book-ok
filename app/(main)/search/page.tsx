@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { safeFetch } from "@shared/lib/api";
 import { Book, Child, MainMenu } from "@shared/types";
+import { toBook } from "@shared/lib/book-mapper";
 import BookGrid from "@features/books/BookGrid";
 import BookList from "@features/books/BookList";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -23,17 +24,6 @@ export default function SearchPage() {
             <SearchContent />
         </Suspense>
     );
-}
-
-interface AladinSearchItem {
-    isbn13?: string;
-    isbn?: string;
-    title: string;
-    author: string;
-    cover: string;
-    categoryName: string;
-    pubDate?: string;
-    description?: string;
 }
 
 function SearchContent() {
@@ -93,16 +83,7 @@ function SearchContent() {
             const data = await response.json();
             if (data.item) {
                 setTotalResults(data.totalResults || 0);
-                setSearchResults(data.item.map((it: AladinSearchItem) => ({
-                    id: it.isbn13 || it.isbn || '',
-                    bookid: it.isbn13 || it.isbn || '',
-                    title: it.title,
-                    author: it.author,
-                    imgsrc: it.cover,
-                    category: it.categoryName,
-                    pubDate: it.pubDate,
-                    description: it.description
-                })));
+                setSearchResults(data.item.map(toBook));
                 // Scroll to top
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } else {

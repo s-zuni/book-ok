@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Send, Sparkles, Star } from "lucide-react";
+import { ChevronLeft, Send, Sparkles } from "lucide-react";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { marked } from "marked";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { Book } from "@shared/types";
+import { toBook } from "@shared/lib/book-mapper";
+import BookRating from "@shared/ui/BookRating";
 import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { Keyboard } from '@capacitor/keyboard';
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
@@ -87,8 +89,8 @@ export default function ChatPage() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    // Helper to fetch and format book details from Aladin API
-    const fetchAladinBook = async (title: string): Promise<Book | null> => {
+    // Helper to fetch and format book details from YES24 API
+    const fetchBookByTitle = async (title: string): Promise<Book | null> => {
         try {
             const response = await safeFetch(
                 `${supabaseUrl}/functions/v1/recommendations?query=${encodeURIComponent(title)}&apiType=ItemSearch`,
@@ -105,20 +107,9 @@ export default function ChatPage() {
             const bookData = await response.json();
             const item = bookData?.item?.[0];
             if (!item) return null;
-            return {
-                id: item.isbn13 || item.isbn || item.itemId,
-                bookid: item.isbn13 || item.isbn || item.itemId,
-                title: item.title.split(" - ")[0], // Remove subtitle fluff
-                author: item.author.replace(/\s*\(지은이\)|\s*\(그림\)|\s*\(글\)/g, "").split(",")[0].trim(),
-                publisher: item.publisher,
-                rating: item.customerRating ? parseFloat((item.customerRating / 2).toFixed(1)) : 4.8,
-                reviewsCount: item.salesPoint ? Math.min(Math.floor(item.salesPoint / 100), 300) + 12 : Math.floor(Math.random() * 50) + 100,
-                coverUrl: item.cover,
-                imgsrc: item.cover || "",
-                category: item.categoryName || ""
-            };
+            return toBook(item);
         } catch (e) {
-            console.error("Failed to fetch Aladin book for title:", title, e);
+            console.error("Failed to fetch book for title:", title, e);
             return null;
         }
     };
@@ -257,7 +248,7 @@ export default function ChatPage() {
                 if (match && loadedBooks.length === 0) {
                     const identifiers = match[1].split(',').map((t: string) => t.trim()).filter(Boolean);
                     for (const id of identifiers) {
-                        const book = await fetchAladinBook(id);
+                        const book = await fetchBookByTitle(id);
                         if (book) loadedBooks.push(book);
                     }
                 }
@@ -366,11 +357,7 @@ export default function ChatPage() {
                                                 </div>
                                                 <h4 className="font-extrabold text-[13px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                                                 <p className="text-[10px] text-gray-400 font-bold tracking-tight mb-1">{book.author} / {book.publisher}</p>
-                                                <div className="flex items-center gap-0.5 text-[#16A34A]">
-                                                    <Star size={11} fill="currentColor" />
-                                                    <span className="text-[11px] font-black">{book.rating}</span>
-                                                    <span className="text-[11px] font-bold text-gray-400">({book.reviewsCount})</span>
-                                                </div>
+                                                <BookRating rating={book.rating} iconSize={11} className="text-[11px]" />
                                             </div>
                                         ))}
                                     </div>

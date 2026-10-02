@@ -28,7 +28,7 @@ const Footer = () => {
                 <span className="font-bold text-gray-500">대표자:</span> 이승준
               </li>
               <li className="text-gray-400 text-xs leading-relaxed">
-                <span className="font-bold text-gray-500">외부 API 연동:</span> Aladin, OpenAI, Gemini
+                <span className="font-bold text-gray-500">외부 API 연동:</span> YES24, OpenAI, Gemini
               </li>
               <li className="text-gray-400 text-xs leading-relaxed">
                 <span className="font-bold text-gray-500">문의:</span> axw0208@gmail.com

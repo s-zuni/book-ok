@@ -34,7 +34,7 @@ export default function PrivacyPage() {
             <ul className="list-disc pl-5 mt-4 space-y-2 text-gray-600">
               <li>사용자 식별 및 회원 관리</li>
               <li>AI를 활용한 독서 성향 분석 및 맞춤형 도서 추천 (OpenAI, Gemini API 활용)</li>
-              <li>알라딘(Aladin) API를 통한 도서 정보 제공 및 검색 기능</li>
+              <li>YES24 Open API를 통한 도서 정보 제공 및 검색 기능</li>
               <li>서비스 개선 및 신규 기능 개발을 위한 통계 분석</li>
             </ul>
           </section>
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
                     <td className="px-4 py-3 text-gray-600">도서 추천 알고리즘 및 텍스트 분석 처리</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 text-gray-700">알라딘 커뮤니케이션</td>
+                    <td className="px-4 py-3 text-gray-700">예스이십사(주) (YES24)</td>
                     <td className="px-4 py-3 text-gray-600">도서 정보 검색 및 연동 서비스 제공</td>
                   </tr>
                 </tbody>

@@ -20,7 +20,7 @@ export default function ReadingCategoryChart({ books }: ReadingCategoryChartProp
         books.forEach(book => {
             // Simplify category names (e.g., "Children's > Science" -> "Science")
             // This depends on the raw data format. Assuming simple mapping or raw usage for now.
-            // Aladin API categories can be "국내도서>유아>그림책>..." 
+            // YES24 categories look like "국내도서-유아" (legacy rows may use ">" paths).
             // We'll take the 2nd or 3rd part if > exists, or just use the whole string.
             // For robustness, let's use the provided 'category' field directly first.
             const cat = book.category ? book.category.split('>').pop()?.trim() || '기타' : '기타';

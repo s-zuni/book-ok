@@ -1,6 +1,6 @@
 import { Book } from "@shared/types";
 import OptimizedImage from "@shared/ui/OptimizedImage";
-import { Star } from "lucide-react";
+import BookRating from "@shared/ui/BookRating";
 
 interface BookGridProps {
     books: Book[];
@@ -32,10 +32,8 @@ export default function BookGrid({ books, onSelectBook, size = 'default' }: Book
                             <h4 className="font-extrabold text-[11px] text-gray-900 tracking-tight line-clamp-1 mb-0.5">{book.title}</h4>
                             <p className="text-[8.5px] text-gray-400 font-bold tracking-tight mb-1 truncate">{book.author}</p>
                         </div>
-                        <div className="flex items-center gap-0.5 text-[#16A34A] mt-1.5">
-                            <Star size={9} fill="currentColor" />
-                            <span className="text-[10px] font-black">{book.rating || 4.8}</span>
-                            <span className="text-[10px] font-bold text-gray-400">({book.reviewsCount || 120})</span>
+                        <div className="mt-1.5">
+                            <BookRating rating={book.rating} iconSize={9} />
                         </div>
                     </div>
                 )) : (

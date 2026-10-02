@@ -42,7 +42,7 @@ export default function TermsPage() {
               회사는 회원에게 다음과 같은 서비스를 제공합니다.
             </p>
             <ul className="list-disc pl-5 mt-4 space-y-2 text-gray-600">
-              <li>도서 검색 및 상세 정보 조회 (알라딘 API 활용)</li>
+              <li>도서 검색 및 상세 정보 조회 (YES24 API 활용)</li>
               <li>AI 독서 분석 및 성향 진단 (OpenAI, Gemini API 활용)</li>
               <li>맞춤형 도서 추천 컬렉션 제공</li>
             </ul>
@@ -67,7 +67,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-bold text-[#2E5A44] mb-4">제 6 조 (면책조항)</h2>
             <ul className="list-disc pl-5 mt-4 space-y-2 text-gray-600">
               <li>회사는 천재지변, 기간통신사업자의 서비스 중단 등 불가항력으로 인하여 서비스를 제공할 수 없는 경우에는 책임을 지지 않습니다.</li>
-              <li>회사는 외부 API(알라딘, OpenAI, Gemini)의 오류나 일시적 중단으로 인한 결과에 대해 책임을 지지 않습니다.</li>
+              <li>회사는 외부 API(YES24, OpenAI, Gemini)의 오류나 일시적 중단으로 인한 결과에 대해 책임을 지지 않습니다.</li>
               <li>회원은 AI가 생성한 분석 결과를 전적으로 신뢰하기보다 전문가의 조언과 병행하여 활용해야 합니다.</li>
             </ul>
           </section>

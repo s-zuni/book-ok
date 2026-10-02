@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
  * Supabase Storage Image Transformation 기반 이미지 최적화 유틸리티.
  *
  * Capacitor 빌드에서는 Next.js Image Optimization이 비활성화되므로(unoptimized: true),
- * 외부 API(예: Aladin)의 고화질 이미지가 리사이징 없이 그대로 모바일에 로드됩니다.
+ * 외부 API(예: YES24)의 고화질 이미지가 리사이징 없이 그대로 모바일에 로드됩니다.
  *
  * 이 유틸리티는 Supabase Storage의 Image Transformations(render/image) 엔드포인트를
  * 이미지 리사이징 프록시로 활용하여, 모바일 환경에서 적절한 사이즈의 이미지를 제공합니다.
@@ -64,7 +64,7 @@ export function getOptimizedImageUrl(
     return src;
   }
 
-  // 외부 이미지(예: 알라딘 커버)는 Supabase 리사이징 프록시를 사용할 수 없으므로 원본 반환
+  // 외부 이미지(예: YES24 커버)는 Supabase 리사이징 프록시를 사용할 수 없으므로 원본 반환
   if (src && !src.includes(SUPABASE_URL)) {
     return src;
   }

@@ -6,7 +6,7 @@ import { X, ArrowLeft, Check, Sparkles, User, Calendar, Heart, ShieldCheck } fro
 import { supabase } from "@shared/lib/supabase";
 import { useAuth } from "@features/auth/AuthContext";
 import { Child } from "@shared/types";
-import { ALADIN_TOPIC_CATEGORIES } from "@features/books/recommendationEngine";
+import { YES24_TOPIC_CATEGORIES } from "@features/books/recommendationEngine";
 import { toast } from "sonner";
 
 interface ChildOnboardingModalProps {
@@ -352,12 +352,12 @@ export default function ChildOnboardingModal({ isOpen, onClose, onSuccess }: Chi
                         </div>
 
                         <p className="text-xs text-gray-400 font-medium mb-4">
-                            알라딘 도서 분류 기준 선호 주제를 최대 3개까지 골라주세요.
+                            YES24 도서 분류 기준 선호 주제를 최대 3개까지 골라주세요.
                         </p>
 
                         {/* 8 Categories Grid */}
                         <div className="grid grid-cols-2 gap-2.5 mb-5 max-h-[280px] overflow-y-auto pr-1">
-                            {ALADIN_TOPIC_CATEGORIES.map((cat) => {
+                            {YES24_TOPIC_CATEGORIES.map((cat) => {
                                 const isSelected = selectedTopics.includes(cat.label);
                                 return (
                                     <button

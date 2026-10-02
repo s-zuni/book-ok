@@ -17,7 +17,9 @@ function getApiKey() {
   return null;
 }
 
-const apiKey = getApiKey();
+const rawKey = getApiKey();
+// YES24 API는 'yk_' 접두사가 필요 (앱 코드의 getYes24ApiKey와 동일 규칙)
+const apiKey = rawKey && !rawKey.startsWith('yk_') ? `yk_${rawKey}` : rawKey;
 if (!apiKey) {
   console.error('❌ Error: YES24_API_KEY not found in environment or .env.local');
   process.exit(1);

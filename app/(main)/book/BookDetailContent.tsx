@@ -74,7 +74,7 @@ export default function BookDetailContent() {
             setLoading(true);
             let success = false;
 
-            // 1. Primary: Fetch accurate & rich details from Aladin API via Edge Function
+            // 1. Primary: Fetch accurate & rich details from YES24 API via Edge Function
             try {
                 const response = await safeFetch(`${supabaseUrl}/functions/v1/recommendations`, {
                     method: 'POST',
@@ -111,10 +111,10 @@ export default function BookDetailContent() {
                     }
                 }
             } catch (err) {
-                console.warn("Aladin API fetch failed, trying Supabase fallback:", err);
+                console.warn("YES24 API fetch failed, trying Supabase fallback:", err);
             }
 
-            // 2. Fallback: Query Supabase DB if Aladin API is unavailable or returns no item
+            // 2. Fallback: Query Supabase DB if YES24 API is unavailable or returns no item
             if (!success) {
                 try {
                     const { data: sbBookByIsbn, error: isbnError } = await supabase.from('books').select('*').eq('bookid', bookId).maybeSingle();

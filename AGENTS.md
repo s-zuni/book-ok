@@ -26,7 +26,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - **모바일 하이브리드 컨테이너**: Capacitor 8 (iOS & Android)
 - **스타일링**: Tailwind CSS v4 (`app/globals.css` 내 `@theme` 정의 활용), Lucide React
 - **백엔드 & 데이터베이스**: Supabase (Auth, PostgreSQL DB with RLS, Storage, Deno Edge Functions)
-- **외부 연동 API**: 알라딘 Open API, 국립중앙도서관(도서관정보나루), OpenAI API (Edge Functions 경유)
+- **외부 연동 API**: YES24 Open API, 국립중앙도서관(도서관정보나루), OpenAI API (Edge Functions 경유)
 - **상태 & 알림**: React Context (`AuthContext`, `LoginModalContext`), Sonner (`toast`)
 
 ---
@@ -89,7 +89,7 @@ bookok-app/
 
 ### 4) 데이터 무결성 및 보안
 - 아동 개인정보(생년월일, 이름)와 부모의 독서 기록은 Supabase RLS 정책(`parent_id = auth.uid()`)에 의해 엄격히 보호되어야 합니다.
-- API Key, Service Role Key 등 민감한 인증 정보를 프론트엔드 코드나 Git에 노출하지 마십시오. 외부 API(OpenAI, 알라딘, 도서관 등) 호출은 Supabase Edge Function을 경유하는 것을 기본으로 합니다.
+- API Key, Service Role Key 등 민감한 인증 정보를 프론트엔드 코드나 Git에 노출하지 마십시오. 외부 API(OpenAI, YES24, 도서관 등) 호출은 Supabase Edge Function을 경유하는 것을 기본으로 합니다.
 
 ### 5) 파일 및 형상 관리
 - 루트 디렉터리에 임의의 SVG, 스크립트, 마크다운 파일을 생성하지 마십시오.

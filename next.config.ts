@@ -24,6 +24,7 @@ const baseConfig: NextConfig = {
   images: {
     unoptimized: true,
     remotePatterns: [
+      // 마이그레이션 이전에 저장된 도서 표지(알라딘) 호환용
       { protocol: "https", hostname: "image.aladin.co.kr" },
       { protocol: "https", hostname: "image.yes24.com" },
       { protocol: "https", hostname: "*.yes24.com" },
