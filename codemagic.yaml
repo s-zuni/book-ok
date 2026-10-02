@@ -84,6 +84,27 @@ workflows:
             --p12-password "1234" \
             --create
 
+      - name: Increment build number
+        script: |
+          echo "=== App Store Connect 최신 빌드 번호 조회 및 자동 증가 ==="
+          LATEST_BUILD_NUMBER=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" || echo "")
+          if [ -z "$LATEST_BUILD_NUMBER" ] || [ "$LATEST_BUILD_NUMBER" = "null" ]; then
+            # fallback to latest app store build number if testflight is empty
+            LATEST_BUILD_NUMBER=$(app-store-connect get-latest-app-store-build-number "$BUNDLE_ID" || echo "44")
+          fi
+          
+          # 숫자가 아니거나 비어있을 경우 안전 기본값
+          if ! [[ "$LATEST_BUILD_NUMBER" =~ ^[0-9]+$ ]]; then
+            LATEST_BUILD_NUMBER=44
+          fi
+
+          NEW_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
+          echo "✅ 빌드 번호 갱신: 기존 ($LATEST_BUILD_NUMBER) -> 신규 ($NEW_BUILD_NUMBER)"
+          
+          cd ios/App
+          agvtool new-version -all "$NEW_BUILD_NUMBER"
+          cd ../..
+
       - name: Build iOS App
         script: |
           echo "=== 0. SPM 캐시 및 이전 결론 파일 삭제 ==="
