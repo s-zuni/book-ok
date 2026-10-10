@@ -71,6 +71,14 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-xl font-bold text-[#2E5A44] mb-4">3-1. 외부 쇼핑몰(예스24) 이동 안내</h2>
+            <p className="text-gray-600 leading-relaxed">
+              서비스 내 &quot;구매하기&quot; 버튼을 누르면 예스24 웹사이트로 이동하며, 이후의 주문·결제 및 개인정보 처리에는 예스24의 개인정보처리방침이 적용됩니다.
+              회사는 구매자의 주문·결제 정보를 수집하거나 보관하지 않습니다. 해당 링크는 예스24 애드온 제휴 링크로, 구매가 이루어지면 회사가 예스24로부터 수수료를 지급받을 수 있습니다.
+            </p>
+          </section>
+
+          <section>
             <h2 className="text-xl font-bold text-[#2E5A44] mb-4">4. 개인정보의 보유 및 이용기간</h2>
             <p className="text-gray-600 leading-relaxed">
               사용자의 개인정보는 원칙적으로 회원 탈퇴 시 지체 없이 파기합니다. 단, 관계법령에 의해 보존할 필요가 있는 경우 해당 법령에서 정한 기간 동안 보관합니다.

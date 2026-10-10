@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
 import { Book, Review, Child, MainMenu } from "@shared/types";
@@ -11,6 +11,12 @@ import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import ChildSelectionModal from "@features/children/ChildSelectionModal";
 import LibraryDetailModal, { LibraryStatusDetail } from "@features/books/LibraryDetailModal";
+import BookInfoHero from "@features/books/BookInfoHero";
+import LibraryHoldingsSection from "@features/books/LibraryHoldingsSection";
+import ReviewSection from "@features/books/ReviewSection";
+import Yes24PurchaseButton from "@features/books/Yes24PurchaseButton";
+import Yes24Attribution from "@features/books/Yes24Attribution";
+import { summarizeLoanState } from "@features/books/libraryStatus";
 import { toast } from "sonner";
 import { apiUrl, safeFetch } from "@shared/lib/api";
 import { getOptimizedImageUrl } from "@shared/lib/image-utils";
@@ -100,6 +106,7 @@ export default function BookDetailContent() {
                             toc: rawItem.toc || data.toc || '',
                             pubDate: rawItem.pubDate || '',
                             publisher: rawItem.publisher || '',
+                            purchaseUrl: rawItem.buyLink || undefined,
                         };
 
                         if (!cancelled) {
@@ -355,7 +362,9 @@ export default function BookDetailContent() {
         }
 
         // 3. Insert new book into books table
+        // 숫자 ISBN 은 기존 데이터 규칙대로 books.id 로도 사용 (id 에 기본값이 없던 DB 와도 호환)
         const { data: newBook, error: insertError } = await supabase.from('books').insert({
+            ...(/^\d+$/.test(bookIsbn) ? { id: Number(bookIsbn) } : {}),
             bookid: bookIsbn,
             title: book.title,
             author: book.author || '저자 미상',
@@ -367,6 +376,11 @@ export default function BookDetailContent() {
         }).select('id').maybeSingle();
 
         if (insertError) {
+            // 동시 요청으로 이미 등록된 경우(중복 키)는 기존 행을 사용
+            if (insertError.code === '23505') {
+                const { data: raced } = await supabase.from('books').select('id').eq('bookid', bookIsbn).maybeSingle();
+                if (raced) return Number(raced.id);
+            }
             console.warn("Failed to insert book to DB:", insertError);
             return null;
         }
@@ -433,7 +447,11 @@ export default function BookDetailContent() {
             return;
         }
 
-        await ensureBookInDB();
+        // 책 정보가 books 에 없으면 독서 기록(book_id 필수)을 저장할 수 없으므로 미리 확인
+        if ((await ensureBookInDB()) == null) {
+            toast.error("책 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요.");
+            return;
+        }
         setShowChildModal(true);
     };
 
@@ -446,6 +464,10 @@ export default function BookDetailContent() {
 
         try {
             const dbBookId = await ensureBookInDB();
+            if (dbBookId == null) {
+                toast.error("책 정보를 저장하지 못했어요. 잠시 후 다시 시도해주세요.");
+                return;
+            }
             const bookIsbn = String(book.bookid || book.id || bookId);
 
             const { error } = await supabase.from('read_books').insert({
@@ -477,33 +499,98 @@ export default function BookDetailContent() {
         }
     };
 
-    const handleSubmitReview = async () => {
-        if (!user) return openLoginModal();
-        if (!newRating || !newReviewText) return;
+    /** 리뷰 등록. 성공 여부를 반환합니다. */
+    const submitReview = async (rating: number, text: string): Promise<boolean> => {
+        if (!user) {
+            openLoginModal();
+            return false;
+        }
+        if (!rating || !text) return false;
 
         await ensureBookInDB(); // Ensure book is saved first
 
         const { error } = await supabase.from('reviews').insert({
             book_id: bookId,
             user_id: user.id,
-            rating: newRating,
-            review_text: newReviewText,
+            rating,
+            review_text: text,
             profile_id: user.id
         });
 
-        if (!error) {
+        if (error) {
+            toast.error("리뷰 작성 실패: " + error.message);
+            return false;
+        }
+        fetchReviews();
+        return true;
+    };
+
+    const handleSubmitReview = async () => {
+        if (await submitReview(newRating, newReviewText)) {
             setNewRating(0);
             setNewReviewText("");
-            fetchReviews();
-        } else {
-            toast.error("리뷰 작성 실패: " + error.message);
         }
     };
+
+    const loanState = useMemo(() => summarizeLoanState(libraryStatus), [libraryStatus]);
+    const favoriteLibraryCount = userProfile?.favorite_libraries?.length ?? 0;
 
     const dummySetView = () => { };
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] text-gray-900 font-sans pb-24 lg:pb-0">
+        <>
+        {/* Mobile (Figma: 도서정보_to be) */}
+        <div className="lg:hidden min-h-screen bg-white pb-28 text-gray-900">
+            <header className="sticky top-0 z-40 flex items-center justify-between border-b border-[#E6E6E6] bg-white px-5 pb-4 pt-[calc(1rem+env(safe-area-inset-top,0px))]">
+                <button type="button" onClick={() => router.back()} aria-label="뒤로가기" className="-ml-1 p-1 text-[#1A1A1A] active:scale-95">
+                    <ChevronLeft size={24} />
+                </button>
+                <h1 className="text-[16px] font-bold text-[#1A1A1A]">도서 정보</h1>
+                <span className="w-6" aria-hidden />
+            </header>
+
+            {loading && !book ? (
+                <div className="flex gap-5 px-5 pt-8" aria-busy>
+                    <div className="h-[193px] w-[148px] shrink-0 animate-pulse rounded-[9px] bg-gray-100" />
+                    <div className="flex-1 space-y-3 pt-2">
+                        <div className="h-7 w-24 animate-pulse rounded-full bg-gray-100" />
+                        <div className="h-12 w-full animate-pulse rounded-xl bg-gray-100" />
+                        <div className="h-4 w-1/2 animate-pulse rounded-full bg-gray-100" />
+                    </div>
+                </div>
+            ) : book ? (
+                <>
+                    <BookInfoHero
+                        book={book}
+                        loanState={loanState}
+                        isScrapped={isScrapped}
+                        isRead={isRead}
+                        onScrap={handleScrap}
+                        onMarkRead={handleMarkRead}
+                    />
+                    <LibraryHoldingsSection
+                        isLoggedIn={!!user}
+                        favoriteLibraryCount={favoriteLibraryCount}
+                        loading={libraryStatusLoading}
+                        statuses={libraryStatus}
+                        onLogin={openLoginModal}
+                        onRegisterLibrary={() => router.push('/mypage')}
+                        onSelect={(status) => {
+                            setSelectedLibraryModal(status);
+                            setShowLibraryModal(true);
+                        }}
+                    />
+                    <Yes24PurchaseButton url={book.purchaseUrl} className="px-5 pt-4" />
+                    <ReviewSection reviews={reviews} isLoggedIn={!!user} onLogin={openLoginModal} onSubmit={submitReview} />
+                    <Yes24Attribution className="pb-2" />
+                </>
+            ) : (
+                <p className="p-10 text-center font-bold text-gray-400">도서 정보를 찾을 수 없습니다.</p>
+            )}
+        </div>
+
+        {/* Desktop */}
+        <div className="hidden lg:block min-h-screen bg-[#FDFDFD] text-gray-900 font-sans">
             <Header
                 view="main"
                 setView={dummySetView}
@@ -674,6 +761,8 @@ export default function BookDetailContent() {
                         )}
                     </div>
 
+                    <Yes24PurchaseButton url={book?.purchaseUrl} className="mb-10 max-w-md" />
+
                     {/* Reviews */}
                     <div className="mb-20">
                         <h3 className="text-xl font-black mb-6">리뷰 ({reviews.length})</h3>
@@ -716,24 +805,27 @@ export default function BookDetailContent() {
                             {reviews.length === 0 && <p className="text-gray-400 font-medium text-center py-8">아직 작성된 리뷰가 없습니다. 첫 리뷰를 남겨주세요!</p>}
                         </div>
                     </div>
+                    <Yes24Attribution className="pb-6 text-left" />
                 </main>
             </div>
 
-            <ChildSelectionModal
-                isOpen={showChildModal}
-                onClose={() => setShowChildModal(false)}
-                childrenList={userChildren}
-                onSelect={handleChildSelect}
-            />
-
-            <LibraryDetailModal
-                isOpen={showLibraryModal}
-                onClose={() => setShowLibraryModal(false)}
-                bookTitle={book?.title || ''}
-                bookAuthor={book?.author}
-                bookIsbn={book?.bookid || book?.id}
-                status={selectedLibraryModal}
-            />
         </div>
+
+        <ChildSelectionModal
+            isOpen={showChildModal}
+            onClose={() => setShowChildModal(false)}
+            childrenList={userChildren}
+            onSelect={handleChildSelect}
+        />
+
+        <LibraryDetailModal
+            isOpen={showLibraryModal}
+            onClose={() => setShowLibraryModal(false)}
+            bookTitle={book?.title || ''}
+            bookAuthor={book?.author}
+            bookIsbn={book?.bookid || book?.id}
+            status={selectedLibraryModal}
+        />
+        </>
     );
 }

@@ -16,6 +16,8 @@ export interface Book {
     rating?: number;
     reviewsCount?: number;
     coverUrl?: string;
+    /** 예스24 상품 상세페이지 구매 링크(애드온 링크 포함) */
+    purchaseUrl?: string;
 }
 
 export interface Review {

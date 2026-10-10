@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { X, ArrowLeft, Check, Sparkles, User, Calendar, Heart, ShieldCheck } from "lucide-react";
+import { X, ArrowLeft, Sparkles, User, Calendar, Heart, ShieldCheck } from "lucide-react";
 import { supabase } from "@shared/lib/supabase";
 import { useAuth } from "@features/auth/AuthContext";
 import { Child } from "@shared/types";
-import { YES24_TOPIC_CATEGORIES } from "@features/books/recommendationEngine";
+import { INTEREST_TOPICS, MAX_INTERESTS } from "@features/books/interestTopics";
 import { toast } from "sonner";
 
 interface ChildOnboardingModalProps {
@@ -62,15 +62,15 @@ export default function ChildOnboardingModal({ isOpen, onClose, onSuccess }: Chi
         return { age, typeText, typeCode };
     };
 
-    const handleTopicToggle = (topicLabel: string) => {
-        if (selectedTopics.includes(topicLabel)) {
-            setSelectedTopics(prev => prev.filter(t => t !== topicLabel));
+    const handleTopicToggle = (topicId: string) => {
+        if (selectedTopics.includes(topicId)) {
+            setSelectedTopics(prev => prev.filter(t => t !== topicId));
         } else {
-            if (selectedTopics.length >= 3) {
-                toast.info("선호 주제는 최대 3개까지 선택할 수 있어요!");
+            if (selectedTopics.length >= MAX_INTERESTS) {
+                toast.info(`관심사는 최대 ${MAX_INTERESTS}개까지 선택할 수 있어요!`);
                 return;
             }
-            setSelectedTopics(prev => [...prev, topicLabel]);
+            setSelectedTopics(prev => [...prev, topicId]);
         }
     };
 
@@ -347,41 +347,32 @@ export default function ChildOnboardingModal({ isOpen, onClose, onSuccess }: Chi
                                     ? "bg-green-100 text-green-800"
                                     : "bg-gray-100 text-gray-400"
                             }`}>
-                                {selectedTopics.length} / 3개 선택됨
+                                {selectedTopics.length} / {MAX_INTERESTS}개 선택됨
                             </span>
                         </div>
 
                         <p className="text-xs text-gray-400 font-medium mb-4">
-                            YES24 도서 분류 기준 선호 주제를 최대 3개까지 골라주세요.
+                            좋아하는 주제를 최대 3개까지 골라주세요.
                         </p>
 
-                        {/* 8 Categories Grid */}
-                        <div className="grid grid-cols-2 gap-2.5 mb-5 max-h-[280px] overflow-y-auto pr-1">
-                            {YES24_TOPIC_CATEGORIES.map((cat) => {
-                                const isSelected = selectedTopics.includes(cat.label);
+                        {/* Interest topics grid */}
+                        <div className="grid grid-cols-3 gap-2.5 mb-5">
+                            {INTEREST_TOPICS.map(({ id, label, Icon }) => {
+                                const isSelected = selectedTopics.includes(id);
                                 return (
                                     <button
-                                        key={cat.id}
+                                        key={id}
                                         type="button"
-                                        onClick={() => handleTopicToggle(cat.label)}
-                                        className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between min-h-[72px] active:scale-95 ${
+                                        onClick={() => handleTopicToggle(id)}
+                                        aria-pressed={isSelected}
+                                        className={`flex items-center justify-center gap-1.5 h-11 rounded-full border text-xs font-bold transition-all active:scale-95 ${
                                             isSelected
-                                                ? "bg-green-50/80 border-[#16A34A] text-green-900 ring-1 ring-[#16A34A]/30 shadow-sm"
-                                                : "bg-gray-50/60 border-gray-150 text-gray-700 hover:bg-gray-100"
+                                                ? "bg-green-50 border-[#16A34A] text-[#16A34A]"
+                                                : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
                                         }`}
                                     >
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-lg">{cat.icon}</span>
-                                            {isSelected && (
-                                                <div className="w-4 h-4 rounded-full bg-[#16A34A] text-white flex items-center justify-center">
-                                                    <Check size={10} strokeWidth={3} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <h4 className="text-xs font-black tracking-tight">{cat.label}</h4>
-                                            <p className="text-[9.5px] text-gray-400 font-medium line-clamp-1 mt-0.5">{cat.description}</p>
-                                        </div>
+                                        <Icon size={14} />
+                                        <span>{label}</span>
                                     </button>
                                 );
                             })}

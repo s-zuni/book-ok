@@ -15,6 +15,8 @@ export interface BookApiItem {
     /** YES24 starScore (0~10 척도, 평점이 없으면 undefined) */
     customerRating?: number;
     salesPoint?: number;
+    /** 예스24 구매 링크(애드온 링크 포함) */
+    buyLink?: string;
 }
 
 /** 엣지 함수 응답 항목 → 앱 공용 Book. 평점은 YES24 실데이터만 사용합니다(5점 만점 환산). */
@@ -32,6 +34,7 @@ export function toBook(item: BookApiItem): Book {
         category: item.categoryName || '',
         pubDate: item.pubDate,
         description: item.description,
+        purchaseUrl: item.buyLink || undefined,
         rating: item.customerRating ? Math.round(item.customerRating * 5) / 10 : undefined,
     };
 }

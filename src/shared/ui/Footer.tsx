@@ -31,6 +31,9 @@ const Footer = () => {
                 <span className="font-bold text-gray-500">외부 API 연동:</span> YES24, OpenAI, Gemini
               </li>
               <li className="text-gray-400 text-xs leading-relaxed">
+                도서 정보 제공: 예스24 <span className="mx-1">|</span> 예스24 제휴(애드온) 링크로 구매 시 북콕이 수수료를 받을 수 있습니다.
+              </li>
+              <li className="text-gray-400 text-xs leading-relaxed">
                 <span className="font-bold text-gray-500">문의:</span> axw0208@gmail.com
               </li>
               <li className="text-gray-400 text-xs leading-relaxed">

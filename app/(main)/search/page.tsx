@@ -13,6 +13,7 @@ import Header from "@shared/ui/Header";
 import Sidebar from "@shared/ui/Sidebar";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
+import Yes24Attribution from "@features/books/Yes24Attribution";
 
 export default function SearchPage() {
     return (
@@ -162,6 +163,7 @@ function SearchContent() {
                             )}
                         </>
                     )}
+                    <Yes24Attribution className="mt-10" />
                 </main>
             </div>
         </div>

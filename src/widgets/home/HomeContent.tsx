@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
 import { Child, MainMenu } from "@shared/types";
 import Header from "@shared/ui/Header";
 import { useAuth } from "@features/auth/AuthContext";
@@ -8,7 +8,7 @@ import { useLoginModal } from "@features/auth/LoginModalContext";
 import { useRouter, useSearchParams } from "next/navigation";
 import HeroSection from "@widgets/hero/HeroSection";
 import RecommendationSection from "@features/books/RecommendationSection";
-import { ChevronLeft, ChevronRight, Bell, Search, BookOpen, X, Check, Award, Plus, Sparkles, Heart } from "lucide-react";
+import { ChevronLeft, ChevronRight, Bell, Search, SlidersHorizontal, BookOpen, X, Check, Award, Plus, Sparkles, Heart } from "lucide-react";
 import MainPopup from "@shared/ui/MainPopup";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
@@ -20,6 +20,11 @@ import { toBook, type BookApiItem } from "@shared/lib/book-mapper";
 import type { Book } from "@shared/types";
 import BookRating from "@shared/ui/BookRating";
 import { getChildRecommendationParams } from "@features/books/recommendationEngine";
+import { getInterestTopic, parseInterestIds } from "@features/books/interestTopics";
+import { fetchInterestPicks, type InterestPick } from "@features/books/interestPicks";
+import InterestSheet from "@features/children/InterestSheet";
+import InterestPromptCard from "@features/children/InterestPromptCard";
+import Yes24Attribution from "@features/books/Yes24Attribution";
 
 
 // Premium Icon Wrappers to match the new design system
@@ -55,6 +60,9 @@ const TrophyIcon = () => (
     </svg>
 );
 
+/** '독서왕' 뱃지 획득에 필요한 연속 독서 일수 */
+const READING_KING_DAYS = 5;
+
 function HomeContentInner() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
@@ -82,6 +90,12 @@ function HomeContentInner() {
     const [customBooks, setCustomBooks] = useState<Book[]>([]);
     const [customLoading, setCustomLoading] = useState(false);
     const [customSort, setCustomSort] = useState<'latest' | 'popular'>('popular');
+
+    // 관심사 기반 추천 (관심사가 설정된 자녀 전용)
+    const [interestSheetOpen, setInterestSheetOpen] = useState(false);
+    const [interestPicks, setInterestPicks] = useState<InterestPick[]>([]);
+    const [interestTab, setInterestTab] = useState('');
+    const [promptDismissed, setPromptDismissed] = useState(false);
 
     const [librarianBooks, setLibrarianBooks] = useState<Book[]>([]);
     const [awardBooks, setAwardBooks] = useState<Book[]>([]);
@@ -269,7 +283,7 @@ function HomeContentInner() {
 
                 const badges = [];
                 if (streak >= 3) badges.push("새싹 독서가");
-                if (streak >= 7) badges.push("독서왕");
+                if (streak >= READING_KING_DAYS) badges.push("독서왕");
                 setObtainedBadges(badges);
 
                 if (readToday) {
@@ -313,6 +327,24 @@ function HomeContentInner() {
         }
     }, [children, activeChild]);
 
+    const interestIds = useMemo(() => parseInterestIds(activeChild?.preferred_topics), [activeChild?.preferred_topics]);
+    const interestKey = interestIds.join(',');
+    const activeInterestTab = interestIds.includes(interestTab) ? interestTab : interestIds[0] ?? '';
+    const promptStorageKey = activeChild ? `bookok_interest_prompt_dismissed_${activeChild.id}` : '';
+
+    useEffect(() => {
+        try {
+            setPromptDismissed(!!promptStorageKey && localStorage.getItem(promptStorageKey) === '1');
+        } catch {
+            setPromptDismissed(false);
+        }
+    }, [promptStorageKey]);
+
+    const dismissInterestPrompt = () => {
+        setPromptDismissed(true);
+        try { localStorage.setItem(promptStorageKey, '1'); } catch { /* 저장 불가 환경에서는 세션 동안만 숨김 */ }
+    };
+
     const handleSelectChild = (child: Child) => {
         setActiveChild(child);
         if (typeof window !== 'undefined') {
@@ -323,6 +355,7 @@ function HomeContentInner() {
 
     // Fetch Personalized Custom book recommendations for child
     useEffect(() => {
+        if (interestKey) return; // 관심사가 있으면 아래 interest 추천이 대신 노출됨
         const fetchCustomPicks = async () => {
             setCustomLoading(true);
             try {
@@ -359,7 +392,30 @@ function HomeContentInner() {
         };
 
         fetchCustomPicks();
-    }, [activeChild, customSort]);
+    }, [activeChild, customSort, interestKey]);
+
+    // 관심사 기반 추천: 관심사/연령이 바뀔 때만 1회 호출하고, 탭 전환은 클라이언트에서 필터링
+    useEffect(() => {
+        if (!interestKey) {
+            setInterestPicks([]);
+            return;
+        }
+        let cancelled = false;
+        setCustomLoading(true);
+        fetchInterestPicks(interestKey.split(','), activeChild?.age ?? 6)
+            .then(picks => { if (!cancelled) setInterestPicks(picks); })
+            .catch(e => console.error("Interest picks fetch error:", e))
+            .finally(() => { if (!cancelled) setCustomLoading(false); });
+        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [interestKey, activeChild?.age, activeChild?.type]);
+
+    const customDisplayBooks = useMemo(
+        () => interestKey
+            ? interestPicks.filter(p => p.interestId === activeInterestTab).slice(0, 8).map(p => p.book)
+            : customBooks,
+        [interestKey, interestPicks, activeInterestTab, customBooks]
+    );
 
     // Fetch librarian book recommendations for the mobile home view
     useEffect(() => {
@@ -675,8 +731,22 @@ function HomeContentInner() {
                                 <button className="text-gray-700 p-1 active:scale-95 transition-transform">
                                     <Bell size={20} />
                                 </button>
+                                {user && activeChild && (
+                                    <button
+                                        onClick={() => setInterestSheetOpen(true)}
+                                        className="relative flex items-center gap-0.5 h-6 px-2 rounded-full border border-[#01C950] bg-[#EEFFF5] text-[#01C950] text-[12px] font-bold active:scale-95 transition-transform"
+                                    >
+                                        <SlidersHorizontal size={12} />
+                                        <span>관심사</span>
+                                        {interestIds.length > 0 && (
+                                            <span className="absolute -top-2 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                                {interestIds.length}
+                                            </span>
+                                        )}
+                                    </button>
+                                )}
                                 {user ? (
-                                    <button 
+                                    <button
                                         onClick={() => router.push('/mypage')}
                                         className="bg-[#16A34A]/10 text-[#16A34A] border border-[#16A34A]/20 rounded-full px-3 py-1 text-[11px] font-black tracking-tight hover:bg-[#16A34A]/20 active:scale-95 transition-all"
                                     >
@@ -793,8 +863,16 @@ function HomeContentInner() {
                             )}
                         </div>
 
+                        {user && activeChild && interestIds.length === 0 && !promptDismissed && (
+                            <InterestPromptCard
+                                childName={activeChild.name}
+                                onStart={() => setInterestSheetOpen(true)}
+                                onLater={dismissInterestPrompt}
+                            />
+                        )}
+
                         {/* Challenge Banner Carousel */}
-                        <div className="px-4 py-2">
+                        <div className="px-5 py-2">
                             <button
                                 onClick={() => {
                                     if (!user) {
@@ -805,11 +883,11 @@ function HomeContentInner() {
                                         setIsChallengeModalOpen(true);
                                     }
                                 }}
-                                className="w-full text-left bg-gradient-to-br from-blue-50/50 via-teal-50/40 to-green-50/30 border border-green-100/60 rounded-[32px] p-5 relative overflow-hidden flex justify-between items-center h-[120px] active:scale-[0.99] transition-transform"
+                                className="w-full text-left bg-[#E1F2FF] rounded-[10px] pl-[22px] relative overflow-hidden flex items-center h-[88px] active:scale-[0.99] transition-transform"
                             >
-                                <div className="space-y-1 z-10 flex-1 pr-4">
-                                    <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest">이번 주 독서 챌린지</div>
-                                    <h3 className="text-base font-black text-gray-900">
+                                <div className="space-y-[5px] z-10 w-[142px] shrink-0">
+                                    <div className="text-[10px] font-semibold text-[#17A1FF]">이번 주 독서 챌린지</div>
+                                    <h3 className="text-base font-bold text-[#2A2A2A]">
                                         {!user 
                                             ? "독서 챌린지 도전하기 🔥" 
                                             : children.length === 0 
@@ -818,31 +896,33 @@ function HomeContentInner() {
                                                     ? "첫 책 읽기 도전! 📖" 
                                                     : `${consecutiveDays}일 연속 책 읽기 🔥`}
                                     </h3>
-                                    <p className="text-[11px] font-bold text-gray-400">
+                                    <p className="text-[11px] font-medium text-[#6B6B66]">
                                         {!user 
                                             ? "로그인하고 아이와 함께 매일 책 읽기 챌린지를 시작해보세요!" 
                                             : children.length === 0 
                                                 ? "아이 프로필을 등록하면 연령별 맞춤 챌린지 혜택을 드려요." 
                                                 : !hasReadBooks 
                                                     ? "오늘 읽은 책을 서재에 등록하고 챌린지 불꽃을 피워보세요!" 
-                                                    : (consecutiveDays >= 7 
+                                                    : (consecutiveDays >= READING_KING_DAYS 
                                                         ? "🎉 챌린지 성공! '독서왕' 뱃지 획득 완료!" 
-                                                        : `${7 - consecutiveDays}일만 더 하면 '독서왕' 뱃지 획득!`)}
+                                                        : `${READING_KING_DAYS - consecutiveDays}일만 더 하면 '독서왕' 뱃지 획득!`)}
                                     </p>
                                 </div>
                                 
-                                <div className="relative w-[110px] h-[90px] shrink-0 self-end -mb-2 overflow-visible">
-                                    <Image
-                                        src="/images/hero_child_reading_3d.png"
-                                        alt="Child reading 3D"
-                                        fill
-                                        className="object-contain object-bottom"
-                                        sizes="110px"
-                                    />
+                                <div className="absolute right-[29px] top-[10px] w-[122px] rounded-[6px] bg-white p-[4px] shadow-[0_4px_9px_-2px_rgba(0,0,0,0.25)]">
+                                    <div className="relative h-[85px] overflow-hidden rounded-[4px] bg-gradient-to-br from-[#DCFCE7] to-[#EFF6FF]">
+                                        <Image
+                                            src="/images/hero_child_reading_3d.png"
+                                            alt="Child reading 3D"
+                                            fill
+                                            className="object-cover"
+                                            sizes="114px"
+                                        />
+                                    </div>
                                 </div>
                             </button>
                             {/* Carousel Indicators */}
-                            <div className="flex justify-center items-center gap-1.5 mt-2.5">
+                            <div className="flex justify-center items-center gap-1.5 mt-2" aria-hidden>
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
                             </div>
                         </div>
@@ -850,42 +930,52 @@ function HomeContentInner() {
                         {/* Section 1: Child Custom Personalized Recommended Books */}
                         <div className="py-4 space-y-3.5">
                             <div className="flex justify-between items-center px-5">
-                                <div className="flex items-center gap-2">
+                                <div>
                                     <h3 className="font-black text-base text-gray-900 tracking-tight">
-                                        {activeChild ? `${activeChild.name} 맞춤 추천도서` : "우리 아이 맞춤 추천도서"}
+                                        {activeChild ? `${activeChild.name}를 위한 맞춤 추천` : "우리 아이 맞춤 추천도서"}
                                     </h3>
-                                    {activeChild?.preferred_topics && activeChild.preferred_topics.length > 0 && (
-                                        <span className="text-[10px] font-extrabold text-[#16A34A] bg-green-50 px-2 py-0.5 rounded-full border border-green-200/60 truncate max-w-[110px]">
-                                            {activeChild.preferred_topics[0].split(' · ')[0]}
-                                        </span>
-                                    )}
+                                    {interestKey && <p className="mt-1 text-xs font-medium text-gray-500">관심사를 바탕으로 추천했어요</p>}
                                 </div>
                                 <span onClick={() => handleOpenSection('아이 맞춤 추천 도서', 'custom')} className="text-xs font-bold text-gray-400 cursor-pointer active:text-[#16A34A] transition-colors">더보기 &gt;</span>
                             </div>
 
-                            {/* Sort Filter Tabs */}
-                            <div className="flex gap-2 px-5 text-xs font-bold">
-                                <button
-                                    onClick={() => setCustomSort('popular')}
-                                    className={`px-3 py-1.5 rounded-full transition-all border ${
-                                        customSort === 'popular'
-                                            ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white font-black'
-                                            : 'bg-white border-gray-150 text-gray-400'
-                                    }`}
-                                >
-                                    인기순
-                                </button>
-                                <button
-                                    onClick={() => setCustomSort('latest')}
-                                    className={`px-3 py-1.5 rounded-full transition-all border ${
-                                        customSort === 'latest'
-                                            ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white font-black'
-                                            : 'bg-white border-gray-150 text-gray-400'
-                                    }`}
-                                >
-                                    최신순
-                                </button>
-                            </div>
+                            {interestKey ? (
+                                <div className="flex gap-1 px-5 overflow-x-auto scrollbar-hide">
+                                    {interestIds.map(id => {
+                                        const topic = getInterestTopic(id)!;
+                                        const isActive = id === activeInterestTab;
+                                        return (
+                                            <button
+                                                key={id}
+                                                onClick={() => setInterestTab(id)}
+                                                aria-pressed={isActive}
+                                                className={`flex items-center gap-0.5 h-[25px] px-2.5 rounded-full border text-[11px] shrink-0 transition-colors ${
+                                                    isActive ? 'bg-black border-black text-white font-bold' : 'bg-white border-[#F0F0F0] text-gray-400 font-semibold'
+                                                }`}
+                                            >
+                                                <topic.Icon size={12} />
+                                                <span>{topic.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="flex gap-2 px-5 text-xs font-bold">
+                                    {(['popular', 'latest'] as const).map(type => (
+                                        <button
+                                            key={type}
+                                            onClick={() => setCustomSort(type)}
+                                            className={`px-3 py-1.5 rounded-full transition-all border ${
+                                                customSort === type
+                                                    ? 'bg-[#1A1A1A] border-[#1A1A1A] text-white font-black'
+                                                    : 'bg-white border-gray-150 text-gray-400'
+                                            }`}
+                                        >
+                                            {type === 'popular' ? '인기순' : '최신순'}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
 
                             {/* Custom Books scroll view */}
                             <div className="flex overflow-x-auto gap-4 py-1 px-5 scrollbar-hide">
@@ -898,7 +988,7 @@ function HomeContentInner() {
                                         </div>
                                     ))
                                 ) : (
-                                    customBooks.map((book, idx) => (
+                                    customDisplayBooks.map((book, idx) => (
                                         <div key={idx} onClick={() => router.push(`/book/?id=${book.id}`)} className="bg-white rounded-[24px] p-3 border border-green-100/40 shadow-[0_4px_12px_rgba(0,0,0,0.02)] w-[136px] shrink-0 cursor-pointer active:scale-[0.97] transition-all">
                                             <div className="relative w-full h-[150px] rounded-[16px] overflow-hidden mb-2.5 border border-gray-50">
                                                 <OptimizedImage src={book.coverUrl} alt={book.title} fill className="object-cover" sizes="136px" sizePreset="thumbnail" />
@@ -1023,6 +1113,7 @@ function HomeContentInner() {
                                 )}
                             </div>
                         </div>
+                        <Yes24Attribution className="pb-6" />
                     </>
                 )}
             </div>
@@ -1057,7 +1148,7 @@ function HomeContentInner() {
                                 {consecutiveDays}일 연속
                             </div>
                             <p className="text-xs font-bold text-gray-400 mt-1">
-                                {consecutiveDays >= 7 ? "주간 목표를 달성했습니다!" : "꾸준히 책을 읽고 있어요!"}
+                                {consecutiveDays >= READING_KING_DAYS ? "주간 목표를 달성했습니다!" : "꾸준히 책을 읽고 있어요!"}
                             </p>
 
                             {/* Progress bar */}
@@ -1069,7 +1160,7 @@ function HomeContentInner() {
                             </div>
                             <div className="flex justify-between w-full text-[10px] text-gray-400 font-bold mt-1">
                                 <span>0일</span>
-                                <span>7일 목표 (독서왕)</span>
+                                <span>{READING_KING_DAYS}일 목표 (독서왕)</span>
                             </div>
                         </div>
 
@@ -1088,19 +1179,19 @@ function HomeContentInner() {
 
                             {/* Badge 2: 독서왕 */}
                             <div className={`p-3 rounded-2xl border flex flex-col items-center text-center transition-all relative overflow-hidden ${
-                                consecutiveDays >= 7 
+                                consecutiveDays >= READING_KING_DAYS 
                                     ? "bg-amber-50/50 border-amber-100 text-amber-800 ring-2 ring-amber-400/20" 
                                     : "bg-gray-50/50 border-gray-100 text-gray-300"
                             }`}>
-                                {consecutiveDays >= 7 && (
+                                {consecutiveDays >= READING_KING_DAYS && (
                                     <span className="absolute top-1 right-1 flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                                         <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                                     </span>
                                 )}
-                                <span className={`text-2xl mb-1.5 ${consecutiveDays >= 7 ? "" : "grayscale opacity-30"}`}>👑</span>
+                                <span className={`text-2xl mb-1.5 ${consecutiveDays >= READING_KING_DAYS ? "" : "grayscale opacity-30"}`}>👑</span>
                                 <span className="text-[11px] font-black">독서왕</span>
-                                <span className="text-[9px] font-bold text-gray-400 mt-0.5">7일 연속 달성</span>
+                                <span className="text-[9px] font-bold text-gray-400 mt-0.5">{READING_KING_DAYS}일 연속 달성</span>
                             </div>
                         </div>
 
@@ -1236,7 +1327,7 @@ function HomeContentInner() {
                                 <div className="text-xl">🎉</div>
                                 <h4 className="text-xs font-black text-amber-900 mt-1">축하합니다!</h4>
                                 <p className="text-[10px] text-amber-700 font-bold mt-0.5">
-                                    7일 연속 독서 달성으로 <strong>&apos;독서왕&apos;</strong> 뱃지를 잠금 해제했습니다!
+                                    {READING_KING_DAYS}일 연속 독서 달성으로 <strong>&apos;독서왕&apos;</strong> 뱃지를 잠금 해제했습니다!
                                 </p>
                             </div>
                         ) : null}
@@ -1276,7 +1367,7 @@ function HomeContentInner() {
                                 setHasReadBooks(true);
                                 toast.success("오늘의 독서 챌린지 기록이 완료되었습니다!");
 
-                                if (nextDays >= 7 && !obtainedBadges.includes("독서왕")) {
+                                if (nextDays >= READING_KING_DAYS && !obtainedBadges.includes("독서왕")) {
                                     setObtainedBadges(prev => [...prev, "독서왕"]);
                                     setShowCongrats(true);
                                 }
@@ -1302,6 +1393,9 @@ function HomeContentInner() {
             )}
 
             {/* Child Onboarding Modal (Triggered on Signup or when Onboarding is requested) */}
+            {activeChild && (
+                <InterestSheet open={interestSheetOpen} onClose={() => setInterestSheetOpen(false)} child={activeChild} />
+            )}
             <ChildOnboardingModal
                 isOpen={isChildOnboardingOpen}
                 onClose={() => {

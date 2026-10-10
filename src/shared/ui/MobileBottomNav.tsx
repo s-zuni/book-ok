@@ -6,6 +6,7 @@ import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Capacitor } from "@capacitor/core";
+import LibrarianTooltip from "./LibrarianTooltip";
 
 // Premium SVG Icons matching the mockup
 const HomeIcon = ({ active }: { active: boolean }) => (
@@ -116,6 +117,7 @@ export function MobileBottomNavContent() {
 
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
+            {pathname === "/" && <LibrarianTooltip />}
             <nav className="bg-white border-t border-gray-100/80 shadow-[0_-8px_30px_rgba(0,0,0,0.03)] px-3 pt-1.5 pb-[calc(4px+env(safe-area-inset-bottom,0px))]">
                 <div className="flex justify-between items-center max-w-sm mx-auto">
                     {navItems.map((item) => (

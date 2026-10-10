@@ -1,3 +1,4 @@
+import Yes24Attribution from "./Yes24Attribution";
 import { useEffect, useState } from "react";
 import { Book } from "@shared/types";
 import { toBook, type BookApiItem } from "@shared/lib/book-mapper";
@@ -176,6 +177,7 @@ export default function RecommendationSection({ title, subtitle, query, category
                         )}
                     </>
                 )}
+                <Yes24Attribution className="mt-6" />
             </div>
         </section>
     );
