@@ -724,10 +724,15 @@ export default function BookDetailContent() {
                                     return (
                                         <div
                                             key={status.libCode}
-                                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-gray-100 transition-all"
+                                            onClick={() => {
+                                                setSelectedLibraryModal(status);
+                                                setShowLibraryModal(true);
+                                            }}
+                                            className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-transparent hover:border-gray-200 hover:bg-gray-100/70 transition-all cursor-pointer group"
+                                            title="도서관 상세 정보 및 공식 홈페이지 보기"
                                         >
                                             <div className="flex items-center gap-3 min-w-0">
-                                                <div className="w-10 h-10 rounded-full bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0">
+                                                <div className="w-10 h-10 rounded-full bg-white text-green-600 flex items-center justify-center font-black shadow-sm shrink-0 group-hover:bg-green-50 transition-colors">
                                                     <Building size={18} />
                                                 </div>
                                                 <div className="text-left min-w-0">
@@ -735,20 +740,22 @@ export default function BookDetailContent() {
                                                 </div>
                                             </div>
 
-                                            <div className="shrink-0 ml-3">
+                                            <div className="shrink-0 ml-3 flex items-center gap-2">
                                                 {isNotHeld && (
                                                     <span className="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-black rounded-lg border border-red-100">
                                                         미소장
                                                     </span>
                                                 )}
                                                 {isLoanable && (
-                                                    <span className="px-3 py-1.5 bg-green-500 text-white text-xs font-black rounded-lg shadow-sm shadow-green-100">
-                                                        대출 가능
+                                                    <span className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-black rounded-lg shadow-sm shadow-green-100 flex items-center gap-1 transition-colors">
+                                                        <span>대출 가능</span>
+                                                        <ExternalLink size={12} />
                                                     </span>
                                                 )}
                                                 {isCheckedOut && (
-                                                    <span className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-black rounded-lg border border-orange-200">
-                                                        대출중
+                                                    <span className="px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs font-black rounded-lg border border-orange-200 flex items-center gap-1 transition-colors">
+                                                        <span>대출중</span>
+                                                        <ExternalLink size={12} />
                                                     </span>
                                                 )}
                                             </div>

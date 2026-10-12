@@ -4,6 +4,11 @@ import React, { useState } from "react";
 import { X, Building, MapPin, Phone, Clock, CalendarX, Copy, ExternalLink, Check, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
+import { Browser } from "@capacitor/browser";
+import { Capacitor } from "@capacitor/core";
+import { Haptics, ImpactStyle } from "@capacitor/haptics";
+import { findSeoulLibrary } from "@shared/lib/seoulLibraries";
+
 export interface LibraryStatusDetail {
     libCode: string;
     libName: string;
@@ -44,21 +49,34 @@ export default function LibraryDetailModal({
     const isLoanable = status.hasBook === 'Y' && status.loanAvailable === 'Y';
     const isCheckedOut = status.hasBook === 'Y' && status.loanAvailable === 'N';
 
-    const handleCopyCallNumber = () => {
+    const handleCopyCallNumber = async () => {
         if (!status.callNumber) {
             toast.error("복사할 청구기호 정보가 없습니다.");
             return;
         }
 
         const textToCopy = `[${status.libName}] 청구기호: ${status.callNumber} (${bookTitle})`;
-        navigator.clipboard.writeText(textToCopy);
-        setCopied(true);
-        toast.success("청구기호가 클립보드에 복사되었습니다!");
-
-        setTimeout(() => setCopied(false), 2000);
+        try {
+            await navigator.clipboard.writeText(textToCopy);
+            if (Capacitor.isNativePlatform()) {
+                await Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
+            }
+            setCopied(true);
+            toast.success("청구기호가 클립보드에 복사되었습니다!");
+            setTimeout(() => setCopied(false), 2000);
+        } catch {
+            toast.error("클립보드 복사에 실패했습니다.");
+        }
     };
 
+    const seoulLib = findSeoulLibrary(status.libName || '');
+
     const getTargetUrl = () => {
+        // 1. 서울 열린데이터 광장 공식 홈페이지 데이터 최우선 매칭 (216개 서울 공공도서관 100% 매칭)
+        if (seoulLib?.homepage) {
+            return seoulLib.homepage;
+        }
+
         let rawHomepage = status.homepage?.trim() || '';
         const name = status.libName || '';
 
@@ -69,13 +87,14 @@ export default function LibraryDetailModal({
             return rawHomepage;
         }
 
+        // 2. 주요 지자체 및 도서관 매퍼 Fallback
         if (name.includes('휘경') || name.includes('동대문') || name.includes('이문') || name.includes('답십리') || name.includes('장안') || name.includes('용두') || name.includes('청량리')) {
-            return 'https://www.l-lib.or.kr';
+            return 'https://www.l4d.or.kr';
         }
         if (name.includes('강남')) return 'https://library.gangnam.go.kr';
         if (name.includes('서초')) return 'https://seocholib.or.kr';
         if (name.includes('송파')) return 'https://www.splib.or.kr';
-        if (name.includes('마포')) return 'https://mapolib.or.kr';
+        if (name.includes('마포')) return 'https://mplib.mapo.go.kr';
         if (name.includes('은평')) return 'https://www.eplib.or.kr';
         if (name.includes('노원')) return 'https://www.nowonlib.kr';
         if (name.includes('성북')) return 'https://www.sblib.seoul.kr';
@@ -91,18 +110,33 @@ export default function LibraryDetailModal({
         return `https://search.naver.com/search.naver?query=${encodeURIComponent(name + ' 공식 홈페이지')}`;
     };
 
-    const handleGoToHomepageClick = () => {
+    const targetUrl = getTargetUrl();
+
+    const handleGoToHomepageClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
         if (status.callNumber) {
             try {
-                navigator.clipboard.writeText(`청구기호: ${status.callNumber}`);
+                await navigator.clipboard.writeText(`청구기호: ${status.callNumber}`);
                 toast.info("청구기호가 복사되었습니다! 도서관 검색창에 활용해보세요.", { duration: 3500 });
-            } catch (e) {
-                console.warn("Clipboard write failed:", e);
+            } catch (err) {
+                console.warn("Clipboard write failed:", err);
+            }
+        }
+
+        if (Capacitor.isNativePlatform()) {
+            e.preventDefault();
+            await Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+            try {
+                await Browser.open({ url: targetUrl });
+            } catch (err) {
+                console.error("Browser.open failed, fallback to window.open", err);
+                window.open(targetUrl, "_blank", "noopener,noreferrer");
             }
         }
     };
-
-    const targetUrl = getTargetUrl();
+    const displayAddress = status.address || seoulLib?.address;
+    const displayTel = status.tel || seoulLib?.tel;
+    const displayOperatingTime = status.operatingTime || seoulLib?.opTime;
+    const displayClosed = status.closed || seoulLib?.closeDate;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
@@ -203,28 +237,28 @@ export default function LibraryDetailModal({
 
                     {/* Library Metadata Details */}
                     <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3 text-xs text-gray-600">
-                        {status.address && (
+                        {displayAddress && (
                             <div className="flex items-start gap-2.5">
                                 <MapPin size={15} className="text-gray-400 shrink-0 mt-0.5" />
-                                <span>{status.address}</span>
+                                <span>{displayAddress}</span>
                             </div>
                         )}
-                        {status.tel && (
+                        {displayTel && (
                             <div className="flex items-center gap-2.5">
                                 <Phone size={15} className="text-gray-400 shrink-0" />
-                                <span>{status.tel}</span>
+                                <span>{displayTel}</span>
                             </div>
                         )}
-                        {status.operatingTime && (
+                        {displayOperatingTime && (
                             <div className="flex items-start gap-2.5">
                                 <Clock size={15} className="text-gray-400 shrink-0 mt-0.5" />
-                                <span>운영시간: {status.operatingTime}</span>
+                                <span>운영시간: {displayOperatingTime}</span>
                             </div>
                         )}
-                        {status.closed && (
+                        {displayClosed && (
                             <div className="flex items-start gap-2.5">
                                 <CalendarX size={15} className="text-red-400 shrink-0 mt-0.5" />
-                                <span className="text-red-600 font-medium">휴관일: {status.closed}</span>
+                                <span className="text-red-600 font-medium">휴관일: {displayClosed}</span>
                             </div>
                         )}
                     </div>
