@@ -1,10 +1,31 @@
 import fs from 'fs';
 
-const key = '7a436b7561646c743634716d754678';
+// API 키는 소스에 하드코딩하지 않고 환경변수(.env.local의 SEOUL_OPEN_DATA)에서 읽는다.
+try { process.loadEnvFile('.env.local'); } catch { /* 환경변수가 이미 주입된 경우 */ }
+const key = process.env.SEOUL_OPEN_DATA;
+if (!key) {
+  console.error('SEOUL_OPEN_DATA 환경변수가 필요합니다.');
+  process.exit(1);
+}
+
+// 홈페이지 URL을 https 절대 URL로 정규화. 유효하지 않으면 빈 문자열.
+function normalizeHomepage(raw) {
+  let url = (raw || '').trim();
+  if (!url) return '';
+  if (/^http:\/\//i.test(url)) url = url.replace(/^http:\/\//i, 'https://');
+  else if (!/^https:\/\//i.test(url)) url = 'https://' + url.replace(/^\/+/, '');
+  try {
+    const u = new URL(url);
+    return u.hostname.includes('.') ? url : '';
+  } catch {
+    return '';
+  }
+}
 
 async function generateSeoulLibraryMap() {
   const url = `http://openapi.seoul.go.kr:8088/${key}/json/SeoulPublicLibraryInfo/1/300/`;
   const res = await fetch(url);
+  if (!res.ok) throw new Error(`Seoul OpenAPI 요청 실패: ${res.status}`);
   const data = await res.json();
   const list = data.SeoulPublicLibraryInfo.row;
 
@@ -12,12 +33,9 @@ async function generateSeoulLibraryMap() {
   
   for (const item of list) {
     const rawName = item.LBRRY_NAME.trim();
-    let homepage = (item.HMPG_URL || '').trim();
-    
-    // HTTP -> HTTPS 프로토콜 보정 (브라우저 Mixed Content 차단 방지)
-    if (homepage.startsWith('http://')) {
-      homepage = homepage.replace('http://', 'https://');
-    }
+    // 스킴 누락/HTTP 보정 (Mixed Content 및 상대경로 해석 방지)
+    const homepage = normalizeHomepage(item.HMPG_URL);
+    if (!homepage) console.warn(`[경고] 홈페이지 URL 없음/무효: ${rawName}`);
     
     libraryMap[rawName] = {
       name: rawName,

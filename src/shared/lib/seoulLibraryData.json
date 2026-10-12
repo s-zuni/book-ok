@@ -1183,7 +1183,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 난계로 20",
     "tel": "02-2204-6450",
-    "homepage": "www.sdlib.or.kr/KH",
+    "homepage": "https://www.sdlib.or.kr/KH",
     "opTime": "화~금 07:00~22:00, 토~일 09:00~20:00",
     "closeDate": "매주 월요일 및 법정공휴일"
   },
@@ -1192,7 +1192,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 고산자로10길 9",
     "tel": "02-2204-6420",
-    "homepage": "www.sdlib.or.kr/SD",
+    "homepage": "https://www.sdlib.or.kr/SD",
     "opTime": "화~일 07:00~22:00",
     "closeDate": "매주 월요일 및 법정공휴일"
   },
@@ -1201,7 +1201,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 매봉길 49-29",
     "tel": "02-2204-6485",
-    "homepage": "www.sdlib.or.kr/fore",
+    "homepage": "https://www.sdlib.or.kr/fore",
     "opTime": "화~일 10:00~20:00",
     "closeDate": "매주 월요일 및 법정공휴일"
   },
@@ -1210,7 +1210,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 고산자로 270",
     "tel": "02-2286-6025",
-    "homepage": "www.sdlib.or.kr/RB",
+    "homepage": "https://www.sdlib.or.kr/RB",
     "opTime": "월 09:00~18:00, 화~일 09:00~21:00",
     "closeDate": "법정공휴일"
   },
@@ -1219,7 +1219,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 뚝섬로1길 43",
     "tel": "02-2204-7590",
-    "homepage": "www.sdlib.or.kr/SS",
+    "homepage": "https://www.sdlib.or.kr/SS",
     "opTime": "화~금 08:00~22:00, 토~일 09:00~20:00",
     "closeDate": "매주 월요일 및 법정공휴일"
   },
@@ -1228,7 +1228,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 용답중앙3길 10",
     "tel": "02-2204-6480",
-    "homepage": "www.sdlib.or.kr/YD",
+    "homepage": "https://www.sdlib.or.kr/YD",
     "opTime": "화~금 07:00~22:00, 토~일 09:00~20:00",
     "closeDate": "매주 월요일 및 법정공휴일"
   },
@@ -1237,7 +1237,7 @@
     "gu": "성동구",
     "address": "서울특별시 성동구 마장로 141",
     "tel": "02-2204-7580",
-    "homepage": "www.sdlib.or.kr/CG",
+    "homepage": "https://www.sdlib.or.kr/CG",
     "opTime": "화~일 09:00~20:00",
     "closeDate": "매주 월요일 및 법정공휴일"
   },
@@ -1318,7 +1318,7 @@
     "gu": "성북구",
     "address": "서울특별시 성북구 화랑로13길 17 월곡꿈그림도서관",
     "tel": "02-6949-1553",
-    "homepage": "www.sblib.seoul.kr/wglib/",
+    "homepage": "https://www.sblib.seoul.kr/wglib/",
     "opTime": "평일, 주말 : 09:00~18:00(수,금 : 09:00~20:00)",
     "closeDate": "월요일,법정공휴일"
   },

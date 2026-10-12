@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
-import { findSeoulLibrary } from "@shared/lib/seoulLibraries";
+import { findSeoulLibrary, toSafeHttpUrl } from "@shared/lib/seoulLibraries";
 
 export interface LibraryStatusDetail {
     libCode: string;
@@ -72,19 +72,18 @@ export default function LibraryDetailModal({
     const seoulLib = findSeoulLibrary(status.libName || '');
 
     const getTargetUrl = () => {
-        // 1. 서울 열린데이터 광장 공식 홈페이지 데이터 최우선 매칭 (216개 서울 공공도서관 100% 매칭)
-        if (seoulLib?.homepage) {
-            return seoulLib.homepage;
+        // 1. 서울 열린데이터 광장 공식 홈페이지 데이터 최우선 매칭 (서울 공공도서관 공식 데이터 기반 이름 매칭)
+        const seoulUrl = toSafeHttpUrl(seoulLib?.homepage);
+        if (seoulUrl) {
+            return seoulUrl;
         }
 
         let rawHomepage = status.homepage?.trim() || '';
         const name = status.libName || '';
 
-        if (rawHomepage && rawHomepage !== '') {
-            if (!rawHomepage.startsWith('http://') && !rawHomepage.startsWith('https://')) {
-                return 'http://' + rawHomepage;
-            }
-            return rawHomepage;
+        const apiUrl = toSafeHttpUrl(rawHomepage);
+        if (apiUrl) {
+            return apiUrl;
         }
 
         // 2. 주요 지자체 및 도서관 매퍼 Fallback
@@ -112,25 +111,28 @@ export default function LibraryDetailModal({
 
     const targetUrl = getTargetUrl();
 
-    const handleGoToHomepageClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const handleGoToHomepageClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        // await 이전에 동기적으로 기본 동작을 막아야 앱에서 이중 이동이 발생하지 않음
+        const isNative = Capacitor.isNativePlatform();
+        if (isNative) e.preventDefault();
+
         if (status.callNumber) {
-            try {
-                await navigator.clipboard.writeText(`청구기호: ${status.callNumber}`);
-                toast.info("청구기호가 복사되었습니다! 도서관 검색창에 활용해보세요.", { duration: 3500 });
-            } catch (err) {
-                console.warn("Clipboard write failed:", err);
-            }
+            navigator.clipboard
+                ?.writeText(`청구기호: ${status.callNumber}`)
+                .then(() => toast.info("청구기호가 복사되었습니다! 도서관 검색창에 활용해보세요.", { duration: 3500 }))
+                .catch((err) => console.warn("Clipboard write failed:", err));
         }
 
-        if (Capacitor.isNativePlatform()) {
-            e.preventDefault();
-            await Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
-            try {
-                await Browser.open({ url: targetUrl });
-            } catch (err) {
-                console.error("Browser.open failed, fallback to window.open", err);
-                window.open(targetUrl, "_blank", "noopener,noreferrer");
-            }
+        if (isNative) {
+            void (async () => {
+                await Haptics.impact({ style: ImpactStyle.Medium }).catch(() => {});
+                try {
+                    await Browser.open({ url: targetUrl });
+                } catch (err) {
+                    console.error("Browser.open failed, fallback to window.open", err);
+                    window.open(targetUrl, "_blank", "noopener,noreferrer");
+                }
+            })();
         }
     };
     const displayAddress = status.address || seoulLib?.address;
