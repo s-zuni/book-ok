@@ -10,7 +10,7 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.bookok.kr"
-      node: 20
+      node: 22
       xcode: 16.2
     scripts:
       - name: Install dependencies
