@@ -125,6 +125,9 @@ workflows:
           echo "=== 2. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
           xcode-project use-profiles --project "$XCODE_PROJECT"
 
+          echo "=== 2-1. SPM 패키지 서명 충돌 방지 처리 (프로젝트 레벨 서명 격리) ==="
+          node scripts/fix-spm-signing.js
+
           echo "=== 3. IPA 빌드 ==="
           if ! xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"; then
             echo "❌ xcode-project build-ipa 실패! 상세 컴파일/빌드 에러를 진단합니다."
