@@ -139,17 +139,12 @@ workflows:
           fi
 
           SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep -E "Apple Distribution|iPhone Distribution" | awk -F'"' '{print $2}' | head -n 1)
-          echo "✅ 서명 인증서: $SIGNING_IDENTITY"
-
-          ARCHIVE_FLAGS="CODE_SIGN_STYLE=Manual"
+          echo "=== 3. IPA 빌드 ==="
+          ARCHIVE_FLAGS="DEVELOPMENT_TEAM=7AB2D79572"
           if [ -n "$SIGNING_IDENTITY" ]; then
             ARCHIVE_FLAGS="$ARCHIVE_FLAGS CODE_SIGN_IDENTITY=\"$SIGNING_IDENTITY\""
           fi
-          if [ -n "$PROFILE_UUID" ]; then
-            ARCHIVE_FLAGS="$ARCHIVE_FLAGS PROVISIONING_PROFILE=\"$PROFILE_UUID\""
-          fi
 
-          echo "=== 3. IPA 빌드 (명시적 서명 플래그 적용) ==="
           if ! eval xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME" --archive-flags "$ARCHIVE_FLAGS"; then
             echo "❌ xcode-project build-ipa 실패! 상세 컴파일/빌드 에러를 진단합니다."
             xcodebuild archive \
@@ -159,9 +154,7 @@ workflows:
               -archivePath "build/ios/xcarchive/App.xcarchive" \
               COMPILER_INDEX_STORE_ENABLE=NO \
               DEVELOPMENT_TEAM=7AB2D79572 \
-              CODE_SIGN_STYLE=Manual \
               CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
-              PROVISIONING_PROFILE="$PROFILE_UUID" \
               2>&1 | tee /tmp/xcodebuild.log | grep -E "error:|fatal error:|warning: App isn't code signed" || true
             
             echo "=== 마지막 50줄 출력 ==="
