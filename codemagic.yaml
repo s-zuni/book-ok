@@ -2,7 +2,7 @@ workflows:
   capacitor-ios:
     name: iOS Build & App Store Upload
     max_build_duration: 60
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     integrations:
       app_store_connect: "seung jun"
     environment:
@@ -11,13 +11,13 @@ workflows:
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.bookok.kr"
       node: 22
-      xcode: 16.2
+      xcode: latest
     scripts:
       - name: Install dependencies
         script: |
           npm install --legacy-peer-deps
           npx patch-package
-          node -e "const fs=require('fs');const p='node_modules/@capacitor-community/apple-sign-in/Package.swift';if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8');c=c.replace('7.0.0','8.0.0');fs.writeFileSync(p,c);console.log('✅ Apple Sign In Package.swift patched to 8.0.0');}"
+          node -e "const fs=require('fs');const p='node_modules/@capacitor-community/apple-sign-in/Package.swift';if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8');c=c.replace('7.0.0','8.0.0').replace('.v14','.v15');fs.writeFileSync(p,c);console.log('✅ Apple Sign In Package.swift patched to 8.0.0 and iOS 15');}"
           echo "=== Debug: Package.swift content ==="
           if [ -f node_modules/@capacitor-community/apple-sign-in/Package.swift ]; then
             cat node_modules/@capacitor-community/apple-sign-in/Package.swift

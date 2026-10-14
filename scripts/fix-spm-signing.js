@@ -32,8 +32,8 @@ console.log(`🔍 Found PBXProject configuration IDs: ${projectConfigIds.join(',
 
 let modified = false;
 
+// Step A: Fix PBXProject level code signing to prevent SPM conflicts
 for (const configId of projectConfigIds) {
-    // Regex to match the XCBuildConfiguration block for this configId
     const blockRegex = new RegExp(`(${configId}\\s*\\/\\*.*?\\*\\/\\s*=\\s*\\{[\\s\\S]*?buildSettings\\s*=\\s*\\{)([\\s\\S]*?)(\\};[\\s\\S]*?\\};)`, 'm');
     const blockMatch = content.match(blockRegex);
 
@@ -52,8 +52,6 @@ for (const configId of projectConfigIds) {
         }
 
         // 3. Set CODE_SIGN_IDENTITY = "Apple Development" at Project level
-        // (This satisfies Xcode requirement that automatically signed SPM targets use Apple Development)
-        // Also remove any sdk-specific CODE_SIGN_IDENTITY overrides at project level
         settings = settings.replace(/\s*CODE_SIGN_IDENTITY\[sdk=[^\]]+\]\s*=\s*[^;]+;/g, '');
         if (/CODE_SIGN_IDENTITY\s*=\s*[^;]+;/.test(settings)) {
             settings = settings.replace(/CODE_SIGN_IDENTITY\s*=\s*[^;]+;/g, 'CODE_SIGN_IDENTITY = "Apple Development";');
@@ -70,10 +68,30 @@ for (const configId of projectConfigIds) {
     }
 }
 
+// Step B: Inject NonescapableTypes experimental feature flag into OTHER_SWIFT_FLAGS across configurations
+// This resolves Capacitor 8 SPM issue where core APIs (viewController, reject, getString, color)
+// are gated behind #if compiler(>=5.3) && $NonescapableTypes
+const configBlockRegex = /([0-9A-F]{24}\s*\/\*\s*(?:Debug|Release)\s*\*\/[\s\S]*?buildSettings\s*=\s*\{)([\s\S]*?)(\};)/g;
+content = content.replace(configBlockRegex, (match, header, settings, footer) => {
+    let updatedSettings = settings;
+    if (updatedSettings.includes('OTHER_SWIFT_FLAGS')) {
+        if (!updatedSettings.includes('NonescapableTypes')) {
+            updatedSettings = updatedSettings.replace(
+                /OTHER_SWIFT_FLAGS\s*=\s*"([^"]*)";/,
+                'OTHER_SWIFT_FLAGS = "$1 -enable-experimental-feature NonescapableTypes";'
+            );
+            modified = true;
+        }
+    } else {
+        updatedSettings = `\n\t\t\t\tOTHER_SWIFT_FLAGS = "$(inherited) -enable-experimental-feature NonescapableTypes";${updatedSettings}`;
+        modified = true;
+    }
+    return header + updatedSettings + footer;
+});
+
 if (modified) {
     fs.writeFileSync(pbxprojPath, content, 'utf8');
-    console.log('🎉 Successfully fixed SPM signing conflict in project.pbxproj!');
+    console.log('🎉 Successfully fixed SPM signing conflict and enabled NonescapableTypes in project.pbxproj!');
 } else {
     console.log('ℹ️ No modifications were needed.');
 }
-
