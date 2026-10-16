@@ -59,7 +59,10 @@ export function MobileBottomNavContent() {
     if (
         pathname === "/chat" || 
         pathname === "/chat/" ||
-        pathname?.startsWith("/chat/")
+        pathname?.startsWith("/chat/") ||
+        pathname === "/solution/literacy" ||
+        pathname === "/solution/literacy/" ||
+        pathname?.startsWith("/solution/literacy/")
     ) {
         return null;
     }

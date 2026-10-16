@@ -435,3 +435,10 @@ entrypoint = "./functions/reading-plan/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/reading-plan/*.html" ]
+
+[functions.literacy-test]
+enabled = true
+verify_jwt = true
+import_map = "./functions/literacy-test/deno.json"
+entrypoint = "./functions/literacy-test/index.ts"
+
