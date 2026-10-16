@@ -3,13 +3,14 @@
 import { useEffect, useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@shared/ui/Header";
+import Sidebar from "@shared/ui/Sidebar";
 import { apiUrl, safeFetch } from "@shared/lib/api";
 import { useAuth } from "@features/auth/AuthContext";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
-import { Child, Book, MainMenu } from "@shared/types";
+import { Child, Book, MainMenu, LiteracyAssessment } from "@shared/types";
 import { toBook, type BookApiItem } from "@shared/lib/book-mapper";
 import BookRating from "@shared/ui/BookRating";
-import { Send, Sparkles } from "lucide-react";
+import { Send, Sparkles, BrainCircuit, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import OptimizedImage from "@shared/ui/OptimizedImage";
 import { useLoginModal } from "@features/auth/LoginModalContext";
@@ -18,6 +19,9 @@ import { Keyboard } from "@capacitor/keyboard";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { marked } from "marked";
 import { toast } from "sonner";
+import ReadingAnalysis from "@widgets/solution/ReadingAnalysis";
+import AISolution from "@widgets/solution/AISolution";
+import LiteracyDashboardWidget from "@widgets/solution/LiteracyDashboardWidget";
 
 
 
@@ -35,7 +39,8 @@ interface BookWithObservation extends Book {
 export function SolutionPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const tabParam = searchParams?.get('tab') as 'analysis' | 'solution' | null;
+    const tabParam = searchParams?.get('tab') as 'analysis' | 'literacy' | 'solution' | null;
+    const fromLiteracyParam = searchParams?.get('fromLiteracy');
     const { openLoginModal } = useLoginModal();
     const [activeMenu, setActiveMenu] = useState<MainMenu>('solution');
     const [activeSubMenu, setActiveSubMenu] = useState('우리 아이 독서 성향 AI 분석');
@@ -43,7 +48,7 @@ export function SolutionPageContent() {
     const [searchQuery, setSearchQuery] = useState("");
 
     // Mobile specific states & refs
-    const [mobileTab, setMobileTab] = useState<'analysis' | 'solution'>('analysis');
+    const [mobileTab, setMobileTab] = useState<'analysis' | 'literacy' | 'solution'>('analysis');
     const [isKeyboardActive, setIsKeyboardActive] = useState(false);
     const [viewportHeight, setViewportHeight] = useState("100dvh");
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -91,13 +96,19 @@ export function SolutionPageContent() {
     }, []);
 
     useEffect(() => {
-        if (tabParam && (tabParam === 'analysis' || tabParam === 'solution')) {
+        if (tabParam && (tabParam === 'analysis' || tabParam === 'literacy' || tabParam === 'solution')) {
             setMobileTab(tabParam);
+            if (tabParam === 'literacy') setActiveSubMenu('AI 문해력 진단');
+            else if (tabParam === 'solution') setActiveSubMenu('AI 독서 솔루션');
+            else setActiveSubMenu('우리 아이 독서 성향 AI 분석');
         }
     }, [tabParam]);
 
-    const handleTabChange = (newTab: 'analysis' | 'solution') => {
+    const handleTabChange = (newTab: 'analysis' | 'literacy' | 'solution') => {
         setMobileTab(newTab);
+        if (newTab === 'literacy') setActiveSubMenu('AI 문해력 진단');
+        else if (newTab === 'solution') setActiveSubMenu('AI 독서 솔루션');
+        else setActiveSubMenu('우리 아이 독서 성향 AI 분석');
         router.replace(`/solution?tab=${newTab}`);
     };
     const [analysisBooks, setAnalysisBooks] = useState<Book[]>([]);
@@ -973,23 +984,125 @@ export function SolutionPageContent() {
         }
     };
 
+    const handleConsultWithAssessment = (assessment: LiteracyAssessment) => {
+        const consultPrompt = `최근 문해력 진단(${assessment.grade_label || ''})에서 종합 BLI ${assessment.total_bli_score}점(${assessment.bli_tier}, 유효 읽기 속도 ${assessment.effective_wpm} WPM)이 나왔고, 특히 '${assessment.weakest_area_label || assessment.weakest_area}' 영역이 상대적으로 부족하다고 나왔어요. 가정에서 어떻게 독서 지도를 해주면 좋을까요?`;
+        setMobileInput(consultPrompt);
+        setAiSolutionPrompt(consultPrompt);
+        setMobileTab('solution');
+        setActiveSubMenu('AI 독서 솔루션');
+        router.replace('/solution?tab=solution');
+        toast.success('문해력 진단 결과가 상담 입력창에 자동으로 반영되었습니다.');
+    };
+
+    useEffect(() => {
+        if (fromLiteracyParam === '1' && typeof window !== 'undefined') {
+            const raw = sessionStorage.getItem('bookok_literacy_consult_context');
+            if (raw) {
+                try {
+                    const ctx = JSON.parse(raw);
+                    const consultPrompt = `최근 문해력 진단(${ctx.grade_label || ''})에서 종합 BLI ${ctx.total_bli_score}점(${ctx.bli_tier}, 유효 읽기 속도 ${ctx.effective_wpm} WPM)이 나왔고, '${ctx.weakest_area_label}' 영역 보완이 필요하다고 나왔어요. 맞춤 지도 방법을 알려주세요.`;
+                    setMobileInput(consultPrompt);
+                    setAiSolutionPrompt(consultPrompt);
+                    sessionStorage.removeItem('bookok_literacy_consult_context');
+                } catch {
+                    // ignore parse errors
+                }
+            }
+        }
+    }, [fromLiteracyParam]);
+
     const dummySetView = () => { };
 
     return (
         <div className="min-h-screen bg-[#F8F9FA] text-gray-900 font-sans pb-24 lg:pb-0">
-            {/* Desktop View Header */}
+            {/* Desktop View Header & Main Layout */}
             <div className="hidden lg:block">
                 <Header
                     view="main"
                     setView={dummySetView}
                     activeMenu={activeMenu}
                     setActiveMenu={setActiveMenu}
-                    setActiveSubMenu={setActiveSubMenu}
+                    setActiveSubMenu={(sub) => {
+                        setActiveSubMenu(sub);
+                        if (sub === 'AI 문해력 진단') router.replace('/solution?tab=literacy');
+                        else if (sub === 'AI 독서 솔루션') router.replace('/solution?tab=solution');
+                        else router.replace('/solution?tab=analysis');
+                    }}
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     handleSearch={handleSearch}
                     activeSubMenu={activeSubMenu}
                 />
+
+                <div className="max-w-7xl mx-auto px-6 py-10 flex gap-8">
+                    <Sidebar
+                        activeChild={activeChild}
+                        activeMenu={activeMenu}
+                        activeSubMenu={activeSubMenu}
+                        setActiveSubMenu={(sub) => {
+                            setActiveSubMenu(sub);
+                            if (sub === 'AI 문해력 진단') router.replace('/solution?tab=literacy');
+                            else if (sub === 'AI 독서 솔루션') router.replace('/solution?tab=solution');
+                            else router.replace('/solution?tab=analysis');
+                        }}
+                        setActiveChild={setActiveChild}
+                    />
+
+                    <div className="flex-1 min-w-0">
+                        {activeSubMenu === 'AI 문해력 진단' ? (
+                            <LiteracyDashboardWidget
+                                activeChild={activeChild}
+                                onConsultWithAssessment={handleConsultWithAssessment}
+                            />
+                        ) : activeSubMenu === 'AI 독서 솔루션' ? (
+                            <AISolution
+                                prompt={aiSolutionPrompt}
+                                setPrompt={setAiSolutionPrompt}
+                                getSolution={getAISolution}
+                                loading={aiSolutionLoading}
+                                result={aiSolutionResult}
+                            />
+                        ) : (
+                            <div className="space-y-6">
+                                {/* Quick Banner to AI Literacy Test */}
+                                <div
+                                    onClick={() => {
+                                        setActiveSubMenu('AI 문해력 진단');
+                                        router.replace('/solution?tab=literacy');
+                                    }}
+                                    className="bg-linear-to-r from-[#2E5A44] to-[#1E3F2F] text-white rounded-[28px] p-6 flex items-center justify-between cursor-pointer shadow-md hover:shadow-lg transition-all"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                                            <BrainCircuit size={24} className="text-[#FACC15]" />
+                                        </div>
+                                        <div>
+                                            <span className="text-[11px] font-black text-emerald-200 uppercase tracking-wider">
+                                                NEW · LangChain & RAG 문해력 엔진
+                                            </span>
+                                            <h3 className="text-lg font-black text-white mt-0.5">
+                                                우리 아이 5각형 문해력 지수(BLI) 3분 진단 & 맞춤 도서 처방받기
+                                            </h3>
+                                        </div>
+                                    </div>
+                                    <span className="bg-[#16A34A] text-white text-xs font-black px-4 py-2.5 rounded-full flex items-center gap-1 shrink-0">
+                                        진단하러 가기 <ChevronRight size={15} />
+                                    </span>
+                                </div>
+
+                                <ReadingAnalysis
+                                    activeChild={activeChild}
+                                    userReadBooks={userReadBooks}
+                                    getReadingAnalysis={getReadingAnalysis}
+                                    loading={readingAnalysisLoading}
+                                    result={readingAnalysisResult}
+                                    chartData={chartData}
+                                    keywords={aiKeywords}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* ============================================================== */}
@@ -1043,11 +1156,11 @@ export function SolutionPageContent() {
                     </div>
                 </header>
 
-                {/* Mobile Tab Control */}
+                {/* Mobile Tab Control (3 Tabs: 성향 분석 | 문해력 진단 | 독서 솔루션) */}
                 <div className="bg-white border-b border-gray-100 flex sticky top-[calc(53px+env(safe-area-inset-top,0px))] z-40 shrink-0">
                     <button
                         onClick={() => handleTabChange('analysis')}
-                        className={`flex-1 py-4 text-center font-extrabold text-[15px] border-b-2 transition-all ${
+                        className={`flex-1 py-3.5 text-center font-extrabold text-[14px] border-b-2 transition-all ${
                             mobileTab === 'analysis'
                                 ? 'border-[#16A34A] text-[#1A1A1A]'
                                 : 'border-transparent text-gray-400 font-bold'
@@ -1056,8 +1169,21 @@ export function SolutionPageContent() {
                         성향 분석
                     </button>
                     <button
+                        onClick={() => handleTabChange('literacy')}
+                        className={`flex-1 py-3.5 text-center font-extrabold text-[14px] border-b-2 transition-all flex items-center justify-center gap-1 ${
+                            mobileTab === 'literacy'
+                                ? 'border-[#16A34A] text-[#16A34A]'
+                                : 'border-transparent text-gray-400 font-bold'
+                        }`}
+                    >
+                        <span>문해력 진단</span>
+                        <span className="bg-[#16A34A] text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                            BLI
+                        </span>
+                    </button>
+                    <button
                         onClick={() => handleTabChange('solution')}
-                        className={`flex-1 py-4 text-center font-extrabold text-[15px] border-b-2 transition-all ${
+                        className={`flex-1 py-3.5 text-center font-extrabold text-[14px] border-b-2 transition-all ${
                             mobileTab === 'solution'
                                 ? 'border-[#16A34A] text-[#1A1A1A]'
                                 : 'border-transparent text-gray-400 font-bold'
@@ -1069,9 +1195,38 @@ export function SolutionPageContent() {
 
                 {/* Mobile Tab Content */}
                 <div className="flex-1 overflow-hidden">
-                    {mobileTab === 'analysis' ? (
+                    {mobileTab === 'literacy' ? (
+                        /* ================= LITERACY DIAGNOSIS TAB ================= */
+                        <div className="h-full overflow-y-auto p-4 pb-28">
+                            <LiteracyDashboardWidget
+                                activeChild={activeChild}
+                                onConsultWithAssessment={handleConsultWithAssessment}
+                            />
+                        </div>
+                    ) : mobileTab === 'analysis' ? (
                         /* ================= ANALYSIS TAB ================= */
                         <div className="h-full overflow-y-auto p-4 space-y-4 pb-28">
+                            {/* AI 문해력 진단(BLI) 런처 배너 */}
+                            <div
+                                onClick={() => handleTabChange('literacy')}
+                                className="bg-linear-to-r from-[#2E5A44] to-[#1E3F2F] text-white rounded-[28px] p-4 flex items-center justify-between gap-3 shadow-sm cursor-pointer active:scale-[0.99] transition-transform"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+                                        <BrainCircuit size={20} className="text-[#FACC15]" />
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] font-black text-emerald-200 block">
+                                            AI 문해력 지수 (BLI) 진단
+                                        </span>
+                                        <span className="text-[13px] font-extrabold text-white block tracking-tight">
+                                            3분 지문 읽기로 5각형 문해력 & 처방책 확인
+                                        </span>
+                                    </div>
+                                </div>
+                                <ChevronRight size={18} className="text-emerald-200 shrink-0" />
+                            </div>
+
                             {/* Top Grid: Read books stats */}
                             <div className="grid grid-cols-2 gap-3">
                                 {/* Current Month Read Books */}

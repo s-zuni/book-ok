@@ -150,4 +150,94 @@ export interface Report {
     };
 }
 
+export type LiteracyArea = 'vocabulary' | 'factual' | 'inferential' | 'critical';
+
+export interface LiteracyVocabularyItem {
+    word: string;
+    meaning: string;
+    level: string;
+}
+
+export interface LiteracyPassage {
+    id: string;
+    title: string;
+    content: string;
+    grade_level: number; // 0: 유아(5~6세), 1~6: 초등 1~6학년
+    grade_label?: string;
+    genre: string;
+    interest_tags?: string[];
+    word_count: number;
+    char_count: number;
+    source_attribution?: string;
+    key_vocabularies?: LiteracyVocabularyItem[];
+    norm_wpm?: number;
+}
+
+export interface LiteracyQuestion {
+    id: string;
+    passage_id: string;
+    area: LiteracyArea;
+    question: string;
+    options: string[];
+    // 시작 시점에는 내려오지 않고, 채점 결과(LiteracyGradedAnswer)로만 공개된다
+    correct_answer?: number;
+    evidence?: string;
+    explanation?: string;
+    critic_score?: number;
+}
+
+export interface LiteracyGradedAnswer {
+    question_id: string;
+    area: LiteracyArea;
+    area_label: string;
+    question: string;
+    options: string[];
+    selected: number;
+    correct_answer: number;
+    is_correct: boolean;
+    evidence: string;
+    explanation: string;
+    time_spent_sec: number;
+}
+
+export interface LiteracyPrescribedBook extends Book {
+    prescriptionArea?: string;
+    prescriptionReason?: string;
+}
+
+export interface LiteracyAssessment {
+    id: string;
+    user_id?: string;
+    child_id?: string | number;
+    passage_id: string;
+    passage_title?: string;
+    passage_content?: string;
+    passage_genre?: string;
+    word_count?: number;
+    grade_level: number;
+    grade_label?: string;
+    norm_wpm?: number;
+    reading_time_seconds: number;
+    raw_wpm: number;
+    effective_wpm: number;
+    score_vocabulary: number;
+    score_factual: number;
+    score_inferential: number;
+    score_critical: number;
+    score_fluency: number;
+    total_bli_score: number;
+    bli_tier: string;
+    weakest_area: string;
+    weakest_area_label?: string;
+    strength_area: string;
+    strength_area_label?: string;
+    ai_diagnosis_summary: string;
+    coaching_tip?: string;
+    answers: LiteracyGradedAnswer[];
+    prescribed_keywords: string[];
+    prescribed_books: LiteracyPrescribedBook[];
+    created_at: string;
+}
+
+
 
