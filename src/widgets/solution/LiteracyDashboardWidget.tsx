@@ -3,10 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-    Sparkles,
     BookOpenCheck,
     Play,
-    ShieldCheck,
     History,
     CheckCircle2,
     BrainCircuit,
@@ -14,7 +12,7 @@ import {
 import { Child, LiteracyAssessment } from "@shared/types";
 import {
     GRADE_LEVEL_OPTIONS,
-    mapChildToDefaultGrade,
+    recommendGrade,
     getGradeConfig,
 } from "@features/literacy/scoring";
 import { fetchChildLiteracyHistory } from "@features/literacy/api";
@@ -30,16 +28,17 @@ export default function LiteracyDashboardWidget({
     onConsultWithAssessment,
 }: LiteracyDashboardWidgetProps) {
     const router = useRouter();
-    const [selectedGrade, setSelectedGrade] = useState<number>(() =>
-        mapChildToDefaultGrade(activeChild)
-    );
+    const recommendation = recommendGrade(activeChild);
+    const [selectedGrade, setSelectedGrade] = useState<number>(recommendation.grade);
     const [history, setHistory] = useState<LiteracyAssessment[]>([]);
     const [selectedAssessmentIdx, setSelectedAssessmentIdx] = useState(0);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
     useEffect(() => {
-        setSelectedGrade(mapChildToDefaultGrade(activeChild));
-    }, [activeChild?.id, activeChild?.age, activeChild?.birthdate]);
+        setSelectedGrade(recommendGrade(activeChild).grade);
+        // activeChild 전체가 아닌 학년 계산에 쓰이는 값이 바뀔 때만 추천 단계를 갱신한다
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeChild?.id, activeChild?.age, activeChild?.birthdate, activeChild?.type]);
 
     useEffect(() => {
         let mounted = true;
@@ -83,16 +82,16 @@ export default function LiteracyDashboardWidget({
                 <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                     <span className="inline-flex items-center gap-1.5 bg-[#E8F5E9] text-[#2E5A44] text-xs font-extrabold px-3 py-1 rounded-full">
                         <BrainCircuit size={14} className="text-[#16A34A]" />
-                        공공 검증 코퍼스 · LangChain RAG 문해력 엔진
+                        문해력 점검
                     </span>
-                    <span className="text-xs font-bold text-gray-400">소요 시간 약 3분 · 총 4문항</span>
+                    <span className="text-xs font-bold text-gray-500">소요 시간 약 3~5분</span>
                 </div>
 
                 <h2 className="text-xl lg:text-3xl font-black text-[#1A1A1A] tracking-tight mb-2 break-keep">
-                    {childName} 맞춤 <span className="text-[#16A34A]">AI 문해력 진단 (BLI)</span> 및 도서 처방
+                    {childName} 맞춤 <span className="text-[#16A34A]">문해력 점검</span>과 추천 도서
                 </h2>
                 <p className="text-xs lg:text-sm text-gray-500 font-medium leading-relaxed mb-6 break-keep">
-                    학년 수준에 맞춘 지문을 읽고 <strong>어휘력 · 사실적 이해 · 추론적 이해 · 비판적 이해 · 읽기 유창성(WPM)</strong> 5대 영역을 정밀 측정한 뒤, 부족한 영역을 채워줄 맞춤 도서를 즉시 처방해 드립니다.
+                    학년 수준에 맞춘 지문을 읽고 <strong>어휘력 · 사실적 이해 · 추론적 이해 · 비판적 이해</strong> 4가지 영역의 문항을 풀어 보세요. 읽은 시간은 참고 지표로 함께 보여 드리고, 더 살펴볼 영역과 어울리는 책을 추천해 드려요. 지문 1편 기준의 참고용 결과예요.
                 </p>
 
                 {/* Grade Selector (Grade 0 ~ Grade 6) */}
@@ -100,9 +99,14 @@ export default function LiteracyDashboardWidget({
                     <div className="flex items-center justify-between mb-2.5">
                         <label className="text-xs font-extrabold text-gray-700">
                             진단 단계 선택{" "}
-                            {activeChild && (
+                            {activeChild && recommendation.recommended && (
                                 <span className="text-[#16A34A] ml-1">
-                                    (현재 {activeChild.name} 나이에 맞춰 자동 추천되었어요)
+                                    ({activeChild.name}의 학년에 맞춰 추천했어요)
+                                </span>
+                            )}
+                            {activeChild && !recommendation.recommended && (
+                                <span className="text-amber-700 ml-1">
+                                    (나이 정보가 없어 임시로 선택했어요. 직접 골라 주세요)
                                 </span>
                             )}
                         </label>
@@ -123,8 +127,8 @@ export default function LiteracyDashboardWidget({
                                 >
                                     <div className="text-xs font-black">{opt.shortLabel}</div>
                                     <div
-                                        className={`text-[10px] font-bold mt-0.5 ${
-                                            isSelected ? "text-emerald-200" : "text-gray-400"
+                                        className={`text-xs font-bold mt-0.5 ${
+                                            isSelected ? "text-emerald-200" : "text-gray-500"
                                         }`}
                                     >
                                         {opt.ageRange}
@@ -209,8 +213,8 @@ export default function LiteracyDashboardWidget({
                     <h4 className="font-extrabold text-base text-gray-800">
                         아직 {childName}의 문해력 진단 기록이 없어요
                     </h4>
-                    <p className="text-xs text-gray-400 font-medium max-w-md mx-auto leading-relaxed">
-                        위에서 학년 단계를 선택하고 3분 문해력 진단을 완료하면, 5각형 BLI 문해력 차트와 약점 보완 맞춤 처방 도서가 이곳에 표시됩니다.
+                    <p className="text-xs text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
+                        위에서 학년 단계를 선택하고 3분 문해력 점검을 마치면, 영역별 결과와 추천 도서가 이곳에 저장돼요.
                     </p>
                 </div>
             )}

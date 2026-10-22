@@ -112,11 +112,19 @@ export const AREA_METADATA: Record<
         coachingGuide:
             "글쓴이의 생각에 동의하는지 물어보고, '나는 왜 그렇게 생각하는지' 이유를 덧붙여 말하는 연습을 해보세요.",
     },
+    balanced: {
+        label: "고른 영역",
+        shortLabel: "고른 영역",
+        badgeColor: "bg-gray-50 text-gray-700 border-gray-200",
+        description: "이번 결과에서는 영역별 차이가 뚜렷하지 않았어요",
+        coachingGuide:
+            "영역별 차이가 크지 않았어요. 아이가 좋아하는 책을 함께 읽고 이야기를 나누며 꾸준히 읽는 습관을 이어 가 보세요.",
+    },
     fluency: {
-        label: "읽기 유창성",
-        shortLabel: "유창성",
+        label: "읽기 속도",
+        shortLabel: "읽기 속도",
         badgeColor: "bg-teal-50 text-teal-700 border-teal-200",
-        description: "학년 권장 속도 대비 정확하고 막힘없이 글을 읽어 내려가는 능력",
+        description: "자체 설정한 학년 참고 속도와 비교한 묵독 속도 (참고 지표)",
         coachingGuide:
             "부모님과 한 문단씩 번갈아 소리 내어 읽는 '교대 낭독'을 통해 의미 단위로 끊어 읽는 리듬감을 키워 주세요.",
     },
@@ -126,19 +134,33 @@ export function getGradeConfig(grade: number): GradeLevelConfig {
     return GRADE_LEVEL_OPTIONS.find((g) => g.grade === grade) || GRADE_LEVEL_OPTIONS[2];
 }
 
-export function mapChildToDefaultGrade(child?: Child | null): number {
-    if (!child) return 2;
-    let age = child.age || 0;
-    if (!age && child.birthdate) {
-        age = Math.floor((Date.now() - new Date(child.birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+/** 나이·생년월일로 기본 진단 단계를 추천한다. 정보가 없으면 recommended=false로 초등 2학년을 임시 선택한다. */
+export function recommendGrade(child?: Child | null, now: Date = new Date()): { grade: number; recommended: boolean } {
+    if (!child) return { grade: 2, recommended: false };
+    if (child.type === "유아" || child.type === "영아") return { grade: 0, recommended: true };
+
+    // 한국 학제는 출생연도 기준: 출생연도 + 7년 되는 해에 초등 1학년
+    const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : NaN;
+    if (Number.isFinite(birthYear)) {
+        const yearDiff = now.getFullYear() - birthYear;
+        return { grade: Math.min(Math.max(yearDiff - 6, 0), 6), recommended: true };
     }
-    if (age <= 6 || child.type === "유아" || child.type === "영아") return 0;
-    if (age === 7) return 1;
-    if (age === 8) return 2;
-    if (age === 9) return 3;
-    if (age === 10) return 4;
-    if (age === 11) return 5;
-    return 6;
+
+    // 생년월일이 없고 만 나이만 있는 경우
+    if (child.age && child.age > 0) {
+        const age = child.age;
+        return { grade: age <= 6 ? 0 : Math.min(age - 6, 6), recommended: true };
+    }
+    return { grade: 2, recommended: false };
+}
+
+export function mapChildToDefaultGrade(child?: Child | null): number {
+    return recommendGrade(child).grade;
+}
+
+/** 이전 채점 방식(점수 하한·시간 가산점 포함)으로 만들어진 기록인지 */
+export function isLegacyScoring(assessment: Pick<LiteracyAssessment, "scoring_version">): boolean {
+    return (assessment.scoring_version ?? 1) < 2;
 }
 
 export interface RadarAxisPoint {
@@ -149,7 +171,7 @@ export interface RadarAxisPoint {
 }
 
 export function buildRadarChartData(assessment: LiteracyAssessment): RadarAxisPoint[] {
-    return [
+    const points: RadarAxisPoint[] = [
         {
             subject: "어휘력",
             key: "vocabulary",
@@ -174,12 +196,16 @@ export function buildRadarChartData(assessment: LiteracyAssessment): RadarAxisPo
             childScore: assessment.score_critical,
             fullMark: 100,
         },
-        {
-            subject: "읽기 유창성",
+    ];
+    // 속도는 유아·비정상 속도일 때 미산정이므로 차트에서 뺀다
+    if (typeof assessment.score_fluency === "number") {
+        points.push({
+            subject: "읽기 속도",
             key: "fluency",
             childScore: assessment.score_fluency,
             fullMark: 100,
-        },
-    ];
+        });
+    }
+    return points;
 }
 
