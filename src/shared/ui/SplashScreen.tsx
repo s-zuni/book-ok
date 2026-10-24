@@ -63,23 +63,33 @@ export default function SplashScreen() {
 
     if (!isVisible) return null;
 
+    // Figma splash_screen(1284×2778) 기준: 흰 배경 중앙에 로고 마크 + 초록색 '북콕', 하단에 슬로건.
+    // 가로는 vw 비율(디자인 폭 1284px 기준)로 맞추고, 큰 화면에서는 상한을 둔다.
     return (
         <div
             className="fixed inset-0 bg-white transition-opacity duration-500 ease-in-out lg:hidden"
             style={{ opacity, zIndex: 9999 }}
         >
-            {/* Full Screen Centered Splash Screen Image with custom bounce/fade animation */}
-            <div className="absolute inset-0 flex items-center justify-center p-4 animate-splash-logo">
-                <div className="relative w-full h-full max-w-md">
+            <div className="absolute inset-0 flex items-center justify-center animate-splash-logo">
+                <div className="flex items-center gap-[1vw]">
+                    {/* Figma 로고 마크(배경 투명 PNG) */}
                     <Image
-                        src="/images/splash.png"
-                        alt="Book,ok Splash"
-                        fill
-                        className="object-contain"
+                        src="/images/splash_logo.png"
+                        alt=""
+                        width={1024}
+                        height={1024}
                         priority
+                        className="w-[min(37.7vw,200px)] h-auto"
                     />
+                    <span className="text-[#01C54F] font-extrabold leading-none text-[min(9.35vw,48px)]">북콕</span>
                 </div>
             </div>
+            <p
+                className="absolute inset-x-0 text-center font-bold text-[#8F8F8F] text-[clamp(13px,3.74vw,18px)]"
+                style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 5vh)" }}
+            >
+                우리 아이 평생 독서의 시작
+            </p>
         </div>
     );
 }
