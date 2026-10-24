@@ -74,3 +74,29 @@ npm run literacy:seed -- --in scripts/literacy/data/validated.json
 
 ## 출제 규칙
 한 번의 점검에서 영역당 최대 3문항(`MAX_QUESTIONS_PER_AREA`), 영역 순서 → `item_order` 순으로 출제합니다. 출제와 채점이 같은 선택 함수를 쓰므로 출제하지 않은 문항이 오답 처리되지 않습니다.
+
+## 낱말 퀴즈 (지문 없이 바로 푸는 어휘 문항)
+점검은 **낱말 퀴즈(6문제, 문제마다 바로 정답·해설 확인) → 지문 읽기 → 지문 문제(사실·추론·비판)** 순서로 진행됩니다. 어휘력 점수는 낱말 퀴즈로만 계산합니다. 연속 정답·별은 재미 요소이며 점수에 반영하지 않습니다.
+
+- 유형: `cloze`(빈칸) · `synonym`(비슷한말) · `antonym`(반대말) · `meaning`(뜻) · `spelling`(맞춤법) · `odd_one_out`(다른 낱말 찾기)
+- 학년별 **검수 완료 문항이 6개 이상**일 때만 그 학년에서 낱말 퀴즈가 열립니다. 그보다 적으면 기존처럼 지문의 어휘 문항을 씁니다.
+- 한 번에 6문제를 세션마다 다르게 고르며, 가능한 한 유형이 겹치지 않게 뽑습니다.
+- 문항별 확인(`check`)은 서버가 **첫 답을 고정**합니다. 같은 문항을 다시 눌러도 첫 답으로 채점됩니다.
+
+### 문항 파일 `scripts/literacy/data/words.json`
+```json
+{ "grade_level": 3, "question_type": "antonym", "question": "'찬성'의 반대말은 무엇일까요?",
+  "correct": "반대", "wrong": ["동의", "승낙", "허락"], "explanation": "…", "status": "pending" }
+```
+정답과 오답을 나눠 적으면 스크립트가 보기를 섞습니다. 빈칸 문항은 질문에 `___`를 넣습니다.
+
+### 명령
+```bash
+npm run literacy:words -- --in scripts/literacy/data/words.json                      # 규칙 검사만
+npm run literacy:words -- --in scripts/literacy/data/words.json --seed --dry-run     # 반영 미리보기
+npm run literacy:words -- --in scripts/literacy/data/words.json --seed               # 저장 (pending은 출제 안 됨)
+npm run literacy:words -- --in scripts/literacy/data/words.json --seed --approve-pending   # 사람이 검수한 문항을 승인으로 저장·승격
+```
+- 정답이 하나인지, 학년에 맞는 낱말인지, 비슷한말·반대말이 정확한지는 **사람이 확인**한 뒤 승인합니다. 규칙 검사는 구조·중복·빈칸·길이 단서만 봅니다.
+- 이미 출제 중인 문항의 내용은 이 명령으로 바뀌지 않습니다. 고치려면 해당 행을 먼저 `is_verified=false`로 내린 뒤 수정하세요.
+- 마이그레이션 `20261024120000_literacy_word_quiz.sql`이 필요합니다(지문에 묶이지 않는 문항, 첫 답 고정 테이블).

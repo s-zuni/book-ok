@@ -524,7 +524,8 @@ export default function LiteracyReportView({
                                                 })}
                                             </div>
 
-                                            {/* Evidence Highlight Box */}
+                                            {/* Evidence Highlight Box (낱말 퀴즈 문항은 지문 근거가 없다) */}
+                                            {ans.evidence ? (
                                             <div className="bg-emerald-50/40 rounded-xl p-3.5 border border-emerald-100/80 space-y-1.5">
                                                 <span className="text-xs font-black text-[#2E5A44] block">
                                                     🔍 지문 속 정답 근거 문장
@@ -540,6 +541,7 @@ export default function LiteracyReportView({
                                                     </p>
                                                 )}
                                             </div>
+                                            ) : null}
 
                                             <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-700 leading-relaxed">
                                                 <span className="font-black text-gray-900 mr-1.5">

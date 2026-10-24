@@ -252,3 +252,48 @@ export async function mapLimit(items, limit, fn) {
     );
     return results;
 }
+
+// ---------------------------------------------------------------------------
+// 낱말 퀴즈 (지문 없이 바로 푸는 어휘 문항)
+// ---------------------------------------------------------------------------
+export const WORD_TYPES = ["cloze", "synonym", "antonym", "meaning", "spelling", "odd_one_out"];
+
+/** 서버가 출제 때 세션마다 다시 섞으므로 저장 순서는 큰 의미가 없다. 파일을 고쳐도 순서가 흔들리지 않게 질문 글로 결정한다. */
+export function buildWordOptions(item) {
+    const all = [item.correct, ...item.wrong];
+    const order = all
+        .map((text, i) => ({ text, i, key: crypto.createHash("sha1").update(`${item.question}|${text}`).digest("hex") }))
+        .sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+    return { options: order.map((o) => o.text), correct_answer: order.findIndex((o) => o.i === 0) };
+}
+
+/**
+ * 낱말 문항 파일의 한 항목 검사. 규칙으로 걸러낼 수 있는 것만 본다(정답의 옳음은 사람이 확인한다).
+ * @returns {{errors: string[], warnings: string[]}}
+ */
+export function checkWordItem(item) {
+    const errors = [];
+    const warnings = [];
+    if (!item || typeof item !== "object") return { errors: ["항목이 객체가 아닙니다"], warnings };
+    if (!Number.isInteger(item.grade_level) || item.grade_level < 0 || item.grade_level > 6) errors.push("grade_level은 0~6 정수여야 합니다");
+    if (!WORD_TYPES.includes(item.question_type)) errors.push(`question_type은 ${WORD_TYPES.join("/")} 중 하나여야 합니다`);
+    if (typeof item.question !== "string" || !item.question.trim()) errors.push("question이 비어 있습니다");
+    if (typeof item.explanation !== "string" || !item.explanation.trim()) errors.push("explanation이 비어 있습니다");
+    if (typeof item.correct !== "string" || !item.correct.trim()) errors.push("correct가 비어 있습니다");
+    if (!Array.isArray(item.wrong) || item.wrong.length !== 3 || item.wrong.some((w) => typeof w !== "string" || !w.trim())) {
+        errors.push("wrong은 비어 있지 않은 문자열 3개여야 합니다");
+    }
+    if (errors.length) return { errors, warnings };
+
+    const all = [item.correct, ...item.wrong].map((o) => compact(o));
+    if (new Set(all).size !== 4) errors.push("보기 4개가 서로 달라야 합니다 (정답과 같은 오답 포함)");
+    if (/<[a-z][\s\S]*>/i.test(item.question + item.correct + item.wrong.join(""))) warnings.push("HTML로 보이는 문자열이 있습니다");
+
+    // 정답이 길이로 드러나는지 (보기 길이 차이가 크고 정답이 가장 긴 경우)
+    const lengths = [item.correct, ...item.wrong].map((o) => compact(o).length);
+    const wrongMax = Math.max(...lengths.slice(1));
+    if (item.question_type === "meaning" && lengths[0] > wrongMax * 1.8) warnings.push("정답이 오답보다 훨씬 깁니다(길이로 찍을 수 있음)");
+    if (item.question_type === "cloze" && !/_{2,}/.test(item.question)) warnings.push("cloze 문항인데 빈칸(___)이 없습니다");
+    if (/모두\s*(맞|정답)|해당\s*없음|정답\s*없음/.test(item.wrong.join(" ") + item.correct)) warnings.push("'모두 맞다' 류 보기");
+    return { errors, warnings };
+}

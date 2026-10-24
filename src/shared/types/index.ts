@@ -173,9 +173,15 @@ export interface LiteracyPassage {
     norm_wpm?: number;
 }
 
+/** 낱말 퀴즈 문항 유형: 지문 없이 바로 푸는 어휘 문항 */
+export type LiteracyWordType = 'cloze' | 'synonym' | 'antonym' | 'meaning' | 'spelling' | 'odd_one_out';
+
 export interface LiteracyQuestion {
     id: string;
-    passage_id: string;
+    /** 낱말 퀴즈 문항은 지문에 묶이지 않아 null */
+    passage_id: string | null;
+    /** 낱말 퀴즈 문항에만 있다 */
+    question_type?: LiteracyWordType;
     area: LiteracyArea;
     question: string;
     options: string[];
@@ -201,6 +207,7 @@ export interface LiteracyGradedAnswer {
     evidence: string;
     explanation: string;
     time_spent_sec: number;
+    question_type?: LiteracyWordType;
 }
 
 export interface LiteracyPrescribedBook extends Book {

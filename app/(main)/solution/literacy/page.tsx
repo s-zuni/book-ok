@@ -10,6 +10,7 @@ import { clearLiteracyProgress, useLiteracyTest } from "@features/literacy/useLi
 import LiteracyReportView from "@widgets/solution/LiteracyReportView";
 import LiteracyPassageStep from "@widgets/solution/LiteracyPassageStep";
 import LiteracyQuizStep from "@widgets/solution/LiteracyQuizStep";
+import LiteracyWordQuizStep from "@widgets/solution/LiteracyWordQuizStep";
 import LoadingState from "@shared/ui/LoadingState";
 
 const CONSULT_CONTEXT_KEY = "bookok_literacy_consult_context";
@@ -66,7 +67,7 @@ function LiteracyTestPageInner() {
 
     // 진행 중에는 확인 후 나가고, 결과 화면에서는 바로 나간다
     const handleExit = () => {
-        if (test.step === "reading" || test.step === "quiz") setConfirmExit(true);
+        if (test.step === "words" || test.step === "reading" || test.step === "quiz") setConfirmExit(true);
         else leave();
     };
 
@@ -110,6 +111,11 @@ function LiteracyTestPageInner() {
                             {activeChild ? `${activeChild.name} · ` : ""}
                             {gradeConfig.shortLabel}
                         </span>
+                        {test.step === "words" && test.wordIdx < test.wordQuestions.length && (
+                            <span className="inline-flex items-center gap-1 bg-[#2E5A44] text-white text-xs font-extrabold px-3 py-1 rounded-full">
+                                낱말 퀴즈 {test.wordIdx + 1} / {test.wordQuestions.length}
+                            </span>
+                        )}
                         {test.step === "reading" && (
                             <span className="inline-flex items-center gap-1 bg-gray-900 text-white text-xs font-extrabold px-3 py-1 rounded-full">
                                 <Clock size={12} />
@@ -180,6 +186,19 @@ function LiteracyTestPageInner() {
                             ]}
                         />
                     </div>
+                )}
+
+                {test.step === "words" && (
+                    <LiteracyWordQuizStep
+                        questions={test.wordQuestions}
+                        results={test.wordResults}
+                        index={test.wordIdx}
+                        pendingId={test.wordPendingId}
+                        stats={test.wordStats}
+                        onAnswer={test.handleWordAnswer}
+                        onNext={test.handleWordNext}
+                        onDone={test.handleWordsDone}
+                    />
                 )}
 
                 {test.step === "reading" && test.passage && (

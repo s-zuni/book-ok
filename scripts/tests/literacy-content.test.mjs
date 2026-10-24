@@ -172,3 +172,58 @@ test("출제: 영역당 최대 3개, item_order 순, 영역 순서 고정", () =
     // 같은 입력이면 출제(start)와 채점(submit)에서 같은 문항이 선택된다
     assert.deepEqual(selectServedQuestions([...qs].reverse()).map((q) => q.id), served.map((q) => q.id));
 });
+
+// ---------------------------------------------------------------------------
+// 낱말 퀴즈 콘텐츠
+// ---------------------------------------------------------------------------
+import { buildWordOptions, checkWordItem, WORD_TYPES } from "../literacy/lib.mjs";
+
+const goodWord = () => ({
+  grade_level: 2, question_type: "antonym", question: "'가볍다'의 반대말은?",
+  correct: "무겁다", wrong: ["얇다", "작다", "짧다"], explanation: "무게가 많은 것이 무겁다예요.",
+});
+
+test("낱말 문항: 정상 항목은 오류가 없다", () => {
+  assert.deepEqual(checkWordItem(goodWord()).errors, []);
+});
+
+test("낱말 문항: 구조 오류를 잡는다", () => {
+  assert.ok(checkWordItem({ ...goodWord(), grade_level: 7 }).errors.length);
+  assert.ok(checkWordItem({ ...goodWord(), question_type: "quiz" }).errors.length);
+  assert.ok(checkWordItem({ ...goodWord(), wrong: ["a", "b"] }).errors.length);
+  assert.ok(checkWordItem({ ...goodWord(), explanation: "" }).errors.length);
+});
+
+test("낱말 문항: 오답이 정답과 같거나 서로 같으면 오류", () => {
+  assert.ok(checkWordItem({ ...goodWord(), wrong: ["무겁다", "작다", "짧다"] }).errors.length);
+  assert.ok(checkWordItem({ ...goodWord(), wrong: ["작다", "작 다", "짧다"] }).errors.length);
+});
+
+test("낱말 문항: 빈칸 없는 cloze는 경고", () => {
+  assert.ok(checkWordItem({ ...goodWord(), question_type: "cloze" }).warnings.some((w) => w.includes("빈칸")));
+});
+
+test("낱말 문항: 보기를 질문 글로 결정적으로 섞고 정답 위치를 따라간다", () => {
+  const a = buildWordOptions(goodWord());
+  const b = buildWordOptions(goodWord());
+  assert.deepEqual(a, b);
+  assert.equal(a.options[a.correct_answer], "무겁다");
+  assert.equal(new Set(a.options).size, 4);
+});
+
+test("낱말 퀴즈 파일 전체가 규칙 검사를 통과하고 학년마다 6개 이상 있다", async () => {
+  const fs = await import("node:fs");
+  const items = JSON.parse(fs.readFileSync(new URL("../literacy/data/words.json", import.meta.url), "utf-8"));
+  const perGrade = {};
+  const seen = new Set();
+  for (const it of items) {
+    const { errors } = checkWordItem(it);
+    assert.deepEqual(errors, [], `${it.grade_level}학년 ${it.question}`);
+    assert.ok(WORD_TYPES.includes(it.question_type));
+    const key = `${it.grade_level}|${it.question_type}|${it.question}`;
+    assert.ok(!seen.has(key), `중복 문항: ${key}`);
+    seen.add(key);
+    perGrade[it.grade_level] = (perGrade[it.grade_level] || 0) + 1;
+  }
+  for (let g = 0; g <= 6; g++) assert.ok((perGrade[g] || 0) >= 6, `${g}학년 낱말 문항 부족`);
+});

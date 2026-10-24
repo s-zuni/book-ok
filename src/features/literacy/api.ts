@@ -22,6 +22,8 @@ export interface StartLiteracyTestParams {
 export interface StartLiteracyTestResponse {
     passage: LiteracyPassage;
     questions: LiteracyQuestion[];
+    /** 지문 없이 바로 푸는 낱말 퀴즈 문항. 없으면(문항 준비 전) 빈 배열 */
+    word_questions?: LiteracyQuestion[];
     /** 서버가 발급한 진단 세션 토큰 (읽기 시간 검증용) */
     session_token?: string;
 }
@@ -74,6 +76,8 @@ export async function startLiteracyTest(
             headers: await buildEdgeHeaders(),
             body: JSON.stringify({
                 action: "start",
+                // 낱말 퀴즈 화면을 지원하는 클라이언트임을 알린다 (구버전 앱은 보내지 않아 기존 방식으로 출제됨)
+                wordQuiz: true,
                 ...params,
             }),
         });
@@ -90,6 +94,35 @@ export async function startLiteracyTest(
 
     // 문항 테이블은 정답 보호를 위해 클라이언트 직접 조회를 허용하지 않는다 (Edge Function 전용)
     throw new Error("문해력 진단 문항을 불러올 수 없어요. 잠시 후 다시 시도해 주세요.");
+}
+
+/** 낱말 퀴즈 한 문항의 즉시 확인 결과 (서버가 첫 답을 고정하고 정답·해설을 알려 준다) */
+export interface LiteracyWordCheckResult {
+    question_id: string;
+    /** 서버에 고정된 첫 답 (섞인 보기 기준) */
+    selected: number;
+    is_correct: boolean;
+    /** 섞인 보기 기준 정답 인덱스 */
+    correct_answer: number;
+    explanation: string;
+}
+
+export async function checkLiteracyWord(params: {
+    passageId: string;
+    sessionToken?: string;
+    questionId: string;
+    selected: number;
+}): Promise<LiteracyWordCheckResult> {
+    const res = await safeFetch(`${supabaseUrl}/functions/v1/literacy-test`, {
+        method: "POST",
+        headers: await buildEdgeHeaders(),
+        body: JSON.stringify({ action: "check", ...params }),
+    });
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new LiteracyApiError(errData.error || "답을 확인하지 못했어요.", res.status);
+    }
+    return (await res.json()) as LiteracyWordCheckResult;
 }
 
 /**

@@ -16,7 +16,8 @@
     "literacy:validate": "node scripts/literacy/validate.mjs",
     "literacy:approve": "node scripts/literacy/approve.mjs",
     "literacy:seed": "node scripts/literacy/seed.mjs",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "literacy:words": "node scripts/literacy/words.mjs"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
