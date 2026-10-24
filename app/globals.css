@@ -113,3 +113,36 @@ html {
   animation: splashLogo 1200ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* 스플래시 v2: 캐릭터 등장 → 둥실 → 로고·슬로건 순서로 올라옴 → 로딩 점. 기본 스타일이 최종 상태라 애니메이션을 꺼도 완성된 화면이다. */
+@keyframes splashCharIn {
+  0% { opacity: 0; transform: translateY(28px) scale(0.86); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes splashFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes splashRise {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes splashTwinkle {
+  0%, 100% { opacity: 0.35; transform: scale(0.7) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(18deg); }
+}
+@keyframes splashDot {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40% { transform: translateY(-6px); opacity: 1; }
+}
+
+.splash-char-in { animation: splashCharIn 800ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
+.splash-float { animation: splashFloat 3200ms ease-in-out 800ms infinite; }
+.splash-rise-1 { animation: splashRise 700ms cubic-bezier(0.16, 1, 0.3, 1) 450ms backwards; }
+.splash-rise-2 { animation: splashRise 700ms cubic-bezier(0.16, 1, 0.3, 1) 650ms backwards; }
+.splash-twinkle { animation: splashTwinkle 1800ms ease-in-out infinite; }
+.splash-dot { animation: splashDot 1100ms ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-char-in, .splash-float, .splash-rise-1, .splash-rise-2, .splash-twinkle, .splash-dot { animation: none; }
+}
+
