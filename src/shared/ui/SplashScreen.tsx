@@ -100,7 +100,7 @@ export default function SplashScreen() {
                         priority
                         className="splash-3d w-[min(25vw,120px)] h-auto"
                     />
-                    <span className="splash-3d splash-3d-text font-extrabold leading-none text-[min(8.6vw,42px)]">북콕</span>
+                    <span className="font-extrabold leading-none text-[#01C54F] text-[min(8.6vw,42px)]">북콕</span>
                 </div>
 
                 <p className="splash-rise-2 mt-[2.2vh] font-bold text-[#6B7280] text-[clamp(13px,3.9vw,17px)]">
