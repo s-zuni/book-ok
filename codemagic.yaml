@@ -2,7 +2,7 @@ workflows:
   capacitor-ios:
     name: iOS Build & App Store Upload
     max_build_duration: 60
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     integrations:
       app_store_connect: "seung jun"
     environment:
@@ -10,14 +10,14 @@ workflows:
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
         BUNDLE_ID: "com.bookok.kr"
-      node: latest
+      node: 22
       xcode: latest
     scripts:
       - name: Install dependencies
         script: |
           npm install --legacy-peer-deps
           npx patch-package
-          node -e "const fs=require('fs');const p='node_modules/@capacitor-community/apple-sign-in/Package.swift';if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8');c=c.replace('7.0.0','8.0.0');fs.writeFileSync(p,c);console.log('✅ Apple Sign In Package.swift patched to 8.0.0');}"
+          node -e "const fs=require('fs');const p='node_modules/@capacitor-community/apple-sign-in/Package.swift';if(fs.existsSync(p)){let c=fs.readFileSync(p,'utf8');c=c.replace('7.0.0','8.0.0').replace('.v14','.v15');fs.writeFileSync(p,c);console.log('✅ Apple Sign In Package.swift patched to 8.0.0 and iOS 15');}"
           echo "=== Debug: Package.swift content ==="
           if [ -f node_modules/@capacitor-community/apple-sign-in/Package.swift ]; then
             cat node_modules/@capacitor-community/apple-sign-in/Package.swift
@@ -30,6 +30,7 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
+          node scripts/fix-spm-path.js
       - name: Check and Inject GoogleService-Info.plist
         script: |
           echo "=== GoogleService-Info.plist Check ==="
@@ -77,6 +78,14 @@ workflows:
           echo "=== 5. 키체인에 인증서 추가 ==="
           keychain add-certificates --certificate /tmp/ios.p12 --certificate-password "1234"
 
+          echo "=== 5-1. codesign 키체인 무인증 접근 권한 부여 (GUI 팝업 차단) ==="
+          DEFAULT_KEYCHAIN=$(security default-keychain 2>/dev/null | tr -d '"' | sed -e 's/^[ \t]*//')
+          if [ -n "$DEFAULT_KEYCHAIN" ]; then
+            security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "1234" "$DEFAULT_KEYCHAIN" 2>/dev/null || true
+          fi
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "1234" ~/Library/Keychains/build.keychain-db 2>/dev/null || true
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "1234" /Users/builder/Library/Keychains/build.keychain-db 2>/dev/null || true
+
           echo "=== 6. 프로비저닝 프로파일 가져오기 ==="
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
@@ -105,20 +114,23 @@ workflows:
 
       - name: Build iOS App
         script: |
-          echo "=== 0. SPM 캐시 및 이전 결론 파일 삭제 ==="
-          rm -rf ~/Library/Caches/org.swift.swiftpm
+          echo "=== 0. SPM 자동 해석 허용 및 캐시 정리 ==="
+          defaults write com.apple.dt.Xcode IDEPackageOnlyUseVersionsFromResolvedFile -bool NO
+          defaults write com.apple.dt.Xcode IDEDisableAutomaticPackageResolution -bool NO
           rm -rf ~/Library/Developer/Xcode/DerivedData
-          find ios -name "Package.resolved" -exec rm -f {} +
 
-          echo "=== 0. SPM 패키지 의존성 해결 ==="
-          xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT"
+          echo "=== 1. SPM 패키지 의존성 해결 (Scheme 명시) ==="
+          xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$XCODE_SCHEME" -disablePackageRepositoryCache
 
-          echo "=== 1. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
+          echo "=== 2. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
           xcode-project use-profiles --project "$XCODE_PROJECT"
 
-          echo "=== 2. IPA 빌드 및 에러 발생 시 상세 로그 출력 ==="
+          echo "=== 2-1. SPM 패키지 서명 충돌 방지 처리 (프로젝트 레벨 서명 격리) ==="
+          node scripts/fix-spm-signing.js
+
+          echo "=== 3. IPA 빌드 ==="
           if ! xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"; then
-            echo "❌ xcode-project build-ipa 실패! 상세 원인 확인을 위해 xcodebuild 실행 로그를 직접 출력합니다."
+            echo "❌ xcode-project build-ipa 실패! 상세 컴파일/빌드 에러를 진단합니다."
             xcodebuild archive \
               -project "$XCODE_PROJECT" \
               -scheme "$XCODE_SCHEME" \
@@ -126,8 +138,10 @@ workflows:
               -archivePath "build/ios/xcarchive/App.xcarchive" \
               COMPILER_INDEX_STORE_ENABLE=NO \
               DEVELOPMENT_TEAM=7AB2D79572 \
-              CODE_SIGN_STYLE=Manual \
-              2>&1 | tail -n 120
+              2>&1 | tee /tmp/xcodebuild.log | grep -E "error:|fatal error:|warning: App isn't code signed" || true
+            
+            echo "=== 마지막 50줄 출력 ==="
+            tail -n 50 /tmp/xcodebuild.log
             exit 1
           fi
     artifacts:

@@ -361,31 +361,24 @@ export default function BookDetailContent() {
             if (existingById) return Number(existingById.id);
         }
 
-        // 3. Insert new book into books table
-        // 숫자 ISBN 은 기존 데이터 규칙대로 books.id 로도 사용 (id 에 기본값이 없던 DB 와도 호환)
-        const { data: newBook, error: insertError } = await supabase.from('books').insert({
-            ...(/^\d+$/.test(bookIsbn) ? { id: Number(bookIsbn) } : {}),
-            bookid: bookIsbn,
-            title: book.title,
-            author: book.author || '저자 미상',
-            imgsrc: book.imgsrc || '',
-            category: book.category || '기타',
-            description: book.description || '',
-            pubDate: book.pubDate || null,
-            publisher: book.publisher || null,
-        }).select('id').maybeSingle();
+        // 3. books 의 INSERT 는 관리자 전용 RLS 라 일반 사용자는 등록 함수(ensure_book)를 통해 등록한다
+        const { data: newId, error: rpcError } = await supabase.rpc('ensure_book', {
+            p_bookid: bookIsbn,
+            p_title: book.title,
+            p_author: book.author || '저자 미상',
+            p_imgsrc: book.imgsrc || '',
+            p_category: book.category || '기타',
+            p_description: book.description || '',
+            p_pubdate: book.pubDate || null,
+            p_publisher: book.publisher || null,
+        });
 
-        if (insertError) {
-            // 동시 요청으로 이미 등록된 경우(중복 키)는 기존 행을 사용
-            if (insertError.code === '23505') {
-                const { data: raced } = await supabase.from('books').select('id').eq('bookid', bookIsbn).maybeSingle();
-                if (raced) return Number(raced.id);
-            }
-            console.warn("Failed to insert book to DB:", insertError);
+        if (rpcError || newId == null) {
+            console.warn("Failed to ensure book in DB:", rpcError);
             return null;
         }
 
-        return newBook ? Number(newBook.id) : null;
+        return Number(newId);
     };
 
     const handleScrap = async () => {
@@ -494,8 +487,14 @@ export default function BookDetailContent() {
             setShowChildModal(false);
         } catch (err) {
             console.error(err);
-            const errorMessage = err instanceof Error ? err.message : '알 수 없는 오류';
-            toast.error("저장 중 오류가 발생했습니다: " + errorMessage);
+            // read_books 는 (child_id, book_id) 유니크: 같은 아이가 같은 책을 다시 기록하면 23505
+            if ((err as { code?: string })?.code === '23505') {
+                toast.info("이미 이 아이의 읽은 책으로 기록되어 있어요.");
+                setIsRead(true);
+                setShowChildModal(false);
+                return;
+            }
+            toast.error("저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
         }
     };
 

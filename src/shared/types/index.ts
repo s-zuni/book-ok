@@ -192,9 +192,12 @@ export interface LiteracyGradedAnswer {
     area_label: string;
     question: string;
     options: string[];
+    /** 응시자에게 보인(섞인) 보기 기준 인덱스. 미응답/모르겠어요는 -1 */
     selected: number;
+    /** 섞인 보기 기준 정답 인덱스 */
     correct_answer: number;
     is_correct: boolean;
+    unsure?: boolean;
     evidence: string;
     explanation: string;
     time_spent_sec: number;
@@ -203,6 +206,7 @@ export interface LiteracyGradedAnswer {
 export interface LiteracyPrescribedBook extends Book {
     prescriptionArea?: string;
     prescriptionReason?: string;
+    prescriptionKeyword?: string;
 }
 
 export interface LiteracyAssessment {
@@ -224,7 +228,14 @@ export interface LiteracyAssessment {
     score_factual: number;
     score_inferential: number;
     score_critical: number;
-    score_fluency: number;
+    /** 읽기 속도 참고 점수(권장 속도 대비 %). 유아·비정상 속도는 null(미산정) */
+    score_fluency: number | null;
+    fluency_reason?: "ok" | "toddler" | "too_fast";
+    /** 2: 정답 비율 기반(이해 4영역 평균). 1(또는 없음): 이전 방식 */
+    scoring_version?: number;
+    /** 서버에 저장되었는지 (게스트·자녀 미선택·저장 실패는 false) */
+    saved?: boolean;
+    save_status?: "saved" | "guest" | "no_child" | "failed";
     total_bli_score: number;
     bli_tier: string;
     weakest_area: string;

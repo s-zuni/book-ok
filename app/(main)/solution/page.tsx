@@ -564,7 +564,7 @@ export function SolutionPageContent() {
                         return {
                             id: r.book_id,
                             bookid: r.book_id,
-                            title: '기록된 도서',
+                            title: (r.observation_data as { book_title?: string } | null)?.book_title || '기록된 도서',
                             author: '저자 미상',
                             category: '기타',
                             imgsrc: '',
@@ -985,7 +985,7 @@ export function SolutionPageContent() {
     };
 
     const handleConsultWithAssessment = (assessment: LiteracyAssessment) => {
-        const consultPrompt = `최근 문해력 진단(${assessment.grade_label || ''})에서 종합 BLI ${assessment.total_bli_score}점(${assessment.bli_tier}, 유효 읽기 속도 ${assessment.effective_wpm} WPM)이 나왔고, 특히 '${assessment.weakest_area_label || assessment.weakest_area}' 영역이 상대적으로 부족하다고 나왔어요. 가정에서 어떻게 독서 지도를 해주면 좋을까요?`;
+        const consultPrompt = `최근 문해력 진단(${assessment.grade_label || ''})에서 종합 ${assessment.total_bli_score}점(${assessment.bli_tier}, 읽기 속도 분당 ${assessment.effective_wpm}어절)이 나왔고, 특히 '${assessment.weakest_area_label || assessment.weakest_area}' 영역이 상대적으로 부족하다고 나왔어요. 가정에서 어떻게 독서 지도를 해주면 좋을까요?`;
         setMobileInput(consultPrompt);
         setAiSolutionPrompt(consultPrompt);
         setMobileTab('solution');
@@ -1000,7 +1000,7 @@ export function SolutionPageContent() {
             if (raw) {
                 try {
                     const ctx = JSON.parse(raw);
-                    const consultPrompt = `최근 문해력 진단(${ctx.grade_label || ''})에서 종합 BLI ${ctx.total_bli_score}점(${ctx.bli_tier}, 유효 읽기 속도 ${ctx.effective_wpm} WPM)이 나왔고, '${ctx.weakest_area_label}' 영역 보완이 필요하다고 나왔어요. 맞춤 지도 방법을 알려주세요.`;
+                    const consultPrompt = `최근 문해력 진단(${ctx.grade_label || ''})에서 종합 ${ctx.total_bli_score}점(${ctx.bli_tier}, 읽기 속도 분당 ${ctx.effective_wpm}어절)이 나왔고, '${ctx.weakest_area_label}' 영역 보완이 필요하다고 나왔어요. 맞춤 지도 방법을 알려주세요.`;
                     setMobileInput(consultPrompt);
                     setAiSolutionPrompt(consultPrompt);
                     sessionStorage.removeItem('bookok_literacy_consult_context');
@@ -1078,10 +1078,10 @@ export function SolutionPageContent() {
                                         </div>
                                         <div>
                                             <span className="text-[11px] font-black text-emerald-200 uppercase tracking-wider">
-                                                NEW · LangChain & RAG 문해력 엔진
+                                                NEW · 문해력 점검
                                             </span>
                                             <h3 className="text-lg font-black text-white mt-0.5">
-                                                우리 아이 5각형 문해력 지수(BLI) 3분 진단 & 맞춤 도서 처방받기
+                                                우리 아이 문해력 3분 점검 & 함께 읽을 책 추천받기
                                             </h3>
                                         </div>
                                     </div>
@@ -1176,10 +1176,7 @@ export function SolutionPageContent() {
                                 : 'border-transparent text-gray-400 font-bold'
                         }`}
                     >
-                        <span>문해력 진단</span>
-                        <span className="bg-[#16A34A] text-white text-[9px] font-black px-1.5 py-0.2 rounded-full">
-                            BLI
-                        </span>
+                        <span>문해력 점검</span>
                     </button>
                     <button
                         onClick={() => handleTabChange('solution')}
@@ -1217,10 +1214,10 @@ export function SolutionPageContent() {
                                     </div>
                                     <div>
                                         <span className="text-[10px] font-black text-emerald-200 block">
-                                            AI 문해력 지수 (BLI) 진단
+                                            문해력 점검
                                         </span>
                                         <span className="text-[13px] font-extrabold text-white block tracking-tight">
-                                            3분 지문 읽기로 5각형 문해력 & 처방책 확인
+                                            3분 지문 읽기로 영역별 결과와 추천 도서 확인
                                         </span>
                                     </div>
                                 </div>

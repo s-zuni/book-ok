@@ -1051,7 +1051,7 @@ export default function MyPage() {
                                             </div>
                                             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                                 <div>
-                                                    <h4 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{item.books?.title || '제목 없음'}</h4>
+                                                    <h4 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{item.books?.title || item.observation_data?.book_title || '제목 없음'}</h4>
                                                     <p className="text-sm text-gray-400 mt-1 line-clamp-1">{item.books?.author || '저자 미상'}</p>
                                                 </div>
                                                 
@@ -1112,7 +1112,7 @@ export default function MyPage() {
                                             </div>
                                             <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
                                                 <div>
-                                                    <h4 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{item.books?.title || '제목 없음'}</h4>
+                                                    <h4 className="font-bold text-gray-900 text-lg line-clamp-1 leading-tight">{item.books?.title || item.observation_data?.book_title || '제목 없음'}</h4>
                                                     <p className="text-sm text-gray-400 mt-1 line-clamp-1">{item.books?.author || '저자 미상'}</p>
                                                 </div>
                                                 

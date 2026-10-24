@@ -170,3 +170,18 @@ export async function recordServiceStay(
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// 마케팅 이벤트 추적 (Google Analytics 4: NEXT_PUBLIC_GA_ID가 설정된 경우에만 전송)
+// ---------------------------------------------------------------------------
+type GtagFn = (command: 'event', name: string, params?: Record<string, unknown>) => void;
+
+export function trackEvent(name: string, params: Record<string, unknown> = {}): void {
+    if (typeof window === 'undefined') return;
+    try {
+        const gtag = (window as unknown as { gtag?: GtagFn }).gtag;
+        gtag?.('event', name, { ...params, device_type: getDeviceType() });
+    } catch {
+        // 분석 실패는 사용자 경험에 영향을 주지 않는다
+    }
+}

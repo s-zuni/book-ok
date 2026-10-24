@@ -3,6 +3,14 @@ import { safeFetch } from "@shared/lib/api";
 import { LiteracyAssessment, LiteracyPassage, LiteracyQuestion } from "@shared/types";
 import { AREA_METADATA, getGradeConfig } from "./scoring";
 
+/** 서버가 내려준 HTTP 상태를 함께 전달해, 만료·중복 제출 같은 복구 불가 오류를 구분한다 */
+export class LiteracyApiError extends Error {
+    constructor(message: string, public status: number) {
+        super(message);
+        this.name = "LiteracyApiError";
+    }
+}
+
 export interface StartLiteracyTestParams {
     childId?: string | number | null;
     childAge?: number | null;
@@ -21,13 +29,15 @@ export interface StartLiteracyTestResponse {
 export interface SubmitLiteracyAnswerItem {
     question_id: string;
     area: string;
+    /** 화면에 보인 보기 순서 기준 인덱스. 미응답/모르겠어요는 -1 */
     selected: number;
     time_spent_sec: number;
+    /** "잘 모르겠어요"를 직접 고른 경우 */
+    unsure?: boolean;
 }
 
 export interface SubmitLiteracyTestParams {
     childId?: string | number | null;
-    childName?: string;
     passageId: string;
     sessionToken?: string;
     gradeLevel: number;
@@ -83,7 +93,7 @@ export async function startLiteracyTest(
 }
 
 /**
- * Step 3 & 4: 답안 제출, BLI 5각형 점수 산출 및 처방형 도서 추천 RAG 실행
+ * 답안 제출: 정답 비율 채점과 보완 영역 관련 도서 추천
  */
 export async function submitLiteracyTest(
     params: SubmitLiteracyTestParams
@@ -99,19 +109,21 @@ export async function submitLiteracyTest(
 
     if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "문해력 채점 중 오류가 발생했습니다.");
+        throw new LiteracyApiError(errData.error || "문해력 채점 중 오류가 발생했습니다.", res.status);
     }
 
     const data = await res.json();
-    return data.assessment as LiteracyAssessment;
+    const assessment = data.assessment as LiteracyAssessment;
+    // 코칭 팁은 화면 어디서나 같은 문구가 보이도록 클라이언트 상수를 단일 출처로 쓴다
+    return { ...assessment, coaching_tip: AREA_METADATA[assessment.weakest_area]?.coachingGuide || assessment.coaching_tip };
 }
 
 type LiteracyHistoryRow = LiteracyAssessment & {
-    literacy_passages?:
-        | { title?: string; content?: string; genre?: string; word_count?: number }
-        | { title?: string; content?: string; genre?: string; word_count?: number }[]
-        | null;
+    passage_snapshot?: PassageSnapshot | null;
+    literacy_passages?: PassageSnapshot | PassageSnapshot[] | null;
 };
+
+type PassageSnapshot = { title?: string; content?: string; genre?: string; word_count?: number };
 
 /**
  * 자녀의 과거 문해력 진단 이력 조회 (최신순)
@@ -142,16 +154,18 @@ export async function fetchChildLiteracyHistory(
     }
 
     return (data as LiteracyHistoryRow[]).map((row) => {
-        const joinedPassage = Array.isArray(row.literacy_passages)
-            ? row.literacy_passages[0]
-            : row.literacy_passages;
+        // 저장 시점의 지문 스냅샷을 우선 사용한다 (지문이 수정·비활성화되어도 과거 해설이 어긋나지 않게)
+        const joinedPassage =
+            row.passage_snapshot ||
+            (Array.isArray(row.literacy_passages) ? row.literacy_passages[0] : row.literacy_passages);
         const gradeConfig = getGradeConfig(row.grade_level);
         return {
             ...row,
             passage_title: joinedPassage?.title || "문해력 진단 지문",
             passage_content: joinedPassage?.content || "",
             passage_genre: joinedPassage?.genre || "공통",
-            word_count: joinedPassage?.word_count || 90,
+            word_count: joinedPassage?.word_count || 0,
+            saved: true,
             grade_label: gradeConfig.label,
             norm_wpm: gradeConfig.targetWpm,
             weakest_area_label: AREA_METADATA[row.weakest_area]?.label || row.weakest_area,
