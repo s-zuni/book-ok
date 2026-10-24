@@ -9,7 +9,7 @@ const config: any = {
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: false,
-      backgroundColor: "#F3EEE2",
+      backgroundColor: "#FFFFFF",
       androidScaleType: "CENTER_INSIDE",
       showSpinner: false
     },
