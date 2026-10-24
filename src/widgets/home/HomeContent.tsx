@@ -1341,7 +1341,7 @@ function HomeContentInner() {
                                 }
 
                                 try {
-                                    // 1. Supabase read_books insert
+                                    // 1. Supabase read_books insert (책 마스터(books)와 연결되지 않는 직접 입력 기록이라 book_id는 null)
                                     if (user && activeChild) {
                                         const { error } = await supabase.from('read_books').insert({
                                             user_id: user.id,
@@ -1354,10 +1354,13 @@ function HomeContentInner() {
                                                 is_challenge: true 
                                             }
                                         });
-                                        if (error) console.warn("Supabase insert ignored (local testing mode):", error.message);
+                                        if (error) throw error;
                                     }
                                 } catch (e) {
-                                    console.error(e);
+                                    // 저장에 실패했는데 완료로 보이면 기록이 사라지므로, 상태를 바꾸지 않고 안내한다
+                                    console.error("Challenge record save failed:", e);
+                                    toast.error("독서 기록을 저장하지 못했어요. 잠시 후 다시 시도해주세요.");
+                                    return;
                                 }
 
                                 // 2. State updates

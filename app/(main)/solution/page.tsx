@@ -564,7 +564,7 @@ export function SolutionPageContent() {
                         return {
                             id: r.book_id,
                             bookid: r.book_id,
-                            title: '기록된 도서',
+                            title: (r.observation_data as { book_title?: string } | null)?.book_title || '기록된 도서',
                             author: '저자 미상',
                             category: '기타',
                             imgsrc: '',
