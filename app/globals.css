@@ -140,10 +140,7 @@ html {
   filter: drop-shadow(0 0.5px 0 #00a043) drop-shadow(0 1px 0 #008c3a) drop-shadow(0 1.5px 0 #007a33) drop-shadow(0 4px 5px rgba(0, 90, 40, 0.2));
 }
 .splash-3d-text {
-  background: linear-gradient(180deg, #4ade80 0%, #01c54f 48%, #00a343 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: #01c54f;
 }
 
 .splash-char-in { animation: splashCharIn 800ms cubic-bezier(0.16, 1, 0.3, 1) backwards; }
