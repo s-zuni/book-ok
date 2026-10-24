@@ -9,8 +9,11 @@ import {
   computeFluency,
   computeTotal,
   gradeAnswers,
+  gradeWordQuestion,
+  MIN_WORD_POOL,
   optionOrder,
-  selectServedQuestions,
+  pickWordQuestions,
+  servedPassageQuestions,
   pickExtremes,
   tierFor,
 } from "./scoring.ts";
@@ -145,7 +148,7 @@ async function resolveUserId(req: Request, supabaseUrl: string, anonKey: string)
 
 /** 호출 제한: DB RPC(literacy_rate_limit_hit)를 우선 사용하고, RPC 실패 시 인스턴스 메모리로 대체 */
 const RATE_WINDOW_SECONDS = 10 * 60;
-const RATE_LIMITS: Record<string, number> = { start: 20, submit: 10 };
+const RATE_LIMITS: Record<string, number> = { start: 20, submit: 10, check: 120 };
 const localBuckets = new Map<string, number[]>();
 
 function isRateLimitedLocal(key: string, action: string): boolean {
@@ -181,7 +184,7 @@ async function isRateLimited(supabase: any, key: string, action: string): Promis
 }
 
 /**
- * 진단 세션 토큰: passageId|user|issuedAt|nonce|sig
+ * 진단 세션 토큰: passageId|user|issuedAt|nonce|wordIds(쉼표 구분, 없으면 빈 값)|sig
  * - 서버가 지문 인출 시각을 서명해 두고, 제출 시 실제 경과 시간으로 읽기 시간을 검증
  * - nonce는 보기 섞기 시드이자 1회용 제출 식별자
  */
@@ -197,8 +200,14 @@ async function signSession(payload: string, secret: string): Promise<string> {
   return toHex(await crypto.subtle.sign("HMAC", key, enc.encode(payload)));
 }
 
-async function issueSessionToken(passageId: string, userId: string | null, nonce: string, secret: string): Promise<string> {
-  const payload = `${passageId}|${userId || "guest"}|${Date.now()}|${nonce}`;
+async function issueSessionToken(
+  passageId: string,
+  userId: string | null,
+  nonce: string,
+  secret: string,
+  wordIds: string[] = []
+): Promise<string> {
+  const payload = `${passageId}|${userId || "guest"}|${Date.now()}|${nonce}|${wordIds.join(",")}`;
   return `${payload}|${await signSession(payload, secret)}`;
 }
 
@@ -208,17 +217,17 @@ async function verifySessionToken(
   passageId: string,
   userId: string | null,
   secret: string
-): Promise<{ elapsedSec: number; nonce: string } | null> {
+): Promise<{ elapsedSec: number; nonce: string; wordIds: string[] } | null> {
   if (typeof token !== "string") return null;
   const parts = token.split("|");
-  if (parts.length !== 5) return null;
-  const [pid, uid, issuedAt, nonce, sig] = parts;
+  if (parts.length !== 6) return null;
+  const [pid, uid, issuedAt, nonce, wordField, sig] = parts;
   if (pid !== passageId || uid !== (userId || "guest")) return null;
-  const expected = await signSession(`${pid}|${uid}|${issuedAt}|${nonce}`, secret);
+  const expected = await signSession(`${pid}|${uid}|${issuedAt}|${nonce}|${wordField}`, secret);
   if (expected !== sig) return null;
   const elapsedMs = Date.now() - Number(issuedAt);
   if (!Number.isFinite(elapsedMs) || elapsedMs < 0 || elapsedMs > SESSION_TTL_MS) return null;
-  return { elapsedSec: Math.floor(elapsedMs / 1000), nonce };
+  return { elapsedSec: Math.floor(elapsedMs / 1000), nonce, wordIds: wordField ? wordField.split(",") : [] };
 }
 
 /** 이름은 화면·프롬프트에 그대로 들어가므로 마크업·제어 문자를 제거하고 길이를 제한한다 */
@@ -459,12 +468,33 @@ async function fetchPrescribedBooks(
   return { books, keywords: searchQueries };
 }
 
-/** 검수된 문항이 4개 영역을 모두 갖췄는지 */
-function coversAllAreas(questions: any[] | null | undefined): boolean {
-  return !!questions && QUESTION_AREAS.every((a) => questions.some((q: any) => q.area === a));
+/** 낱말 퀴즈가 어휘 영역을 대신할 때는 지문 문항에서 어휘 영역을 요구하지 않는다 */
+const PASSAGE_AREAS_WORD_MODE = QUESTION_AREAS.filter((a) => a !== "vocabulary");
+
+/** 검수된 문항이 필요한 영역을 모두 갖췄는지 */
+function coversAllAreas(questions: any[] | null | undefined, wordMode = false): boolean {
+  const areas = wordMode ? PASSAGE_AREAS_WORD_MODE : QUESTION_AREAS;
+  return !!questions && areas.every((a) => questions.some((q: any) => q.area === a));
 }
 
+const WORD_COLUMNS = "id, question_type, area, question, options, correct_answer, explanation";
+
 const QUESTION_COLUMNS = "id, passage_id, area, item_order, question, options, correct_answer, evidence, explanation, critic_score";
+
+/** 이 학년의 검수 완료 낱말 퀴즈 풀. 충분하지 않으면 빈 배열(= 지문 어휘 문항 사용) */
+async function loadWordPool(supabase: any, grade: number): Promise<any[]> {
+  const { data, error } = await supabase
+    .from("literacy_questions")
+    .select(WORD_COLUMNS)
+    .is("passage_id", null)
+    .eq("grade_level", grade)
+    .eq("is_verified", true);
+  if (error) {
+    console.warn("literacy word pool unavailable:", error.message);
+    return [];
+  }
+  return data && data.length >= MIN_WORD_POOL ? data : [];
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -563,7 +593,12 @@ serve(async (req) => {
         .eq("is_verified", true);
       let finalQuestions: any[] = existingQuestions || [];
 
-      if (!coversAllAreas(finalQuestions) && allowRuntimeGeneration && openAiKey) {
+      // 낱말 퀴즈를 풀 수 있다고 알린 클라이언트에게만 연다. 구버전 앱은 낱말 문항을 풀 수 없어 어휘 점수가 0이 되므로 기존 방식을 쓴다.
+      const clientSupportsWords = body.wordQuiz === true;
+      const wordPool = clientSupportsWords ? await loadWordPool(supabase, selectedPassage.grade_level) : [];
+      const wordMode = wordPool.length > 0;
+
+      if (!coversAllAreas(finalQuestions, wordMode) && allowRuntimeGeneration && openAiKey) {
         const generated = await generateAndVerifyQuestionsWithLLM(selectedPassage, openAiKey);
         if (generated && generated.length === 4) {
           const toInsert = generated.map((q) => ({
@@ -596,14 +631,14 @@ serve(async (req) => {
       }
 
       // 영역이 빠진 채로 진단을 시작하면 측정하지 않은 영역이 점수처럼 보이므로 시작하지 않는다
-      if (!coversAllAreas(finalQuestions)) {
+      if (!coversAllAreas(finalQuestions, wordMode)) {
         console.error("literacy-test: incomplete question set for passage", selectedPassage.id);
         return json({ error: "이 지문의 문항을 준비하는 중이에요. 잠시 후 다시 시도해 주세요." }, 503);
       }
 
       const nonce = crypto.randomUUID();
       // 정답·근거·해설은 채점 결과(submit)에서만 공개. 보기는 세션 nonce로 섞는다.
-      const publicQuestions = selectServedQuestions(finalQuestions).map((q: any) => {
+      const publicQuestions = servedPassageQuestions(finalQuestions, wordMode).map((q: any) => {
         const order = optionOrder(nonce, q.id, q.options.length);
         return {
           id: q.id,
@@ -613,7 +648,26 @@ serve(async (req) => {
           options: order.map((i: number) => q.options[i]),
         };
       });
-      const sessionToken = await issueSessionToken(selectedPassage.id, authUserId, nonce, supabaseServiceKey);
+      // 낱말 퀴즈: 지문 없이 바로 푸는 어휘 문항 (정답은 문항별 확인(check)·최종 채점에서만 공개)
+      const servedWords = wordMode ? pickWordQuestions(wordPool, nonce) : [];
+      const publicWordQuestions = servedWords.map((q: any) => {
+        const order = optionOrder(nonce, q.id, q.options.length);
+        return {
+          id: q.id,
+          passage_id: null,
+          area: q.area,
+          question_type: q.question_type,
+          question: q.question,
+          options: order.map((i: number) => q.options[i]),
+        };
+      });
+      const sessionToken = await issueSessionToken(
+        selectedPassage.id,
+        authUserId,
+        nonce,
+        supabaseServiceKey,
+        servedWords.map((q: any) => q.id)
+      );
 
       return json({
         session_token: sessionToken,
@@ -632,6 +686,56 @@ serve(async (req) => {
           norm_wpm: GRADE_WPM_NORMS[selectedPassage.grade_level]?.targetWpm || 150,
         },
         questions: publicQuestions,
+        word_questions: publicWordQuestions,
+      });
+    }
+
+    // =====================================================================
+    // ACTION 1.5: CHECK — 낱말 퀴즈 문항별 즉시 확인 (첫 답을 서버가 고정, 정답은 이 응답에서만 공개)
+    // =====================================================================
+    if (action === "check") {
+      const passageId = String(body.passageId || "");
+      const questionId = String(body.questionId || "");
+      const selected = Number(body.selected);
+      const session = await verifySessionToken(body.sessionToken, passageId, authUserId, supabaseServiceKey);
+      if (session === null || !session.wordIds.includes(questionId) || !Number.isInteger(selected) || selected < 0 || selected > 3) {
+        return json({ error: "낱말 퀴즈 세션이 올바르지 않아요. 처음부터 다시 시작해 주세요." }, 400);
+      }
+
+      const { data: wordQ } = await supabase
+        .from("literacy_questions")
+        .select(WORD_COLUMNS)
+        .eq("id", questionId)
+        .is("passage_id", null)
+        .maybeSingle();
+      if (!wordQ) return json({ error: "문항을 찾을 수 없어요." }, 404);
+
+      // 첫 답만 인정: 이미 답한 문항이면 저장된 첫 답으로 다시 알려 준다
+      let lockedSelected = selected;
+      const { error: lockErr } = await supabase
+        .from("literacy_word_answers")
+        .insert({ nonce: session.nonce, question_id: questionId, selected });
+      if (lockErr) {
+        if (lockErr.code !== "23505") {
+          console.error("literacy word answer insert failed:", lockErr);
+          return json({ error: "답을 확인할 수 없어요. 잠시 후 다시 시도해 주세요." }, 503);
+        }
+        const { data: prev } = await supabase
+          .from("literacy_word_answers")
+          .select("selected")
+          .eq("nonce", session.nonce)
+          .eq("question_id", questionId)
+          .maybeSingle();
+        if (prev && Number.isInteger(prev.selected)) lockedSelected = prev.selected;
+      }
+
+      const graded = gradeWordQuestion(wordQ, lockedSelected, session.nonce);
+      return json({
+        question_id: questionId,
+        selected: graded.selected,
+        is_correct: graded.is_correct,
+        correct_answer: graded.correct_answer,
+        explanation: graded.explanation,
       });
     }
 
@@ -655,7 +759,8 @@ serve(async (req) => {
         .eq("passage_id", passageId)
         .eq("is_verified", true);
 
-      if (!passage || !coversAllAreas(questions)) {
+      const wordMode = session.wordIds.length > 0;
+      if (!passage || !coversAllAreas(questions, wordMode)) {
         return json({ error: "진단 지문 또는 문항 정보를 찾을 수 없습니다." }, 404);
       }
 
@@ -675,7 +780,24 @@ serve(async (req) => {
       const norm = GRADE_WPM_NORMS[passage.grade_level] || GRADE_WPM_NORMS[2];
 
       // 1. 채점: 영역 점수 = 정답 비율. 풀이 시간·찍기 방지용 가산/하한 없음.
-      const gradedAnswers = gradeAnswers(selectServedQuestions(questions), answers, session.nonce);
+      const gradedPassage = gradeAnswers(servedPassageQuestions(questions, wordMode), answers, session.nonce);
+      // 낱말 퀴즈는 클라이언트가 보낸 답이 아니라 서버가 고정한 첫 답으로 채점한다 (못 푼 문항은 오답)
+      let gradedWords: ReturnType<typeof gradeWordQuestion>[] = [];
+      if (wordMode) {
+        const [{ data: wordRows }, { data: lockedRows }] = await Promise.all([
+          supabase.from("literacy_questions").select(WORD_COLUMNS).in("id", session.wordIds),
+          supabase.from("literacy_word_answers").select("question_id, selected").eq("nonce", session.nonce),
+        ]);
+        const byId = new Map<string, any>((wordRows || []).map((r: any) => [r.id, r]));
+        const lockedById = new Map<string, number>((lockedRows || []).map((r: any) => [r.question_id, r.selected]));
+        gradedWords = session.wordIds
+          .filter((id) => byId.has(id))
+          .map((id) => gradeWordQuestion(byId.get(id), lockedById.get(id) ?? null, session.nonce));
+        if (gradedWords.length !== session.wordIds.length) {
+          console.error("literacy-test: word questions missing at submit", session.wordIds);
+        }
+      }
+      const gradedAnswers = [...gradedWords, ...gradedPassage];
       const areaScores = computeAreaScores(gradedAnswers);
       const totalScore = computeTotal(areaScores);
       const tier = tierFor(totalScore);
@@ -694,7 +816,7 @@ serve(async (req) => {
 
       let aiDiagnosisSummary =
         `### ${childName}의 문해력 점검 결과 (${norm.label})\n\n` +
-        `**'${passage.title}'** 지문을 읽고 ${gradedAnswers.length}문항 중 **${correctCount}문항**을 맞혔어요.\n\n` +
+        `**'${passage.title}'** ${wordMode ? "지문과 낱말 퀴즈를 합해" : "지문을 읽고"} ${gradedAnswers.length}문항 중 **${correctCount}문항**을 맞혔어요.\n\n` +
         (weakestArea === "balanced"
           ? allCorrect
             ? `- **🌟 이번 결과**: 모든 영역의 문항을 맞혔어요. 한 단계 높은 지문에도 도전해 보세요.\n`

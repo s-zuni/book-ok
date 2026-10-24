@@ -103,3 +103,80 @@ test("서버 규준과 클라이언트 규준(src/features/literacy/scoring.ts)�
   assert.equal(found.length, 7);
   for (const [grade, wpm] of found) assert.equal(GRADE_WPM_NORMS[grade].targetWpm, wpm, `grade ${grade}`);
 });
+
+// ---------------------------------------------------------------------------
+// 낱말 퀴즈
+// ---------------------------------------------------------------------------
+import {
+  pickWordQuestions, gradeWordQuestion, servedPassageQuestions, WORD_QUIZ_COUNT, WORD_QUESTION_TYPES,
+} from "../../supabase/functions/literacy-test/scoring.ts";
+
+const wordPool = () =>
+  Array.from({ length: 14 }, (_, i) => ({
+    id: `w-${String(i).padStart(2, "0")}`,
+    question_type: WORD_QUESTION_TYPES[i % WORD_QUESTION_TYPES.length],
+    question: `q${i}`, options: ["a", "b", "c", "d"], correct_answer: i % 4, explanation: "x",
+  }));
+
+test("낱말 문항 선택은 같은 nonce·풀이면 항상 같고, 입력 순서와 무관하다", () => {
+  const pool = wordPool();
+  const a = pickWordQuestions(pool, "nonce-1").map((q) => q.id);
+  const b = pickWordQuestions([...pool].reverse(), "nonce-1").map((q) => q.id);
+  assert.deepEqual(a, b);
+  assert.equal(a.length, WORD_QUIZ_COUNT);
+  assert.equal(new Set(a).size, a.length);
+});
+
+test("낱말 문항은 가능한 한 서로 다른 유형으로 고른다", () => {
+  const picked = pickWordQuestions(wordPool(), "nonce-2");
+  assert.equal(new Set(picked.map((q) => q.question_type)).size, WORD_QUIZ_COUNT);
+});
+
+test("낱말 문항은 nonce마다 다른 조합이 나온다", () => {
+  const sets = new Set();
+  for (let i = 0; i < 20; i++) sets.add(pickWordQuestions(wordPool(), `n-${i}`).map((q) => q.id).sort().join());
+  assert.ok(sets.size > 3);
+});
+
+test("풀이 문항 수보다 작으면 가진 만큼만 고른다", () => {
+  assert.equal(pickWordQuestions(wordPool().slice(0, 3), "n").length, 3);
+});
+
+test("낱말 문항 채점: 섞인 화면 기준 정답이면 맞고, 미응답은 오답이다", () => {
+  const q = wordPool()[1];
+  const nonce = "nonce-3";
+  const order = optionOrder(nonce, q.id, 4);
+  const correctIdx = order.indexOf(q.correct_answer);
+  const right = gradeWordQuestion(q, correctIdx, nonce);
+  assert.equal(right.is_correct, true);
+  assert.equal(right.area, "vocabulary");
+  assert.equal(right.evidence, "");
+  assert.equal(right.question_type, q.question_type);
+  assert.deepEqual(right.options, order.map((i) => q.options[i]));
+  assert.equal(gradeWordQuestion(q, (correctIdx + 1) % 4, nonce).is_correct, false);
+  assert.equal(gradeWordQuestion(q, null, nonce).is_correct, false);
+  assert.equal(gradeWordQuestion(q, null, nonce).selected, -1);
+  assert.equal(gradeWordQuestion(q, 9, nonce).selected, -1);
+});
+
+test("낱말 퀴즈가 어휘를 대신하면 지문 문항에서 어휘 영역은 출제·채점하지 않는다", () => {
+  const qs = makeQuestions();
+  assert.equal(servedPassageQuestions(qs, false).length, 4);
+  const word = servedPassageQuestions(qs, true);
+  assert.equal(word.length, 3);
+  assert.ok(word.every((q) => q.area !== "vocabulary"));
+});
+
+test("낱말 퀴즈 + 지문 문항을 합쳐도 어휘는 낱말 퀴즈로만 계산된다", () => {
+  const qs = makeQuestions();
+  const nonce = "nonce-4";
+  const words = wordPool().slice(0, 4);
+  const gradedWords = words.map((w) => {
+    const idx = optionOrder(nonce, w.id, 4).indexOf(w.correct_answer);
+    return gradeWordQuestion(w, idx, nonce);
+  });
+  const gradedPassage = gradeAnswers(servedPassageQuestions(qs, true), [], nonce);
+  const scores = computeAreaScores([...gradedWords, ...gradedPassage]);
+  assert.equal(scores.vocabulary, 100);
+  assert.equal(scores.factual, 0);
+});

@@ -113,6 +113,8 @@ export interface GradedAnswer {
   evidence: string;
   explanation: string;
   time_spent_sec: number;
+  /** 낱말 퀴즈 문항 유형. 지문 문항은 없음 */
+  question_type?: string;
 }
 
 export function gradeAnswers(questions: StoredQuestion[], answers: SubmittedAnswer[], nonce: string): GradedAnswer[] {
@@ -195,5 +197,87 @@ export function pickExtremes(areaScores: Record<QuestionArea, number | null>): {
   return {
     weakest: entries.find((e) => e[1] === min)![0],
     strength: entries.find((e) => e[1] === max)![0],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 낱말 퀴즈: 지문 없이 바로 푸는 어휘 문항
+// ---------------------------------------------------------------------------
+
+export const WORD_QUESTION_TYPES = ["cloze", "synonym", "antonym", "meaning", "spelling", "odd_one_out"] as const;
+export type WordQuestionType = typeof WORD_QUESTION_TYPES[number];
+
+/** 한 번의 점검에서 출제하는 낱말 문항 수 */
+export const WORD_QUIZ_COUNT = 6;
+/** 학년별 검수 완료 낱말 문항이 이보다 적으면 낱말 퀴즈를 열지 않고 지문 어휘 문항을 쓴다 */
+export const MIN_WORD_POOL = 6;
+
+/** 지문 문항 중 낱말 퀴즈가 어휘 영역을 대신할 때는 어휘 영역 문항을 출제·채점하지 않는다 */
+export function servedPassageQuestions<T extends { id: string; area: string; item_order?: number | null }>(
+  questions: T[],
+  wordMode: boolean
+): T[] {
+  const served = selectServedQuestions(questions);
+  return wordMode ? served.filter((q) => q.area !== "vocabulary") : served;
+}
+
+/**
+ * 세션 nonce로 결정되는 낱말 문항 선택. 유형이 겹치지 않게 먼저 한 유형씩 고른 뒤 나머지를 채운다.
+ * 입력 순서·풀 크기와 무관하게 같은 (nonce, 풀)이면 같은 결과가 나온다.
+ */
+export function pickWordQuestions<T extends { id: string; question_type: string }>(
+  pool: T[],
+  nonce: string,
+  count: number = WORD_QUIZ_COUNT
+): T[] {
+  const ranked = [...pool].sort((a, b) => hashSeed(`${nonce}|${a.id}`) - hashSeed(`${nonce}|${b.id}`) || a.id.localeCompare(b.id));
+  const picked: T[] = [];
+  const usedTypes = new Set<string>();
+  for (const q of ranked) {
+    if (picked.length >= count) break;
+    if (!usedTypes.has(q.question_type)) {
+      usedTypes.add(q.question_type);
+      picked.push(q);
+    }
+  }
+  for (const q of ranked) {
+    if (picked.length >= count) break;
+    if (!picked.includes(q)) picked.push(q);
+  }
+  // 출제 순서도 nonce로 섞는다 (유형 선택 순서가 그대로 드러나지 않게)
+  return picked.sort((a, b) => hashSeed(`order|${nonce}|${a.id}`) - hashSeed(`order|${nonce}|${b.id}`));
+}
+
+export interface StoredWordQuestion {
+  id: string;
+  question_type: string;
+  question: string;
+  options: string[];
+  correct_answer: number;
+  explanation: string;
+}
+
+/** 한 낱말 문항의 채점 결과(섞인 보기 기준). 즉시 확인(check)과 최종 채점이 같은 함수를 쓴다. */
+export function gradeWordQuestion(q: StoredWordQuestion, selectedShuffled: number | null, nonce: string): GradedAnswer {
+  const order = optionOrder(nonce, q.id, q.options.length);
+  const shuffledCorrect = order.indexOf(q.correct_answer);
+  const selected =
+    typeof selectedShuffled === "number" && Number.isInteger(selectedShuffled) && selectedShuffled >= 0 && selectedShuffled < q.options.length
+      ? selectedShuffled
+      : -1;
+  return {
+    question_id: q.id,
+    area: "vocabulary",
+    area_label: AREA_LABELS.vocabulary,
+    question: q.question,
+    options: order.map((i) => q.options[i]),
+    selected,
+    correct_answer: shuffledCorrect,
+    is_correct: selected !== -1 && selected === shuffledCorrect,
+    unsure: false,
+    evidence: "",
+    explanation: q.explanation,
+    time_spent_sec: 0,
+    question_type: q.question_type,
   };
 }

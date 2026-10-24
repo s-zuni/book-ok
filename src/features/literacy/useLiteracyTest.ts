@@ -8,12 +8,15 @@ import { Child, LiteracyAssessment, LiteracyPassage, LiteracyQuestion } from "@s
 import { trackEvent } from "@shared/lib/analytics";
 import {
     LiteracyApiError,
+    LiteracyWordCheckResult,
     SubmitLiteracyAnswerItem,
+    checkLiteracyWord,
     startLiteracyTest,
     submitLiteracyTest,
 } from "./api";
 
-export type TestStep = "loading" | "reading" | "quiz" | "submitting" | "report";
+/** words: 지문 없이 바로 푸는 낱말 퀴즈 (지문 읽기 전) */
+export type TestStep = "loading" | "words" | "reading" | "quiz" | "submitting" | "report";
 
 /** 보기에서 "잘 모르겠어요"를 고른 경우의 선택 값 */
 export const UNSURE_OPTION = -1;
@@ -28,7 +31,10 @@ interface SavedProgress {
     passage: LiteracyPassage;
     questions: LiteracyQuestion[];
     sessionToken?: string;
-    step: "reading" | "quiz";
+    step: "words" | "reading" | "quiz";
+    wordQuestions?: LiteracyQuestion[];
+    wordResults?: Record<string, LiteracyWordCheckResult>;
+    wordIdx?: number;
     readingSeconds: number;
     currentQIdx: number;
     selectedOptions: Record<string, number>;
@@ -71,6 +77,10 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
     const [step, setStep] = useState<TestStep>("loading");
     const [passage, setPassage] = useState<LiteracyPassage | null>(null);
     const [questions, setQuestions] = useState<LiteracyQuestion[]>([]);
+    const [wordQuestions, setWordQuestions] = useState<LiteracyQuestion[]>([]);
+    const [wordResults, setWordResults] = useState<Record<string, LiteracyWordCheckResult>>({});
+    const [wordIdx, setWordIdx] = useState(0);
+    const [wordPendingId, setWordPendingId] = useState<string | null>(null);
     const [sessionToken, setSessionToken] = useState<string | undefined>(undefined);
     const [readingSeconds, setReadingSeconds] = useState(0);
     const [skimWarned, setSkimWarned] = useState(false);
@@ -92,6 +102,10 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
     const topicsKey = (activeChild?.preferred_topics || []).join(",");
 
     const resetSessionState = () => {
+        setWordQuestions([]);
+        setWordResults({});
+        setWordIdx(0);
+        setWordPendingId(null);
         setReadingSeconds(0);
         setSkimWarned(false);
         setCurrentQIdx(0);
@@ -112,6 +126,10 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
             ) {
                 setPassage(saved.passage);
                 setQuestions(saved.questions);
+                setWordQuestions(saved.wordQuestions || []);
+                setWordResults(saved.wordResults || {});
+                setWordIdx(saved.wordIdx || 0);
+                setWordPendingId(null);
                 setSessionToken(saved.sessionToken);
                 setReadingSeconds(saved.readingSeconds);
                 setCurrentQIdx(Math.min(saved.currentQIdx, saved.questions.length - 1));
@@ -137,9 +155,16 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
                 });
                 setPassage(res.passage);
                 setQuestions(res.questions);
+                const words = res.word_questions || [];
+                setWordQuestions(words);
                 setSessionToken(res.session_token);
-                setStep("reading");
-                trackEvent("literacy_start", { grade: res.passage.grade_level, logged_in: !!activeChild });
+                // 낱말 퀴즈가 준비된 학년은 지문 없이 바로 푸는 문제부터 시작한다
+                setStep(words.length > 0 ? "words" : "reading");
+                trackEvent("literacy_start", {
+                    grade: res.passage.grade_level,
+                    logged_in: !!activeChild,
+                    word_quiz: words.length > 0,
+                });
             } catch (err) {
                 toast.error(err instanceof Error && err.message ? err.message : "진단 문항을 불러오는 중 오류가 발생했습니다.");
                 onLoadFailedRef.current();
@@ -178,15 +203,18 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
         };
     }, [step]);
 
-    // 진행 상태 저장 (읽기/문항 단계에서만)
+    // 진행 상태 저장 (낱말 퀴즈/읽기/문항 단계에서만)
     useEffect(() => {
-        if ((step !== "reading" && step !== "quiz") || !passage) return;
+        if ((step !== "words" && step !== "reading" && step !== "quiz") || !passage) return;
         try {
             const progress: SavedProgress = {
                 childId: childKey,
                 grade: targetGrade,
                 passage,
                 questions,
+                wordQuestions,
+                wordResults,
+                wordIdx,
                 sessionToken,
                 step,
                 readingSeconds,
@@ -198,7 +226,7 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
         } catch {
             // 저장 실패는 진단 진행에 영향을 주지 않는다
         }
-    }, [step, passage, questions, sessionToken, readingSeconds, currentQIdx, selectedOptions, questionTimes, childKey, targetGrade]);
+    }, [step, passage, questions, wordQuestions, wordResults, wordIdx, sessionToken, readingSeconds, currentQIdx, selectedOptions, questionTimes, childKey, targetGrade]);
 
     // 문항별 풀이 시간 측정 시작
     useEffect(() => {
@@ -206,6 +234,56 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
     }, [step, currentQIdx]);
 
     const currentQuestion = questions[currentQIdx];
+
+    // 낱말 퀴즈: 연속 정답(콤보)과 최고 기록은 점수에 반영하지 않는 재미 요소다
+    const wordStats = (() => {
+        let combo = 0;
+        let best = 0;
+        let correct = 0;
+        for (const q of wordQuestions) {
+            const r = wordResults[q.id];
+            if (!r) break;
+            if (r.is_correct) {
+                correct++;
+                combo++;
+                best = Math.max(best, combo);
+            } else {
+                combo = 0;
+            }
+        }
+        return { combo, best, correct, answered: Object.keys(wordResults).length };
+    })();
+
+    /** 낱말 퀴즈 한 문항 답하기: 서버가 첫 답을 고정하고 정답·해설을 바로 알려 준다 */
+    const handleWordAnswer = async (question: LiteracyQuestion, optionIdx: number) => {
+        if (!passage || wordResults[question.id] || wordPendingId) return;
+        setWordPendingId(question.id);
+        try {
+            const result = await checkLiteracyWord({
+                passageId: passage.id,
+                sessionToken,
+                questionId: question.id,
+                selected: optionIdx,
+            });
+            setWordResults((prev) => ({ ...prev, [question.id]: result }));
+            if (Capacitor.isNativePlatform()) {
+                void Haptics.impact({ style: result.is_correct ? ImpactStyle.Medium : ImpactStyle.Light });
+            }
+        } catch (err) {
+            toast.error(err instanceof Error && err.message ? err.message : "답을 확인하지 못했어요. 다시 눌러 주세요.");
+            // 만료된 세션은 같은 토큰으로 계속할 수 없으므로 새로 시작한다
+            if (err instanceof LiteracyApiError && err.status === 400) loadTestSession(true);
+        } finally {
+            setWordPendingId(null);
+        }
+    };
+
+    const handleWordNext = () => setWordIdx((i) => Math.min(i + 1, wordQuestions.length));
+
+    const handleWordsDone = () => {
+        setStep("reading");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
     const handleFinishReading = async () => {
         if (Capacitor.isNativePlatform()) await Haptics.impact({ style: ImpactStyle.Medium });
@@ -293,6 +371,14 @@ export function useLiteracyTest({ activeChild, targetGrade, ready, onLoadFailed 
         step,
         passage,
         questions,
+        wordQuestions,
+        wordResults,
+        wordIdx,
+        wordPendingId,
+        wordStats,
+        handleWordAnswer,
+        handleWordNext,
+        handleWordsDone,
         currentQuestion,
         currentQIdx,
         readingSeconds,
