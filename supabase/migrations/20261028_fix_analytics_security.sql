@@ -1,13 +1,10 @@
 -- 20261028_fix_analytics_security.sql
--- 1. get_admin_analytics 관리자 전용 권한 가드 적용
-CREATE OR REPLACE FUNCTION public.get_admin_analytics(
-    p_start_date TIMESTAMPTZ DEFAULT (NOW() - INTERVAL '7 days'),
-    p_end_date TIMESTAMPTZ DEFAULT NOW()
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+-- 1. get_admin_analytics: 운영 DB의 현재 정의에 '관리자 전용 권한 가드'만 추가한다.
+CREATE OR REPLACE FUNCTION public.get_admin_analytics(p_start_date timestamp with time zone DEFAULT (now() - '7 days'::interval), p_end_date timestamp with time zone DEFAULT now())
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
 DECLARE
     v_total_duration BIGINT;
     v_avg_duration NUMERIC;
@@ -71,44 +68,49 @@ BEGIN
     INTO v_daily_trends
     FROM (
         SELECT 
-            TO_CHAR(started_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD') AS date,
-            COUNT(DISTINCT COALESCE(user_id::text, anonymous_id)) AS active_users,
-            COUNT(*) AS sessions,
-            COALESCE(ROUND(AVG(total_duration_seconds), 1), 0) AS avg_duration
-        FROM public.app_sessions
-        WHERE started_at >= p_start_date AND started_at <= p_end_date
-        GROUP BY TO_CHAR(started_at AT TIME ZONE 'Asia/Seoul', 'YYYY-MM-DD')
-        ORDER BY date ASC
+            TO_CHAR(d.day, 'YYYY-MM-DD') AS date,
+            COALESCE(SUM(s.total_duration_seconds), 0) AS total_duration,
+            COALESCE(ROUND(AVG(s.total_duration_seconds), 1), 0) AS avg_duration,
+            COUNT(s.id) AS session_count,
+            COUNT(DISTINCT COALESCE(s.user_id::text, s.anonymous_id)) AS unique_users
+        FROM generate_series(DATE_TRUNC('day', p_start_date), DATE_TRUNC('day', p_end_date), '1 day'::interval) d(day)
+        LEFT JOIN public.app_sessions s 
+            ON DATE_TRUNC('day', s.started_at) = d.day
+        GROUP BY d.day
+        ORDER BY d.day ASC
     ) sub;
 
-    -- 4. 시간대별 활동 분포 (Hourly Distribution: 0시~23시)
+    -- 4. 시간대별 활동 분포 (0시 ~ 23시)
     SELECT COALESCE(jsonb_agg(sub), '[]'::jsonb)
     INTO v_hourly_distribution
     FROM (
         SELECT 
-            EXTRACT(HOUR FROM started_at AT TIME ZONE 'Asia/Seoul')::int AS hour,
-            COUNT(*) AS sessions
-        FROM public.app_sessions
-        WHERE started_at >= p_start_date AND started_at <= p_end_date
-        GROUP BY hour
-        ORDER BY hour ASC
+            h.hour,
+            COUNT(s.id) AS session_count,
+            COALESCE(SUM(s.total_duration_seconds), 0) AS total_duration
+        FROM generate_series(0, 23) h(hour)
+        LEFT JOIN public.app_sessions s 
+            ON EXTRACT(HOUR FROM s.started_at) = h.hour
+            AND s.started_at >= p_start_date AND s.started_at <= p_end_date
+        GROUP BY h.hour
+        ORDER BY h.hour ASC
     ) sub;
 
-    -- 5. 기기/플랫폼 분포 (Device Stats)
+    -- 5. 디바이스/환경별 점유율
     SELECT COALESCE(jsonb_agg(sub), '[]'::jsonb)
     INTO v_device_stats
     FROM (
         SELECT 
-            platform,
-            COUNT(*) AS count,
-            ROUND((COUNT(*)::numeric / NULLIF(v_total_sessions, 0)::numeric) * 100, 1) AS share
+            COALESCE(device_type, 'desktop_web') AS device_type,
+            COUNT(*) AS session_count,
+            COUNT(DISTINCT COALESCE(user_id::text, anonymous_id)) AS unique_users,
+            COALESCE(SUM(total_duration_seconds), 0) AS total_duration
         FROM public.app_sessions
         WHERE started_at >= p_start_date AND started_at <= p_end_date
-        GROUP BY platform
-        ORDER BY count DESC
+        GROUP BY device_type
+        ORDER BY session_count DESC
     ) sub;
 
-    -- 최종 반환 JSON 구조
     RETURN jsonb_build_object(
         'overview', jsonb_build_object(
             'total_duration_seconds', v_total_duration,
@@ -123,32 +125,28 @@ BEGIN
         'device_stats', v_device_stats
     );
 END;
-$$;
+$function$;
 
--- 2. profiles 테이블 권한 상승 방지 트리거
--- service_role이 아니면 일반 사용자가 본인의 is_admin이나 role을 admin으로 임의 변경하는 것을 방지
-CREATE OR REPLACE FUNCTION public.protect_profile_admin_role()
-RETURNS TRIGGER
+-- 2. profiles 권한 상승 방지: 기존 tr_protect_profile_admin 트리거 함수가 is_admin 만 보호하고 있어
+--    role 컬럼을 'admin' 으로 직접 바꿔 관리자가 될 수 있었다(check_is_admin_v3 는 role='admin' 도 관리자로 본다).
+--    is_admin 과 role 변경을 모두 'service_role 또는 기존 관리자'에게만 허용한다.
+CREATE OR REPLACE FUNCTION public.protect_profile_admin_field()
+RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-AS $$
+SET search_path TO 'public'
+AS $function$
 BEGIN
-    -- auth.role()이 'service_role'이 아닌 경우, 일반 세션에서의 role/is_admin 임의 승격 차단
-    IF auth.role() <> 'service_role' THEN
-        IF TG_OP = 'INSERT' THEN
-            NEW.is_admin := false;
-            NEW.role := 'user';
-        ELSIF TG_OP = 'UPDATE' THEN
-            NEW.is_admin := OLD.is_admin;
-            NEW.role := OLD.role;
-        END IF;
+  IF (NEW.is_admin IS DISTINCT FROM OLD.is_admin) OR (NEW.role IS DISTINCT FROM OLD.role) THEN
+    IF current_setting('request.jwt.claims', true)::json->>'role' != 'service_role' THEN
+      IF NOT EXISTS (
+        SELECT 1 FROM public.profiles
+        WHERE id = auth.uid() AND (is_admin = true OR role = 'admin')
+      ) THEN
+        RAISE EXCEPTION 'Unauthorized: Only administrators can update admin privileges.';
+      END IF;
     END IF;
-    RETURN NEW;
+  END IF;
+  RETURN NEW;
 END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_protect_profile_admin_role ON public.profiles;
-CREATE TRIGGER trg_protect_profile_admin_role
-    BEFORE INSERT OR UPDATE ON public.profiles
-    FOR EACH ROW
-    EXECUTE FUNCTION public.protect_profile_admin_role();
+$function$;
