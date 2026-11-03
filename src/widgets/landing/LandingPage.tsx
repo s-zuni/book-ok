@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import Yes24Attribution from "@features/books/Yes24Attribution";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 import { 
   Sparkles, 
@@ -44,6 +46,10 @@ const MobileMockup = ({ src, alt, className = "" }: { src: string, alt: string, 
     <div className="absolute inset-0 rounded-[2.2rem] sm:rounded-[2.8rem] bg-gradient-to-tr from-white/0 via-white/5 to-white/10 pointer-events-none z-20" />
   </div>
 );
+
+// 스토어 링크 (환경변수로 덮어쓸 수 있음)
+const PLAY_STORE_URL = process.env.NEXT_PUBLIC_PLAY_STORE_URL || "https://play.google.com/store/apps/details?id=com.bookok.kr&pcampaignid=web_share";
+const APP_STORE_URL = process.env.NEXT_PUBLIC_APP_STORE_URL || "https://apps.apple.com/kr/app/%EB%B6%81%EC%BD%95-book-ok/id6793458143";
 
 export default function LandingPage() {
   const { openLoginModal } = useLoginModal();
@@ -95,6 +101,7 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("details")} className="text-sm font-bold text-gray-500 hover:text-[#01C54F] transition-colors cursor-pointer">상세 기능</button>
             <button onClick={() => scrollToSection("comparison")} className="text-sm font-bold text-gray-500 hover:text-[#01C54F] transition-colors cursor-pointer">서비스 비교</button>
             <button onClick={() => scrollToSection("offer")} className="text-sm font-bold text-gray-500 hover:text-[#01C54F] transition-colors cursor-pointer">특별 혜택</button>
+            <button onClick={() => scrollToSection("download")} className="text-sm font-bold text-gray-500 hover:text-[#01C54F] transition-colors cursor-pointer">앱 다운로드</button>
           </nav>
 
           {/* Start CTA */}
@@ -517,6 +524,43 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ------------------ App Download ------------------ */}
+      <section id="download" className="py-20 sm:py-28 bg-gray-50/50 border-t border-gray-100">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <span className="inline-block px-3 py-1 rounded-full bg-[#01C54F]/10 text-[#01C54F] text-xs font-black tracking-wider mb-4">MOBILE APP</span>
+          <h2 className="text-3xl sm:text-4xl font-black text-[#101828] tracking-tight mb-4 break-keep">
+            북콕은 <span className="text-[#01C54F]">모바일 앱</span>으로 만나보세요
+          </h2>
+          <p className="text-gray-500 font-medium leading-relaxed mb-10 break-keep">
+            아이와 함께 읽는 순간에 바로 기록하고, AI 사서에게 물어보세요.<br className="hidden sm:block" />
+            스마트폰에서 앱을 설치하면 모든 기능을 이용할 수 있어요.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a
+              href={PLAY_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-4 rounded-2xl bg-[#101828] text-white font-bold hover:bg-black transition-all hover:scale-[1.03] shadow-lg"
+            >
+              <span className="text-xs font-medium text-gray-300">Android</span>
+              <span>Google Play에서 받기</span>
+            </a>
+            {APP_STORE_URL && (
+              <a
+                href={APP_STORE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-7 py-4 rounded-2xl bg-[#101828] text-white font-bold hover:bg-black transition-all hover:scale-[1.03] shadow-lg"
+              >
+                <span className="text-xs font-medium text-gray-300">iOS</span>
+                <span>App Store에서 받기</span>
+              </a>
+            )}
+          </div>
+          <p className="mt-6 text-xs text-gray-400 font-medium">스마트폰에서 이 페이지를 열면 앱 화면으로 바로 이용할 수 있어요.</p>
+        </div>
+      </section>
+
       {/* ------------------ Footer ------------------ */}
       <footer className="bg-gray-50 border-t border-gray-100 pt-16 pb-20 px-6">
         <div className="max-w-7xl mx-auto">
@@ -540,9 +584,9 @@ export default function LandingPage() {
                 AI 기반 독서 성향 분석과 연령별 맞춤 도서 추천으로 우리 아이의 올바른 평생 독서 습관을 함께 만들어갑니다.
               </p>
               <div className="flex gap-4">
-                <button className="text-gray-400 hover:text-[#01C54F] text-xs font-bold transition-colors cursor-pointer">이용약관</button>
+                <Link href="/terms" className="text-gray-400 hover:text-[#01C54F] text-xs font-bold transition-colors">이용약관</Link>
                 <span className="text-gray-200 text-xs">|</span>
-                <button className="text-[#01C54F] hover:underline text-xs font-black transition-colors cursor-pointer">개인정보처리방침</button>
+                <Link href="/privacy" className="text-[#01C54F] hover:underline text-xs font-black transition-colors">개인정보처리방침</Link>
               </div>
             </div>
             
@@ -568,6 +612,7 @@ export default function LandingPage() {
           </div>
           
           <div className="pt-8 border-t border-gray-100">
+            <Yes24Attribution className="!text-left !text-[10px] mb-2" />
             <p className="text-[10px] text-gray-300 leading-normal font-medium break-keep">
               BookOk은 아동의 건강한 독서 문화를 위해 기술을 활용합니다. 분석 결과는 AI 모델에 의해 생성되며, 
               실제 교육 전문가의 조언과 함께 참고용으로 활용하시길 권장합니다. 본 서비스는 대한민국 개인정보보호법을 준수합니다.

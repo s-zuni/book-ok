@@ -88,7 +88,7 @@ function LiteracyTestPageInner() {
         } catch {
             // 저장소를 쓸 수 없어도 상담 화면으로는 이동한다
         }
-        router.push("/solution?tab=solution&fromLiteracy=1");
+        router.push("/chat?mode=consult&fromLiteracy=1");
     };
 
     const gradeConfig = getGradeConfig(test.passage?.grade_level ?? targetGrade);

@@ -13,7 +13,7 @@ import { Capacitor } from '@capacitor/core';
  */
 
 const SUPABASE_URL =
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://holaqlorkluptvrcfwtu.supabase.co';
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://tffvsyarxfujmvbqlutr.supabase.co';
 
 /** 사전 정의된 이미지 사이즈 프리셋 (width 기준) */
 export type ImageSizePreset = 'thumbnail' | 'card' | 'detail' | 'full';

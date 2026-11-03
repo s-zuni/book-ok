@@ -1,6 +1,7 @@
 import MobileBottomNav from "@shared/ui/MobileBottomNav";
 import AIChatbot from "@widgets/chatbot/AIChatbot";
 import Footer from "@shared/ui/Footer";
+import DesktopLandingGate from "@widgets/landing/DesktopLandingGate";
 
 export default function MainLayout({
   children,
@@ -8,17 +9,22 @@ export default function MainLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <>
+    <DesktopLandingGate
+      desktopOnly={
+        <>
+          <div className="hidden lg:block">
+            <Footer />
+          </div>
+          <div className="hidden lg:block">
+            <AIChatbot />
+          </div>
+        </>
+      }
+    >
       {children}
-      <div className="hidden lg:block">
-        <Footer />
-      </div>
-      <div className="hidden lg:block">
-        <AIChatbot />
-      </div>
       <div className="lg:hidden">
         <MobileBottomNav />
       </div>
-    </>
+    </DesktopLandingGate>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, BookMarked, Mail, Lock, Shield, ArrowLeft, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@shared/lib/supabase";
+import { supabase, supabaseUrl } from "@shared/lib/supabase";
 import { toast } from "sonner";
 import { useNativeBridge } from "@shared/lib/native-bridge";
 import { useAuth } from "@features/auth/AuthContext";
@@ -126,7 +126,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
                     const appleOptions = {
                         clientId: platform === 'ios' ? 'com.bookok.kr' : 'com.bookok.kr.app',
-                        redirectURI: 'https://holaqlorkluptvrcfwtu.supabase.co/auth/v1/callback',
+                        redirectURI: `${supabaseUrl}/auth/v1/callback`,
                         scopes: 'email name',
                         nonce: nonceDigest,
                     };

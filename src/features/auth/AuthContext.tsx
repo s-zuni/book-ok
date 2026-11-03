@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@shared/lib/supabase";
 import { Session, User } from "@supabase/supabase-js";
 import { Child, Profile } from "@shared/types";
+import { calculateExactAge } from "@shared/lib/age-utils";
 import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { Capacitor, PluginListenerHandle } from "@capacitor/core";
@@ -14,6 +15,9 @@ interface AuthContextType {
     session: Session | null;
     userProfile: Profile | null;
     children: Child[];
+    activeChild: Child | null;
+    setActiveChild: (child: Child | null) => void;
+    selectChild: (target: string | Child | null) => void;
     loading: boolean;
     isInitialized: boolean;
     isOnboardingModalOpen: boolean;
@@ -33,12 +37,42 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
     const [session, setSession] = useState<Session | null>(null);
     const [userProfile, setUserProfile] = useState<Profile | null>(null);
     const [children, setChildren] = useState<Child[]>([]);
+    const [activeChild, setActiveChild] = useState<Child | null>(null);
     const [loading, setLoading] = useState(true);
     const [isInitialized, setIsInitialized] = useState(false);
     const [isOnboardingModalOpen, setIsOnboardingModalOpen] = useState(false);
 
     const openOnboardingModal = useCallback(() => setIsOnboardingModalOpen(true), []);
     const closeOnboardingModal = useCallback(() => setIsOnboardingModalOpen(false), []);
+
+    const selectChild = useCallback((target: string | Child | null) => {
+        if (!target) {
+            setActiveChild(null);
+            if (typeof window !== 'undefined') localStorage.removeItem('bookok_active_child_id');
+            return;
+        }
+        const targetChild = typeof target === 'string'
+            ? (children.find(c => String(c.id) === String(target)) || null)
+            : target;
+        setActiveChild(targetChild);
+        if (typeof window !== 'undefined' && targetChild) {
+            localStorage.setItem('bookok_active_child_id', String(targetChild.id));
+        }
+    }, [children]);
+
+    useEffect(() => {
+        if (children.length === 0) {
+            setActiveChild(null);
+            return;
+        }
+        const savedChildId = typeof window !== 'undefined' ? localStorage.getItem('bookok_active_child_id') : null;
+        const found = savedChildId ? children.find(c => String(c.id) === savedChildId) : null;
+        const current = found || children[0];
+        setActiveChild(current);
+        if (typeof window !== 'undefined' && current) {
+            localStorage.setItem('bookok_active_child_id', String(current.id));
+        }
+    }, [children]);
     
     // To prevent redundant fetches and race conditions
     const fetchInProgress = useRef<string | null>(null);
@@ -52,8 +86,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         return {
             id: user.id,
             nickname: nickname,
-            role: (metadata.role as Profile["role"]) || 'user',
-            is_admin: metadata.is_admin || false,
+            role: 'user',
+            is_admin: false,
             phone: metadata.phone || '',
             created_at: user.created_at || new Date().toISOString()
         };
@@ -104,8 +138,8 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     const newProfile: Profile = {
                         id: userId,
                         nickname: nickname,
-                        role: (metadata.role as Profile["role"]) || 'user',
-                        is_admin: metadata.is_admin || false,
+                        role: 'user',
+                        is_admin: false,
                         phone: metadata.phone || '',
                         created_at: currentUser.created_at || new Date().toISOString()
                     };
@@ -147,9 +181,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                 
                 if (data) {
                     const childrenWithAge = data.map((child: any) => {
-                        const birthYear = child.birthdate ? new Date(child.birthdate).getFullYear() : 0;
-                        const currentYear = new Date().getFullYear();
-                        const age = birthYear > 0 ? currentYear - birthYear : 0;
+                        const age = calculateExactAge(child.birthdate);
                         return { 
                             ...child, 
                             age,
@@ -161,6 +193,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
                     return childrenWithAge;
                 }
                 setChildren([]);
+        setActiveChild(null);
                 return [];
             };
 
@@ -169,6 +202,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         } catch (error) {
             console.error("Error fetching children:", error);
             setChildren([]);
+        setActiveChild(null);
             return [];
         }
     }, []);
@@ -198,6 +232,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             } else {
                 setUserProfile(null);
                 setChildren([]);
+        setActiveChild(null);
             }
         } catch (err) {
             console.error("Error syncing user data:", err);
@@ -225,6 +260,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
         setSession(null);
         setUserProfile(null);
         setChildren([]);
+        setActiveChild(null);
         setLoading(false);
         setIsInitialized(true);
 
@@ -234,6 +270,7 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             const keysToRemove = [
                 'bookok-auth-token',
                 'supabase.auth.token',
+                'bookok_active_child_id',
             ];
             
             try {
@@ -592,7 +629,10 @@ export function AuthProvider({ children: providerChildren }: { children: React.R
             user, 
             session, 
             userProfile, 
-            children, 
+            children,
+            activeChild,
+            setActiveChild,
+            selectChild, 
             loading, 
             isInitialized,
             isOnboardingModalOpen,

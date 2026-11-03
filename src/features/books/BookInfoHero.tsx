@@ -5,6 +5,7 @@ import { Bookmark, BookOpen, Check, ChevronDown } from "lucide-react";
 import type { Book } from "@shared/types";
 import { getOptimizedImageUrl } from "@shared/lib/image-utils";
 import { LOAN_STATE_META, type LoanState } from "./libraryStatus";
+import Yes24PurchaseButton from "./Yes24PurchaseButton";
 
 interface BookInfoHeroProps {
     book: Book;
@@ -16,9 +17,7 @@ interface BookInfoHeroProps {
     onMarkRead: () => void;
 }
 
-const iconButton = "flex h-8 w-8 items-center justify-center rounded-full border border-[#E7E7E7] bg-white text-[#2A2A2A] active:scale-95 transition-transform";
-
-/** 모바일 도서 정보 상단: 대출 상태 배지를 최상단에 두는 위계 (Figma: 도서정보_to be) */
+/** 모바일 도서 정보 상단: 대출 상태 배지 & 작은 구매하기 버튼, 하단에 돋보이는 저장/읽었어요 액션 */
 export default function BookInfoHero({ book, loanState, isScrapped, isRead, onScrap, onMarkRead }: BookInfoHeroProps) {
     const [detailOpen, setDetailOpen] = useState(false);
     const cover = getOptimizedImageUrl(book.imgsrc, "detail");
@@ -36,20 +35,17 @@ export default function BookInfoHero({ book, loanState, isScrapped, isRead, onSc
                 <img src={cover} alt={book.title} className="h-[193px] w-[148px] shrink-0 rounded-[9px] border border-[#E7E7E7] object-cover" />
 
                 <div className="flex min-w-0 flex-1 flex-col gap-3.5 pt-1">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                         {loanState ? (
-                            <span className={`flex h-[27px] items-center rounded-full px-2.5 text-[14px] font-bold text-white ${LOAN_STATE_META[loanState].badge}`}>
+                            <span className={`flex h-[27px] items-center rounded-full px-2.5 text-[14px] font-bold text-white shrink-0 ${LOAN_STATE_META[loanState].badge}`}>
                                 {LOAN_STATE_META[loanState].label}
                             </span>
                         ) : <span />}
-                        <div className="flex gap-1">
-                            <button type="button" onClick={onScrap} aria-label={isScrapped ? "찜 취소" : "찜하기"} aria-pressed={isScrapped} className={`${iconButton} ${isScrapped ? "!border-[#00AD31] !text-[#00AD31]" : ""}`}>
-                                <Bookmark size={15} fill={isScrapped ? "currentColor" : "none"} />
-                            </button>
-                            <button type="button" onClick={onMarkRead} aria-label={isRead ? "읽은 책" : "읽었어요"} aria-pressed={isRead} className={`${iconButton} ${isRead ? "!border-[#00AD31] !text-[#00AD31]" : ""}`}>
-                                {isRead ? <Check size={15} /> : <BookOpen size={15} />}
-                            </button>
-                        </div>
+
+                        {/* 소형 구매하기 버튼 (기존 상단 아이콘 위치에 콤팩트하게 배치) */}
+                        {book.purchaseUrl && (
+                            <Yes24PurchaseButton url={book.purchaseUrl} variant="compact" />
+                        )}
                     </div>
 
                     <div>
@@ -70,7 +66,7 @@ export default function BookInfoHero({ book, loanState, isScrapped, isRead, onSc
                             type="button"
                             onClick={() => hasDetail && setDetailOpen(open => !open)}
                             aria-expanded={detailOpen}
-                            className="flex w-full items-center justify-between text-left"
+                            className="flex w-full items-center justify-between text-left cursor-pointer"
                         >
                             <span>
                                 <span className="block text-[14px] font-semibold text-black">책 정보 · 줄거리</span>
@@ -95,6 +91,39 @@ export default function BookInfoHero({ book, loanState, isScrapped, isRead, onSc
                     )}
                 </div>
             )}
+
+            {/* 돋보이는 저장 & 읽었어요 주요 액션 버튼 UI */}
+            <div className="relative mt-5 flex items-center gap-2.5">
+                <button
+                    type="button"
+                    onClick={onScrap}
+                    aria-label={isScrapped ? "저장 취소" : "저장하기"}
+                    aria-pressed={isScrapped}
+                    className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border text-[14px] font-bold transition-all active:scale-[0.98] select-none cursor-pointer ${
+                        isScrapped
+                            ? "border-amber-300 bg-amber-50 text-amber-700 shadow-xs"
+                            : "border-gray-200 bg-white/95 text-gray-700 hover:bg-gray-50 shadow-xs"
+                    }`}
+                >
+                    <Bookmark size={18} fill={isScrapped ? "currentColor" : "none"} className={isScrapped ? "text-amber-500" : "text-gray-400"} />
+                    <span>{isScrapped ? "저장됨" : "저장"}</span>
+                </button>
+
+                <button
+                    type="button"
+                    onClick={onMarkRead}
+                    aria-label={isRead ? "읽은 책" : "읽었어요"}
+                    aria-pressed={isRead}
+                    className={`flex h-12 flex-[1.4] items-center justify-center gap-2 rounded-2xl text-[14px] font-bold transition-all active:scale-[0.98] shadow-xs select-none cursor-pointer ${
+                        isRead
+                            ? "border border-green-500 bg-green-50 text-green-700"
+                            : "bg-[#16A34A] text-white hover:bg-[#15803D]"
+                    }`}
+                >
+                    {isRead ? <Check size={18} className="stroke-[2.5]" /> : <BookOpen size={18} />}
+                    <span>{isRead ? "읽은 책" : "읽었어요"}</span>
+                </button>
+            </div>
         </section>
     );
 }

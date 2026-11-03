@@ -98,15 +98,15 @@ export default function ReadingPlanRoadmap({
     if (!child) return null;
 
     return (
-        <div className="mt-12 bg-linear-to-br from-indigo-50 to-purple-50 rounded-[2.5rem] border border-indigo-100 p-8 lg:p-10 animate-in slide-in-from-bottom-10">
+        <div className="mt-12 bg-linear-to-br from-[#2E5A44]/5 to-green-50/60 rounded-[2.5rem] border border-green-100 p-8 lg:p-10 animate-in slide-in-from-bottom-10">
             <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                    <div className="bg-white p-2.5 rounded-xl shadow-sm text-indigo-600">
+                    <div className="bg-white p-2.5 rounded-xl shadow-sm text-[#2E5A44]">
                         <Calendar size={24} />
                     </div>
                     <div>
                         <h3 className="text-2xl font-black text-gray-900">개인화 독서 로드맵</h3>
-                        <p className="text-sm font-bold text-indigo-600/80">{child.name}님을 위한 4주 계획</p>
+                        <p className="text-sm font-bold text-[#16A34A]">{child.name}님을 위한 4주 계획</p>
                     </div>
                 </div>
 
@@ -114,7 +114,7 @@ export default function ReadingPlanRoadmap({
                     <button
                         onClick={generatePlan}
                         disabled={loading}
-                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                        className="px-6 py-3 bg-[#2E5A44] text-white rounded-xl font-bold shadow-md hover:bg-[#234534] transition-all disabled:opacity-50 flex items-center gap-2"
                     >
                         {loading ? (
                             <>
@@ -140,18 +140,18 @@ export default function ReadingPlanRoadmap({
             {plan && (
                 <div className="space-y-6">
                     {/* 요약 카드 */}
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-100">
+                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-green-100">
                         <div className="flex items-start gap-4">
-                            <div className="p-3 bg-indigo-100 rounded-xl text-indigo-600">
+                            <div className="p-3 bg-green-100 rounded-xl text-[#2E5A44]">
                                 <Target size={24} />
                             </div>
                             <div className="flex-1">
                                 <h4 className="font-bold text-gray-900 mb-2">이번 달 목표</h4>
                                 <p className="text-gray-600 text-sm mb-4">{plan.summary}</p>
                                 <div className="flex items-center gap-4">
-                                    <div className="px-4 py-2 bg-indigo-50 rounded-xl">
-                                        <span className="text-2xl font-black text-indigo-600">{plan.monthlyGoal}</span>
-                                        <span className="text-sm text-indigo-500 ml-1">권 목표</span>
+                                    <div className="px-4 py-2 bg-green-50 rounded-xl">
+                                        <span className="text-2xl font-black text-[#2E5A44]">{plan.monthlyGoal}</span>
+                                        <span className="text-sm text-gray-500 ml-1">권 목표</span>
                                     </div>
                                     {plan.strengthAreas.length > 0 && (
                                         <div className="flex flex-wrap gap-1">

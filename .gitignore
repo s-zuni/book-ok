@@ -120,3 +120,23 @@ yarn-error.log*
 
 # Vercel
 .vercel
+
+
+# Marketing Automation (Python / Playwright / Generated Media)
+/marketing_auto/.venv/
+/marketing_auto/__pycache__/
+/marketing_auto/**/__pycache__/
+/marketing_auto/state.db
+/marketing_auto/token.json
+/marketing_auto/client_secret.json
+/marketing_auto/flow_storage_state.json
+/marketing_auto/assets/chrome_flow_profile/
+/marketing_auto/assets/audio/*
+/marketing_auto/assets/images/*
+/marketing_auto/assets/videos/*
+/marketing_auto/assets/subtitles/*
+/marketing_auto/assets/output/*
+!/marketing_auto/assets/**/.gitkeep
+
+/marketing_auto/*.json
+/marketing_auto/logs/

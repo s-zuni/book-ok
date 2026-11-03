@@ -177,29 +177,7 @@ function HomeContentInner() {
         }
     }, [isChallengeModalOpen, user, activeChild]);
 
-    useEffect(() => {
-        const checkReadBooks = async () => {
-            if (!user || !activeChild) {
-                setHasReadBooks(false);
-                return;
-            }
-            try {
-                const { count, error } = await supabase
-                    .from('read_books')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('child_id', activeChild.id);
-                if (!error && count !== null) {
-                    setHasReadBooks(count > 0);
-                } else {
-                    setHasReadBooks(false);
-                }
-            } catch (err) {
-                console.error("Error checking read books count:", err);
-                setHasReadBooks(false);
-            }
-        };
-        checkReadBooks();
-    }, [user, activeChild]);
+// checkReadBooks query integrated into fetchChallengeData below
 
     useEffect(() => {
         const fetchChallengeData = async () => {
@@ -222,6 +200,7 @@ function HomeContentInner() {
                 if (error) throw error;
 
                 if (!data || data.length === 0) {
+                    setHasReadBooks(false);
                     setConsecutiveDays(0);
                     setHasReadToday(false);
                     setChallengeBookTitle("");
@@ -231,6 +210,7 @@ function HomeContentInner() {
                 }
 
                 // Helper to get local date string YYYY-MM-DD
+                setHasReadBooks(true);
                 const getLocalDateString = (d: Date) => {
                     const y = d.getFullYear();
                     const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -538,7 +518,7 @@ function HomeContentInner() {
                                             <h3 className="text-xl font-black mb-2 group-hover:text-[#2E5A44] transition-colors relative z-10">아이 맞춤 도서</h3>
                                             <p className="text-gray-500 text-xs mb-6 leading-relaxed relative z-10">
                                                 {activeChild?.preferred_topics && activeChild.preferred_topics.length > 0 
-                                                    ? `${activeChild.preferred_topics.slice(0, 2).join(', ')} 선호 반영` 
+                                                    ? `${activeChild.preferred_topics.slice(0, 2).map(id => getInterestTopic(id)?.label || id).join(', ')} 선호 반영` 
                                                     : '연령과 도서관 대출 데이터 기반'}
                                             </p>
                                             <div className="flex items-center text-xs font-black text-[#16A34A] group-hover:text-[#2E5A44] transition-all duration-300 relative z-10">
@@ -1120,8 +1100,11 @@ function HomeContentInner() {
 
             {/* Reading Challenge Modal */}
             {isChallengeModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto">
-                    <div className="bg-white rounded-[32px] w-full max-w-sm p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col my-8">
+                <div
+                    className="fixed inset-0 z-70 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+                    style={{ paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}
+                >
+                    <div className="bg-white rounded-[32px] w-full max-w-sm p-6 shadow-2xl relative animate-in zoom-in-95 duration-200 flex flex-col max-h-full overflow-y-auto overscroll-contain">
                         {/* Close Button */}
                         <button 
                             onClick={() => {

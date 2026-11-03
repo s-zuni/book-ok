@@ -10,9 +10,9 @@ interface BookRatingProps {
 export default function BookRating({ rating, iconSize = 10, className = "text-[10px]" }: BookRatingProps) {
     if (!rating) return null;
     return (
-        <div className="flex items-center gap-0.5 text-[#16A34A]">
-            <Star size={iconSize} fill="currentColor" />
-            <span className={`${className} font-black`}>{rating}</span>
+        <div className="flex items-center gap-0.5">
+            <Star size={iconSize} className="text-[#FACC15] fill-[#FACC15]" />
+            <span className={`${className} font-black text-gray-700`}>{rating}</span>
         </div>
     );
 }

@@ -280,8 +280,8 @@ export default function ReadingGoalWidget({ child, userId, readBooks }: ReadingG
 
             {/* Goal Setting Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95">
+                <div className="fixed inset-0 bg-black/50 z-70 flex items-center justify-center px-4" style={{ paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
+                    <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-full overflow-y-auto">
                         <div className="flex items-center justify-between mb-6">
                             <h4 className="text-xl font-black text-gray-900">
                                 {editingGoal ? '목표 수정' : '새 목표 설정'}

@@ -16,6 +16,10 @@
   --font-sans: var(--font-pretendard);
   --spacing-safe-top: var(--safe-area-top);
   --spacing-safe-bottom: var(--safe-area-bottom);
+
+  /* Bookok Custom Gray Tokens */
+  --color-gray-55: #f6f7f8;
+  --color-gray-150: #ededed;
 }
 
 /* Dark mode intentionally disabled — all components use light theme only */

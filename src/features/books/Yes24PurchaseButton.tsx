@@ -12,6 +12,7 @@ interface Yes24PurchaseButtonProps {
     /** 예스24 애드온 링크(`addOnLink`, 미신청 시 일반 상품 링크). 그대로 사용하며 가공하지 않습니다. */
     url?: string;
     className?: string;
+    variant?: "compact" | "full";
 }
 
 const gatePassedThisSession = () => {
@@ -19,11 +20,10 @@ const gatePassedThisSession = () => {
 };
 
 /**
- * 예스24 상품 상세페이지로 이동하는 구매 버튼. 이 링크로 구매가 발생하면 북콕이 소정의 수수료를 받을 수 있어
- * 버튼 아래에 그 사실을 함께 안내합니다(예스24 Open API 이용약관: 상품 상세페이지 링크 제공).
+ * 예스24 상품 상세페이지로 이동하는 구매 버튼.
  * 네이티브 앱(어린이 대상 스토어 정책)에서는 외부 쇼핑몰로 나가기 전에 보호자 확인을 한 번 거칩니다.
  */
-export default function Yes24PurchaseButton({ url, className = "" }: Yes24PurchaseButtonProps) {
+export default function Yes24PurchaseButton({ url, className = "", variant = "compact" }: Yes24PurchaseButtonProps) {
     const [gateOpen, setGateOpen] = useState(false);
 
     if (!url) return null;
@@ -50,12 +50,36 @@ export default function Yes24PurchaseButton({ url, className = "" }: Yes24Purcha
         void openStore();
     };
 
+    if (variant === "compact") {
+        return (
+            <div className={`shrink-0 ${className}`}>
+                <button
+                    type="button"
+                    onClick={handleClick}
+                    className="inline-flex h-[27px] items-center gap-1 rounded-full border border-gray-200 bg-white/95 px-2.5 text-[11px] font-semibold text-[#454545] hover:border-[#16A34A] hover:text-[#16A34A] hover:bg-white active:scale-95 transition-all shadow-2xs whitespace-nowrap select-none cursor-pointer"
+                    title="예스24에서 구매하기 (새 창)"
+                >
+                    <span>구매하기</span>
+                    <ExternalLink size={11} className="text-gray-400 shrink-0" />
+                </button>
+
+                <ParentalGateModal
+                    isOpen={gateOpen}
+                    onClose={() => setGateOpen(false)}
+                    onSuccess={handleGateSuccess}
+                    title="보호자(성인) 확인"
+                    description="외부 쇼핑몰(예스24)로 이동하기 위해 보호자(성인) 확인이 필요합니다."
+                />
+            </div>
+        );
+    }
+
     return (
         <div className={className}>
             <button
                 type="button"
                 onClick={handleClick}
-                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#00AD31] bg-white text-[14px] font-bold text-[#00AD31] transition-transform active:scale-[0.99]"
+                className="flex h-12 w-full items-center justify-center gap-1.5 rounded-[8px] border border-[#00AD31] bg-white text-[14px] font-bold text-[#00AD31] transition-transform active:scale-[0.99] cursor-pointer"
             >
                 <span>구매하기</span>
                 <ExternalLink size={14} />

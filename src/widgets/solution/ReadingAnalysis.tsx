@@ -5,7 +5,7 @@ import AIRecommendationList from "@widgets/solution/AIRecommendationList";
 import ReadingPlanRoadmap from "@widgets/solution/ReadingPlanRoadmap";
 import LoadingState from "@shared/ui/LoadingState";
 import EmptyState from "@shared/ui/EmptyState";
-import { marked } from 'marked';
+import { renderSafeMarkdown } from "@shared/lib/renderSafeMarkdown";
 import { useState } from "react";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
@@ -241,7 +241,7 @@ export default function ReadingAnalysis({
                             </button>
                         </div>
                         <div className="prose prose-lg max-w-none whitespace-pre-wrap text-gray-700 leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: marked.parse(result as string) as string }}
+                            dangerouslySetInnerHTML={{ __html: renderSafeMarkdown(result) }}
                         />
                     </div>
 

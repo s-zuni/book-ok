@@ -36,7 +36,8 @@ export default function BookDetailContent() {
     const [isApiBook, setIsApiBook] = useState(false);
 
     // Auth & Sidebar state
-    const { user, children, userProfile } = useAuth();
+    const { user, children, userProfile, activeChild: contextActiveChild, selectChild } = useAuth();
+    const setActiveChild = (child: Child | null) => selectChild(child);
     
     // Library holding status state
     const [libraryStatus, setLibraryStatus] = useState<LibraryStatusDetail[]>([]);
@@ -46,7 +47,7 @@ export default function BookDetailContent() {
 
     const { openLoginModal } = useLoginModal();
     const [userChildren, setUserChildren] = useState<Child[]>([]);
-    const [activeChild, setActiveChild] = useState<Child | null>(null);
+    const activeChild = contextActiveChild || (children.length > 0 ? children[0] : null);
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
 
@@ -55,13 +56,10 @@ export default function BookDetailContent() {
     const [isRead, setIsRead] = useState(false);
     const [showChildModal, setShowChildModal] = useState(false);
 
-    // Sync activeChild with global children list
+    // Sync userChildren with global children list
     useEffect(() => {
-        if (!activeChild && children.length > 0) {
-            setActiveChild(children[0]);
-        }
-        setUserChildren(children); // Keep local for modal if needed, or switch modal to use global
-    }, [children, activeChild]);
+        setUserChildren(children);
+    }, [children]);
 
     // Review form state
     const [newRating, setNewRating] = useState(0);
@@ -160,19 +158,10 @@ export default function BookDetailContent() {
         fetchReviews();
 
         // Fetch user children
-        if (user) {
-            supabase.from('children').select('*').eq('parent_id', user.id).then(({ data }) => {
-                if (data && data.length > 0) {
-                    setUserChildren(data);
-                    setActiveChild(data[0]);
-                } else {
-                    setUserChildren([]);
-                    setActiveChild(null);
-                }
-            });
-        } else {
+        if (user && children.length > 0) {
+            setUserChildren(children);
+        } else if (!user) {
             setUserChildren([]);
-            setActiveChild(null);
         }
     }, [bookId, user]);
 
@@ -211,12 +200,15 @@ export default function BookDetailContent() {
                     .maybeSingle();
 
                 if (existingBook) {
-                    const { data: readData } = await supabase
+                    let query = supabase
                         .from('read_books')
                         .select('id')
                         .eq('book_id', existingBook.id)
-                        .eq('user_id', user.id)
-                        .limit(1);
+                        .eq('user_id', user.id);
+                    if (activeChild?.id) {
+                        query = query.eq('child_id', activeChild.id);
+                    }
+                    const { data: readData } = await query.limit(1);
 
                     if (readData && readData.length > 0) {
                         setIsRead(true);
@@ -225,12 +217,15 @@ export default function BookDetailContent() {
                 }
 
                 // Fallback check by observation_data isbn
-                const { data: readByMeta } = await supabase
+                let metaQuery = supabase
                     .from('read_books')
                     .select('id')
                     .eq('user_id', user.id)
-                    .contains('observation_data', { book_isbn: isbn })
-                    .limit(1);
+                    .contains('observation_data', { book_isbn: isbn });
+                if (activeChild?.id) {
+                    metaQuery = metaQuery.eq('child_id', activeChild.id);
+                }
+                const { data: readByMeta } = await metaQuery.limit(1);
 
                 if (readByMeta && readByMeta.length > 0) {
                     setIsRead(true);
@@ -241,7 +236,7 @@ export default function BookDetailContent() {
         };
 
         checkInteractions();
-    }, [user, book, bookId]);
+    }, [user, book, bookId, activeChild?.id]);
 
     // Fetch holding status for favorite libraries
     useEffect(() => {
@@ -549,12 +544,21 @@ export default function BookDetailContent() {
             </header>
 
             {loading && !book ? (
-                <div className="flex gap-5 px-5 pt-8" aria-busy>
-                    <div className="h-[193px] w-[148px] shrink-0 animate-pulse rounded-[9px] bg-gray-100" />
-                    <div className="flex-1 space-y-3 pt-2">
-                        <div className="h-7 w-24 animate-pulse rounded-full bg-gray-100" />
-                        <div className="h-12 w-full animate-pulse rounded-xl bg-gray-100" />
-                        <div className="h-4 w-1/2 animate-pulse rounded-full bg-gray-100" />
+                <div className="px-5 pt-8" aria-busy>
+                    <div className="flex gap-5">
+                        <div className="h-[193px] w-[148px] shrink-0 animate-pulse rounded-[9px] bg-gray-100" />
+                        <div className="flex-1 space-y-3 pt-2">
+                            <div className="flex items-center justify-between">
+                                <div className="h-7 w-20 animate-pulse rounded-full bg-gray-100" />
+                                <div className="h-7 w-16 animate-pulse rounded-full bg-gray-100" />
+                            </div>
+                            <div className="h-12 w-full animate-pulse rounded-xl bg-gray-100" />
+                            <div className="h-4 w-1/2 animate-pulse rounded-full bg-gray-100" />
+                        </div>
+                    </div>
+                    <div className="mt-5 flex gap-2.5">
+                        <div className="h-12 flex-1 animate-pulse rounded-2xl bg-gray-100" />
+                        <div className="h-12 flex-[1.4] animate-pulse rounded-2xl bg-gray-100" />
                     </div>
                 </div>
             ) : book ? (
@@ -579,7 +583,6 @@ export default function BookDetailContent() {
                             setShowLibraryModal(true);
                         }}
                     />
-                    <Yes24PurchaseButton url={book.purchaseUrl} className="px-5 pt-4" />
                     <ReviewSection reviews={reviews} isLoggedIn={!!user} onLogin={openLoginModal} onSubmit={submitReview} />
                     <Yes24Attribution className="pb-2" />
                 </>
@@ -637,22 +640,9 @@ export default function BookDetailContent() {
                                 <div className="flex-1">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                                         <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-black self-start">{book.category}</span>
-                                        <div className="flex gap-2 shrink-0">
-                                            <button
-                                                onClick={handleScrap}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-bold text-sm ${isScrapped ? 'bg-yellow-50 border-yellow-200 text-yellow-600' : 'border-gray-100 text-gray-500 hover:bg-gray-50'}`}
-                                            >
-                                                <Bookmark size={18} fill={isScrapped ? "currentColor" : "none"} />
-                                                {isScrapped ? "찜 완료" : "찜하기"}
-                                            </button>
-                                            <button
-                                                onClick={handleMarkRead}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-full border transition-all font-bold text-sm ${isRead ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-100 text-gray-500 hover:bg-gray-50'}`}
-                                            >
-                                                {isRead ? <Check size={18} /> : <BookOpen size={18} />}
-                                                {isRead ? "읽은 책" : "읽었어요"}
-                                            </button>
-                                        </div>
+                                        {book.purchaseUrl && (
+                                            <Yes24PurchaseButton url={book.purchaseUrl} variant="compact" />
+                                        )}
                                     </div>
                                     <h1 className="text-xl md:text-2xl lg:text-3xl font-black text-gray-900 mb-2">{book.title}</h1>
                                     <p className="text-gray-500 font-medium mb-6">{book.author} | {book.pubDate}</p>
@@ -665,6 +655,38 @@ export default function BookDetailContent() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* 데스크톱 메인 액션 버튼 (저장 & 읽었어요) */}
+                                    <div className="mt-8 pt-6 border-t border-gray-100 flex items-center gap-3 max-w-md">
+                                        <button
+                                            type="button"
+                                            onClick={handleScrap}
+                                            aria-label={isScrapped ? "저장 취소" : "저장하기"}
+                                            aria-pressed={isScrapped}
+                                            className={`flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl border text-sm font-bold transition-all active:scale-[0.98] cursor-pointer ${
+                                                isScrapped
+                                                    ? 'border-amber-300 bg-amber-50 text-amber-700 shadow-xs'
+                                                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-xs'
+                                            }`}
+                                        >
+                                            <Bookmark size={18} fill={isScrapped ? "currentColor" : "none"} className={isScrapped ? "text-amber-500" : "text-gray-400"} />
+                                            <span>{isScrapped ? "저장됨" : "저장"}</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleMarkRead}
+                                            aria-label={isRead ? "읽은 책" : "읽었어요"}
+                                            aria-pressed={isRead}
+                                            className={`flex h-12 flex-[1.4] items-center justify-center gap-2 rounded-2xl text-sm font-bold transition-all active:scale-[0.98] shadow-xs cursor-pointer ${
+                                                isRead
+                                                    ? 'border border-green-500 bg-green-50 text-green-700'
+                                                    : 'bg-[#16A34A] text-white hover:bg-[#15803D]'
+                                            }`}
+                                        >
+                                            {isRead ? <Check size={18} className="stroke-[2.5]" /> : <BookOpen size={18} />}
+                                            <span>{isRead ? "읽은 책" : "읽었어요"}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -767,7 +789,6 @@ export default function BookDetailContent() {
                         )}
                     </div>
 
-                    <Yes24PurchaseButton url={book?.purchaseUrl} className="mb-10 max-w-md" />
 
                     {/* Reviews */}
                     <div className="mb-20">
