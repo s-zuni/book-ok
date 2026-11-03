@@ -1098,7 +1098,7 @@ export default function AdminPage() {
                                                         </div>
                                                     </td>
                                                     <td className="px-6 py-4 text-sm font-medium text-gray-900 truncate max-w-xs">{comment.content}</td>
-                                                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{comment.author_name}</td>
+                                                    <td className="px-6 py-4 text-sm font-medium text-gray-500">{comment.author_nickname || comment.author_name}</td>
                                                     <td className="px-6 py-4">
                                                         <div className="flex justify-end gap-2">
                                                             <button 

@@ -1,10 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.8";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "DELETE, OPTIONS",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -13,7 +13,7 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (req.method !== "DELETE") {
+  if (req.method !== "POST") {
     return new Response(
       JSON.stringify({ error: "Method not allowed" }),
       { status: 405, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -21,32 +21,30 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!serviceRoleKey) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured.");
+    if (!supabaseUrl || !serviceRoleKey) {
+      throw new Error("Missing Supabase environment variables");
     }
 
-    // 1. Get Authorization header to authenticate the user
+    // 1. Authenticate user from the Authorization header JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Missing Authorization header" }),
+        JSON.stringify({ error: "No authorization header provided" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Create client using user's jwt token to authenticate
-    const token = authHeader.replace("Bearer ", "");
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const userClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: { user }, error: authError } = await userClient.auth.getUser(token);
+    const { data: { user }, error: userError } = await userClient.auth.getUser(token);
 
-    if (authError || !user) {
+    if (userError || !user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized request" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -70,9 +68,34 @@ serve(async (req) => {
     if (childrenData && childrenData.length > 0) {
       const childIds = childrenData.map((c) => c.id);
       
-      // Delete read books & reading goals
+      // Delete child read books & reading goals
       await adminClient.from("read_books").delete().in("child_id", childIds);
       await adminClient.from("reading_goals").delete().in("child_id", childIds);
+    }
+
+    // Delete any remaining read_books by user_id directly
+    await adminClient.from("read_books").delete().eq("user_id", userId);
+
+    // Delete bookmarks / scraps
+    await adminClient.from("book_scraps").delete().eq("user_id", userId);
+
+    // Delete reviews
+    await adminClient.from("reviews").delete().eq("user_id", userId);
+
+    // Delete comments & posts
+    try {
+      await adminClient.from("comments").delete().or(`author_id.eq.${userId},user_id.eq.${userId}`);
+      await adminClient.from("posts").delete().or(`author_id.eq.${userId},user_id.eq.${userId}`);
+    } catch {
+      // ignore if column doesn't match
+    }
+
+    // Delete reports & assessments
+    try {
+      await adminClient.from("literacy_assessments").delete().eq("user_id", userId);
+      await adminClient.from("reports").delete().eq("user_id", userId);
+    } catch {
+      // ignore
     }
 
     // Delete children profiles

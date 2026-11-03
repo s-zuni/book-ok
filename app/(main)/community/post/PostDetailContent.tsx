@@ -54,7 +54,7 @@ export default function PostDetailPage() {
             }
             if (data) {
                 const blockedUsers = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('blocked_users') || '[]') : [];
-                const filtered = data.filter(comment => !blockedUsers.includes(comment.user_id));
+                const filtered = data.filter(comment => !blockedUsers.includes(comment.author_id || comment.user_id));
                 setComments(filtered);
             }
         } catch (err) {
@@ -92,6 +92,11 @@ export default function PostDetailPage() {
 
     const handleLike = async () => {
         if (!post) return;
+        if (!user) { toast.error("로그인이 필요한 기능입니다."); return; }
+        const likedKey = `bookok_liked_posts_${user.id}`;
+        const likedPosts: string[] = JSON.parse(localStorage.getItem(likedKey) || "[]");
+        if (likedPosts.includes(String(postId))) { toast.info("이미 좋아요를 누른 게시글입니다."); return; }
+        localStorage.setItem(likedKey, JSON.stringify([...likedPosts, String(postId)]));
         setPost({ ...post, likes: post.likes + 1 });
         await supabase.from('posts').update({ likes: post.likes + 1 }).eq('id', postId);
     };
@@ -193,7 +198,7 @@ export default function PostDetailPage() {
             localStorage.setItem('blocked_users', JSON.stringify(blockedUsers));
         }
         toast.success("차단되었습니다.");
-        setComments(prev => prev.filter(c => c.user_id !== targetUserId));
+        setComments(prev => prev.filter(c => (c.author_id || c.user_id) !== targetUserId));
     };
 
     if (!post) {
@@ -292,13 +297,13 @@ export default function PostDetailPage() {
                             <div key={comment.id} className="bg-gray-50 p-4 rounded-2xl">
                                 <div className="flex justify-between items-center mb-1.5">
                                     <div className="flex items-center gap-2">
-                                        <span className="font-bold text-sm text-gray-800">{comment.author_name}</span>
+                                        <span className="font-bold text-sm text-gray-800">{comment.author_nickname || comment.author_name || '익명'}</span>
                                         <span className="text-[10px] text-gray-400">{new Date(comment.created_at).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                     </div>
-                                    {user && comment.user_id !== user.id && (
+                                    {user && (comment.author_id || comment.user_id) !== user.id && (
                                         <div className="flex gap-1.5">
                                             <button onClick={() => handleReportComment(comment.id)} className="text-[10px] text-red-400 hover:text-red-600 font-bold transition">신고</button>
-                                            <button onClick={() => handleBlockUser(comment.user_id, comment.id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold transition">차단</button>
+                                            <button onClick={() => handleBlockUser(comment.author_id || comment.user_id || '', comment.id)} className="text-[10px] text-gray-400 hover:text-gray-600 font-bold transition">차단</button>
                                         </div>
                                     )}
                                 </div>

@@ -48,14 +48,13 @@ export default function Header({
                 router.push('/admin/login');
                 return 0;
             }
+            router.push('/');
             return next;
         });
         
         setTimeout(() => {
             setLogoTapCount(0);
         }, 2000);
-
-        router.push('/');
     };
 
     const onSearchSubmit = () => {

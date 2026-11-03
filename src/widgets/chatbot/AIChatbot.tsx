@@ -5,7 +5,7 @@ import { X, Send, Bot, Sparkles } from "lucide-react";
 import { useChatbot } from "@widgets/chatbot/ChatbotContext";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
-import { marked } from 'marked';
+import { renderSafeMarkdown } from "@shared/lib/renderSafeMarkdown";
 import { Haptics, ImpactStyle } from "@capacitor/haptics";
 import { Capacitor } from "@capacitor/core";
 import { supabase, supabaseUrl, supabaseAnonKey } from "@shared/lib/supabase";
@@ -14,10 +14,11 @@ import { safeFetch } from "@shared/lib/api";
 interface Message {
     role: "user" | "assistant" | "system";
     content: string;
+    books?: any[];
 }
 
 export default function AIChatbot() {
-    const { user } = useAuth();
+    const { user, activeChild } = useAuth();
     const { openLoginModal } = useLoginModal();
     const { isChatOpen, closeChat, toggleChat } = useChatbot();
     const [messages, setMessages] = useState<Message[]>([]);
@@ -107,7 +108,11 @@ export default function AIChatbot() {
             }
 
             const data = await response.json();
-            const botMessage = data.result;
+            const botMessage = {
+                role: "assistant" as const,
+                content: data.result?.content || data.result || "답변을 불러오지 못했습니다.",
+                books: data.books || data.result?.books || []
+            };
 
             setMessages(prev => [...prev, botMessage]);
         } catch (error: any) {
@@ -125,7 +130,7 @@ export default function AIChatbot() {
                 if (!user) return openLoginModal();
                 toggleChat();
             }}
-            className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-2xl transition-all duration-300 hidden lg:flex items-center gap-2 group ${isChatOpen ? 'bg-gray-800 rotate-90 scale-0' : 'bg-green-600 hover:bg-green-700 scale-100 hover:scale-110'}`}
+            className={`fixed bottom-8 right-8 z-50 p-4 rounded-full shadow-2xl transition-all duration-300 hidden lg:flex items-center gap-2 group ${isChatOpen ? 'bg-gray-800 rotate-90 scale-0' : 'bg-[#16A34A] hover:bg-[#15803D] scale-100 hover:scale-110'}`}
         >
             <Sparkles className="text-yellow-300 fill-current animate-pulse" size={24} />
             <span className="text-white font-bold pr-2">AI 책 추천</span>
@@ -147,7 +152,7 @@ export default function AIChatbot() {
                 <div className={`bg-white w-full sm:max-w-md h-dvh sm:h-[600px] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform ${isChatOpen ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'}`}>
 
                     {/* Header */}
-                    <div className="bg-green-600 p-4 flex items-center justify-between text-white shrink-0">
+                    <div className="bg-[#16A34A] p-4 flex items-center justify-between text-white shrink-0">
                         <div className="flex items-center gap-3">
                             <div className="bg-white/20 p-2 rounded-full">
                                 <Bot size={24} className="text-white" />
@@ -173,20 +178,41 @@ export default function AIChatbot() {
                         )}
 
                         {messages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                                    ? 'bg-green-600 text-white rounded-br-none shadow-md shadow-green-100'
-                                    : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-sm'
-                                    }`}>
-                                    {msg.role === 'assistant' ? (
-                                        <div
-                                            className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 text-gray-800"
-                                            dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
-                                        />
-                                    ) : (
-                                        msg.content
-                                    )}
+                            <div key={idx} className="space-y-1.5">
+                                <div className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    <div className={`max-w-[80%] p-3.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
+                                        ? 'bg-[#16A34A] text-white rounded-br-none shadow-md shadow-green-100'
+                                        : 'bg-white text-gray-800 rounded-bl-none border border-gray-100 shadow-sm'
+                                        }`}>
+                                        {msg.role === 'assistant' ? (
+                                            <div
+                                                className="prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0 text-gray-800"
+                                                dangerouslySetInnerHTML={{ __html: renderSafeMarkdown(msg.content.replace(/\[RECOMMENDED_BOOKS:.*?\]/g, "").trim()) }}
+                                            />
+                                        ) : (
+                                            msg.content
+                                        )}
+                                    </div>
                                 </div>
+                                {msg.books && msg.books.length > 0 && (
+                                    <div className="flex gap-2 overflow-x-auto py-1 px-1 scrollbar-hide my-1">
+                                        {msg.books.map((b: any, bIdx: number) => (
+                                            <a
+                                                key={bIdx}
+                                                href={`/book?id=${b.id || b.bookid}`}
+                                                className="flex items-center gap-2 bg-white border border-gray-100 rounded-xl p-2 shrink-0 shadow-2xs hover:border-green-300 transition-all max-w-[200px]"
+                                            >
+                                                {b.cover_url && (
+                                                    <img src={b.cover_url} alt={b.title} className="w-10 h-14 object-cover rounded-md shrink-0" />
+                                                )}
+                                                <div className="overflow-hidden">
+                                                    <p className="text-xs font-bold text-gray-900 truncate">{b.title}</p>
+                                                    <p className="text-[10px] text-gray-400 truncate">{b.author}</p>
+                                                </div>
+                                            </a>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         ))}
                         {isLoading && (
@@ -219,7 +245,7 @@ export default function AIChatbot() {
                             <button
                                 onClick={handleSend}
                                 disabled={!input.trim() || isLoading}
-                                className="bg-green-600 text-white p-3 rounded-xl hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-green-100"
+                                className="bg-[#16A34A] text-white p-3 rounded-xl hover:bg-[#15803D] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-green-100"
                             >
                                 <Send size={20} />
                             </button>

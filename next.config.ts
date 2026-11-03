@@ -9,7 +9,7 @@ import type { NextConfig } from "next";
 const isCapacitorBuild = process.env.BUILD_TARGET === 'capacitor';
 
 const SUPABASE_URL =
-  process.env.NEXT_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://holaqlorkluptvrcfwtu.supabase.co";
+  process.env.NEXT_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "https://tffvsyarxfujmvbqlutr.supabase.co";
 
 
 

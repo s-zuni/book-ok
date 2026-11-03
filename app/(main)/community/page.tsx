@@ -302,8 +302,8 @@ export default function CommunityPage() {
                     {[
                         { label: "전체", key: "전체 게시글" },
                         { label: "🔥 인기", key: "인기 게시판" },
-                        { label: "교육 고민", key: "교육 고민" },
-                        { label: "독서 고민", key: "독서 고민" }
+                        { label: "교육 고민", key: "유아동 교육 고민" },
+                        { label: "독서 고민", key: "유아동 독서 고민" }
                     ].map((tab, idx) => {
                         const isTabActive = activeSubMenu === tab.key;
                         return (

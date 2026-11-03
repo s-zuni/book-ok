@@ -1,6 +1,6 @@
 import { Sparkles, MessageCircle, Quote } from "lucide-react";
 import LoadingState from "@shared/ui/LoadingState";
-import { marked } from 'marked';
+import { renderSafeMarkdown } from "@shared/lib/renderSafeMarkdown";
 import { useAuth } from "@features/auth/AuthContext";
 import { useLoginModal } from "@features/auth/LoginModalContext";
 
@@ -73,7 +73,7 @@ export default function AISolution({
                             </h3>
                             <div
                                 className="prose prose-lg max-w-none text-gray-700 leading-relaxed bg-green-50/50 p-8 rounded-3xl border border-green-100/50"
-                                dangerouslySetInnerHTML={{ __html: marked.parse(result) as string }}
+                                dangerouslySetInnerHTML={{ __html: renderSafeMarkdown(result) }}
                             />
                         </div>
                     )}

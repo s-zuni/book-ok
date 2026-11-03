@@ -23,7 +23,7 @@ import { Capacitor } from "@capacitor/core";
 export default function MyPage() {
     const [activeMenu, setActiveMenu] = useState<MainMenu>('rec');
     const [activeSubMenu, setActiveSubMenu] = useState('');
-    const { user, userProfile, signOut, loading: authLoading, isInitialized, refreshChildren, children, refreshProfile } = useAuth();
+    const { user, userProfile, signOut, loading: authLoading, isInitialized, refreshChildren, children, refreshProfile, activeChild: contextActiveChild, selectChild } = useAuth();
 
     const [isEditingNickname, setIsEditingNickname] = useState(false);
     const [editedNickname, setEditedNickname] = useState("");
@@ -60,7 +60,19 @@ export default function MyPage() {
     const [isAddingChild, setIsAddingChild] = useState(false);
 
     // Active Child & Stats
-    const [activeChild, setActiveChild] = useState<Child | null>(null);
+    const [activeChild, setLocalActiveChild] = useState<Child | null>(null);
+    const setActiveChild = (child: Child | null) => {
+        setLocalActiveChild(child);
+        selectChild(child);
+    };
+
+    useEffect(() => {
+        if (contextActiveChild) {
+            setLocalActiveChild(contextActiveChild);
+        } else if (children.length > 0) {
+            setLocalActiveChild(children[0]);
+        }
+    }, [contextActiveChild, children]);
     const [editingChild, setEditingChild] = useState<Child | null>(null);
     const [readBookCount, setReadBookCount] = useState(0);
     const [readBooks, setReadBooks] = useState<ReadBook[]>([]);
@@ -312,11 +324,7 @@ export default function MyPage() {
         return () => clearTimeout(timer);
     }, []);
 
-    useEffect(() => {
-        if (isInitialized && children.length > 0 && !activeChild) {
-            setActiveChild(children[0]);
-        }
-    }, [isInitialized, children, activeChild]);
+// Active child is synchronized with AuthContext
 
     useEffect(() => {
         if ((isInitialized || forceReady) && !user && !authLoading) {
@@ -1152,8 +1160,8 @@ export default function MyPage() {
 
             {/* 계정 탈퇴 확인 모달 */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95 overflow-hidden">
+                <div className="fixed inset-0 z-70 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm animate-in fade-in" style={{ paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
+                    <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl animate-in zoom-in-95 overflow-y-auto max-h-full">
                         {/* 헤더 */}
                         <div className="bg-red-50 px-6 pt-8 pb-6 text-center">
                             <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1214,8 +1222,8 @@ export default function MyPage() {
 
             {/* PIN Change Modal */}
             {showPinChangeModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[2rem] p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-70 px-4 animate-in fade-in duration-200" style={{ paddingTop: "calc(1rem + env(safe-area-inset-top, 0px))", paddingBottom: "calc(1rem + env(safe-area-inset-bottom, 0px))" }}>
+                    <div className="bg-white rounded-[2rem] p-6 max-w-md w-full shadow-2xl relative animate-in zoom-in-95 duration-200 max-h-full overflow-y-auto">
                         <button
                             onClick={() => setShowPinChangeModal(false)}
                             className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors"

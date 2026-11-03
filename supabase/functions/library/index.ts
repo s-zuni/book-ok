@@ -41,7 +41,13 @@ serve(async (req) => {
     region = region || urlObj.searchParams.get("region") || "";
     dtl_region = dtl_region || urlObj.searchParams.get("dtl_region") || "";
 
-    const API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key") || "c0bde3ba4483595bfd280c6bfa5bf7627b8d4477ce024e44c1ea1db1af866";
+    const API_KEY = Deno.env.get("DATA4LIBRARY_API_KEY") || Deno.env.get("data4library_api_key") || "";
+    if (!API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "DATA4LIBRARY_API_KEY not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Helper for fast fetching with timeout
     const fetchWithTimeout = async (url: string, timeoutMs: number = 3500) => {
@@ -72,11 +78,11 @@ serve(async (req) => {
         );
       }
 
-      const libCodes = libCodesStr.split(",").map((code) => code.trim()).filter(Boolean);
+      const libCodes = libCodesStr.split(",").map((code) => code.trim()).filter(Boolean).slice(0, 20);
 
       const fetchPromises = libCodes.map(async (libCode) => {
         try {
-          const existUrl = `http://data4library.kr/api/bookExist?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&format=json`;
+          const existUrl = `https://data4library.kr/api/bookExist?authKey=${API_KEY}&libCode=${libCode}&isbn13=${isbn}&format=json`;
           const existRes = await fetchWithTimeout(existUrl, 4000);
           if (!existRes || !existRes.ok) {
             return {
@@ -109,7 +115,7 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     } else {
-      let fetchUrl = `http://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150`;
+      let fetchUrl = `https://data4library.kr/api/libSrch?authKey=${API_KEY}&format=json&pageSize=150`;
       if (region) fetchUrl += `&region=${region}`;
       if (dtl_region) fetchUrl += `&dtl_region=${dtl_region}`;
 

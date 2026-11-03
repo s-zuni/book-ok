@@ -51,9 +51,11 @@ export interface Post {
 export interface Comment {
     id: number;
     post_id: number;
-    author_name: string;
+    author_id: string;
+    author_nickname: string;
+    author_name?: string;
     content: string;
-    user_id: string;
+    user_id?: string;
     created_at: string;
     parent_id?: number | null;
     is_deleted: boolean;
@@ -256,6 +258,3 @@ export interface LiteracyAssessment {
     prescribed_books: LiteracyPrescribedBook[];
     created_at: string;
 }
-
-
-
