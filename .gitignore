@@ -140,3 +140,7 @@ yarn-error.log*
 
 /marketing_auto/*.json
 /marketing_auto/logs/
+
+# Marketing automation (credentials / generated files)
+/marketing_auto/
+/Microsoft/
