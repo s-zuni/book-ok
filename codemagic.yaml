@@ -122,28 +122,46 @@ workflows:
           echo "=== 1. SPM 패키지 의존성 해결 (Scheme 명시) ==="
           xcodebuild -resolvePackageDependencies -project "$XCODE_PROJECT" -scheme "$XCODE_SCHEME" -disablePackageRepositoryCache
 
-          echo "=== 2. Xcode 프로젝트에 프로파일 적용 및 Export Options 생성 ==="
-          xcode-project use-profiles --project "$XCODE_PROJECT"
+          echo "=== 2. 프로비저닝 프로파일 감지 및 서명 파라미터 추출 ==="
+          PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+          PROFILE=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -n 1)
+          if [ -z "$PROFILE" ]; then
+            PROFILES_DIR="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+            PROFILE=$(ls "$PROFILES_DIR"/*.mobileprovision 2>/dev/null | head -n 1)
+          fi
 
-          echo "=== 2-1. SPM 패키지 서명 충돌 방지 처리 (프로젝트 레벨 서명 격리) ==="
+          if [ -n "$PROFILE" ]; then
+            export PROFILE_NAME=$(security cms -D -i "$PROFILE" | plutil -extract Name raw - 2>/dev/null || echo "")
+            export PROFILE_UUID=$(security cms -D -i "$PROFILE" | plutil -extract UUID raw - 2>/dev/null || echo "")
+            echo "✅ 감지된 프로비저닝 프로파일: $PROFILE_NAME ($PROFILE_UUID)"
+          fi
+
+          echo "=== 2-1. SPM 패키지 격리 및 메인 앱 배포 서명 적용 ==="
           node scripts/fix-spm-signing.js
 
-          echo "=== 3. IPA 빌드 ==="
-          if ! xcode-project build-ipa --project "$XCODE_PROJECT" --scheme "$XCODE_SCHEME"; then
-            echo "❌ xcode-project build-ipa 실패! 상세 컴파일/빌드 에러를 진단합니다."
-            xcodebuild archive \
-              -project "$XCODE_PROJECT" \
-              -scheme "$XCODE_SCHEME" \
-              -destination "generic/platform=iOS" \
-              -archivePath "build/ios/xcarchive/App.xcarchive" \
-              COMPILER_INDEX_STORE_ENABLE=NO \
-              DEVELOPMENT_TEAM=7AB2D79572 \
-              2>&1 | tee /tmp/xcodebuild.log | grep -E "error:|fatal error:|warning: App isn't code signed" || true
-            
-            echo "=== 마지막 50줄 출력 ==="
-            tail -n 50 /tmp/xcodebuild.log
-            exit 1
+          echo "=== 3. 아카이브 생성 (xcodebuild archive) ==="
+          mkdir -p build/ios/xcarchive
+          xcodebuild archive \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME" \
+            -destination "generic/platform=iOS" \
+            -archivePath "build/ios/xcarchive/App.xcarchive" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+          echo "=== 4. IPA 파일 추출 (xcodebuild -exportArchive) ==="
+          mkdir -p build/ios/ipa
+          EXPORT_PLIST="/tmp/export_options.plist"
+          if [ ! -f "$EXPORT_PLIST" ]; then
+            EXPORT_PLIST="ios/App/export_options.plist"
           fi
+          
+          xcodebuild -exportArchive \
+            -archivePath "build/ios/xcarchive/App.xcarchive" \
+            -exportPath "build/ios/ipa" \
+            -exportOptionsPlist "$EXPORT_PLIST"
+
+          echo "=== 5. 빌드 결과 확인 ==="
+          ls -lh build/ios/ipa
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
